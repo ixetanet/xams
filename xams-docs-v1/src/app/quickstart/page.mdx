@@ -1,0 +1,291 @@
+import widgetForm from '@/images/widget_form.png'
+import widgetTable from '@/images/widget_table.png'
+import widgetTableCreate from '@/images/widget_table_create.png'
+
+export const metadata = {
+  title: 'Quickstart',
+  description: 'This guide will get you up and running with Xams.',
+}
+
+# Quickstart
+
+This guide will get you up and running with Xams and covers the following: {{ className: 'lead' }}
+
+- Creating a Xams Api project {{ className: 'lead' }}
+- Creating a Xams NextJS \ React project {{ className: 'lead' }}
+- Creating tables {{ className: 'lead' }}
+- Displaying and creating records from a datatable {{ className: 'lead' }}
+- Writing service logic {{ className: 'lead' }}
+- Creating forms {{ className: 'lead' }}
+
+## Prerequisites
+
+- [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+- [NodeJS (LTS)](https://nodejs.org)
+
+## Install EF Core Tools
+
+Ensure you have version 8+ of the Entity Framework Core tools installed.
+
+```cmd {{ title: 'Terminal' }}
+dotnet tool install --global dotnet-ef
+```
+
+## Install Xams CLI
+
+Install the Xams CLI if you haven't installed it yet.
+
+```cmd {{ title: 'Terminal' }}
+dotnet tool install --global Xams.Cli --version 1.0.2
+```
+
+## Create Api Project
+
+1.  Create the directory you want your project to live in.
+2.  Open the command prompt or terminal in the directory.
+3.  Execute the Xams CLI. Choose "Create Api Project".
+
+<CodeGroup title="Terminal" tag="" label="">
+            ```bash {{ title: 'Windows' }}
+            xams-cli
+            ```
+
+            ```js {{ title: 'MacOS' }}
+            export PATH="$PATH:$HOME/.dotnet/tools" && xams-cli
+            ```
+
+</CodeGroup>
+4. Enter your email address. A project key will be sent.
+5. Enter the project key.
+6. Enter the name of your project. All of the c# project will be prefixed with this name.
+7. Open the solution in your IDE of choice. The projects contained in this solution are:
+
+- Project.Common: Classes shared across projects including Entities
+- Project.Data: Entity Framework migrations as well as the DbContext
+- Project.Services: All service layer logic
+- Project.Web: The api endpoints
+
+8. The project is configured to use SQLite by default. Run the following commands in the Project.Data folder to create the first migration and update the database.
+
+```cmd {{ title: 'Terminal - / Project.Data ' }}
+dotnet ef migrations add migration01
+dotnet ef database update
+```
+
+9. Run the project using https to connect to the React \ NextJS web app in the next step.
+
+## Create NextJS Project
+
+1. Open the command prompt or terminal in the directory to create the React \ NextJS project.
+2. Execute the Xams CLI. Choose "Create React \ NextJS Project".
+
+<CodeGroup title="Terminal" tag="" label="">
+            ```bash {{ title: 'Windows' }}
+            xams-cli
+            ```
+
+            ```js {{ title: 'MacOS' }}
+            export PATH="$PATH:$HOME/.dotnet/tools" && xams-cli
+            ```
+
+</CodeGroup>
+
+3. Enter your email address. A project key will be sent.
+4. Enter the project key.
+5. Enter the name of your web app. A folder with the name of your web app will be created and includes all of the web app files.
+6. Open the folder in your code editor of choice.
+7. In the directory of the web app execute the following code.
+
+```cmd {{ title: 'Terminal' }}
+npm install && npm run dev
+```
+
+8. With the Api running, open the NextJS project in the browser (http://localhost:3000?userid=f8a43b04-4752-4fda-a89f-62bebcd8240c)
+
+<Note>
+  A new Xams project isn't configured with Authentication or Authorization but
+  still has users. Whenever the api starts, it creates system records. One of
+  those system records is the "SYSTEM" user. The Id of this user is always
+  f8a43b04-4752-4fda-a89f-62bebcd8240c.
+</Note>
+
+## Create an Entity
+
+1. In the "Common" project create a new class file in the Entities folder and name it "Widget.cs"
+2. Paste the below code in the file.
+
+```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
+[Table("Widget")]
+public class Widget
+{
+    public Guid WidgetId { get; set; }
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+}
+```
+
+<Note>The table and class name must match.</Note>
+
+3. Add the Widget class to the DataContext class.
+
+```c# {{ title: 'Project.Data / DataContext.cs' }}
+public class DataContext : BaseDbContext
+{
+    public DbSet<User> Users { get; set; } = null!;
+    public DbSet<Role> Roles { get; set; } = null!;
+    public DbSet<Permission> Permissions { get; set; } = null!;
+    public DbSet<Team> Teams { get; set; } = null!;
+    public DbSet<TeamUser> TeamUsers { get; set; } = null!;
+    public DbSet<TeamRole> TeamRoles { get; set; } = null!;
+    public DbSet<RolePermission> RolePermissions { get; set; } = null!;
+    public DbSet<UserRole> UserRoles { get; set; } = null!;
+    public DbSet<Option> Options { get; set; } = null!;
+    public DbSet<Setting> Settings { get; set; } = null!;
+    public DbSet<Job> Jobs { get; set; } = null!;
+    public DbSet<JobHistory> JobHistories { get; set; } = null!;
+    public DbSet<Widget> Widgets { get; set; } // <-- Add this
+}
+```
+
+4. In the Project.Data directory execute the code below to create a migration and update the database.
+
+```cmd {{ title: 'Terminal' }}
+dotnet ef migrations add migration02
+dotnet ef database update
+```
+
+6. Start the project
+
+## Create a Datatable
+
+1. Paste the following code in index.tsx
+
+```tsx {{ title: 'src / pages / index.tsx' }}
+import { DataTable } from '@ixeta/xams'
+import React from 'react'
+
+const Index = () => {
+  return (
+    <div className="h-96 w-[500px] p-10">
+      <DataTable tableName="Widget"></DataTable>
+    </div>
+  )
+}
+
+export default Index
+```
+
+This will create the following table.
+
+<DocImage image={widgetTable} />
+
+If you click the "Add" button on the table, a form will open where a new record can be created.
+
+<DocImage image={widgetTableCreate} full={true} />
+
+## Add Service Logic
+
+We can have the service layer automatically set a price for the Widget based on the number of Widgets in the database.
+
+1. Create a new class file in the Project.Services/ServiceLogic folder. Name it "WidgetService.cs"
+2. Replace the class in the file with the code below.
+
+```c# {{ title: 'Project.Services / ServiceLogic / WidgetService.cs' }}
+// Execute on Create or Update of the Widget entity before the Save to the database.
+[ServiceLogic(nameof(Widget), DataOperation.Create | DataOperation.Update, LogicStage.PreOperation)]
+public class WidgetService : IServiceLogic
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        var db = context.GetDbContext<DataContext>();
+
+        // Get the entity being saved
+        Widget widget = context.GetEntity<Widget>();
+
+        var countWidgets = await db.Widgets.CountAsync();
+
+        // Only set on create
+        if (context.DataOperation is DataOperation.Create)
+        {
+            // Because this is a PreOperation (before save), the Price will
+            // eventually get saved to the database
+            widget.Price = countWidgets * 10.5M;
+        }
+
+        return ServiceResult.Success();
+    }
+}
+```
+
+## Create a Record
+
+1. Replace the code in index.tsx with the following.
+
+```tsx {{ title: 'src / pages / index.tsx' }}
+import { useAuthRequest } from '@ixeta/xams'
+import { Button } from '@mantine/core'
+import React from 'react'
+
+const Index = () => {
+  const authRequest = useAuthRequest()
+
+  const onClick = async () => {
+    const resp = await authRequest.create('Widget', {
+      Name: 'My Widget',
+      Price: 9.99,
+    })
+    if (!resp.succeeded) {
+      return
+    }
+  }
+
+  return <Button onClick={onClick}>Create Widget</Button>
+}
+
+export default Index
+```
+
+When the button is clicked, a Widget record will be created with the provided data.
+
+## Create a Form
+
+1. Replace the code in index.tsx with the following.
+
+```tsx {{ title: 'src / pages / index.tsx' }}
+import { Field, FormContainer, SaveButton, useFormBuilder } from '@ixeta/xams'
+import { Grid } from '@mantine/core'
+import React from 'react'
+
+const Index = () => {
+  // Use the useFormBuilder hook to specify the table we're creating the form for
+  const formBuilder = useFormBuilder({
+    tableName: 'Widget',
+  })
+
+  return (
+    <div className="h-full w-full max-w-md p-6">
+      {/* Create a form container for this table's fields */}
+      <FormContainer formBuilder={formBuilder}>
+        <div className="flex flex-col gap-4">
+          <Grid>
+            <Grid.Col span={6}>
+              {/* Define the table fields to bind to */}
+              <Field name="Name" />
+            </Grid.Col>
+            <Grid.Col span={6}>
+              <Field name="Price" />
+            </Grid.Col>
+          </Grid>
+          <SaveButton />
+        </div>
+      </FormContainer>
+    </div>
+  )
+}
+
+export default Index
+```
+
+This will create the below form:
+
+<DocImage image={widgetForm} />

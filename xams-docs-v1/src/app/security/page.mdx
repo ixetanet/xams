@@ -1,0 +1,93 @@
+export const metadata = {
+  title: 'Security',
+  description: 'Creating a Security service layer',
+}
+
+# Security
+
+A security layer can be defined by creating a class with the `SecurityService` attribute and inheriting from IServiceLogic. {{ className: 'lead' }}
+
+## Security Service
+
+Below is the default service security configuration, which grants everyone the ability to perform any operation.
+
+```c# {{ title: 'Project.Services / ServiceSecurity / DefaultSecurity.cs' }}
+[ServiceSecurity]
+public class DefaultSecurity : IServiceSecurity
+{
+    public async Task Execute(SecurityContext context)
+    {
+        // Everyone has all permissions
+        foreach (var permissionRequest in context.PermissionRequests)
+        {
+            permissionRequest.Approved = true;
+        }
+    }
+}
+```
+
+## Example
+
+Below is an example of how security could be implemented.
+
+```c# {{ title: 'Project.Services / ServiceSecurity / DefaultSecurity.cs' }}
+[ServiceSecurity]
+public class DefaultSecurity : IServiceSecurity
+{
+    public async Task Execute(SecurityContext context)
+    {
+        var db = context.GetDbContext<DataContext>();
+        var user = await db.Users.FindAsync(context.ExecutingUserId);
+
+        // Can create a IsAdmin field
+        // and check if user is admin
+        // to allow all operations
+        if (user.IsAdmin)
+        {
+            foreach (var permissionRequest in context.PermissionRequests)
+            {
+                permissionRequest.Approved = true;
+            }
+        }
+
+        // Can create a IsReadOnly field
+        // and check if user is read only
+        // to allow only read operations
+        if (user.IsReadOnly)
+        {
+            foreach (var permissionRequest in context.PermissionRequests)
+            {
+                if (permissionRequest.Type is PermissionType.Read)
+                {
+                    permissionRequest.Approved = true;
+                }
+            }
+        }
+
+        // Can create a IsSystemUser field
+        // to allow all operations
+        // on tables that start with "APP_"
+        if (user.IsSystemUser)
+        {
+            foreach (var permissionRequest in context.PermissionRequests)
+            {
+                if (permissionRequest.TableName.StartsWith("APP_"))
+                {
+                    permissionRequest.Approved = true;
+                }
+            }
+        }
+    }
+}
+```
+
+## Permission Types
+
+The following permission types exist.
+
+- Read: Allows read access to a specific table
+- Create: Allows creates to a specific table
+- Update: Allows updates to a specific table
+- Delete: Allows deletes to a specific table
+- Action: Allows an action to be called
+- Other: Any custom defined permissions

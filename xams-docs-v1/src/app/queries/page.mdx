@@ -1,0 +1,379 @@
+export const metadata = {
+  title: 'Queries',
+  description: 'Writing Queries in JavaScript',
+}
+
+# Queries
+
+Queries from JavaScript can be written in a SQL-Like syntax. {{ className: 'lead' }}
+
+## Simple Query
+
+Queries can be constructed using the `Query` class. Calling the `toReadRequest` method returns a `ReadRequest`, which can be passed to the `authRequest.read` method to retrieve the result set.
+
+```tsx {{ title: 'src / pages / index.tsx' }}
+import { useAuthRequest, Query } from '@ixeta/xams'
+import React, { useCallback, useEffect, useState } from 'react'
+
+type Widget = {
+  WidgetId: string
+  Name: string
+  Price: number
+}
+
+const Index = () => {
+  const authRequest = useAuthRequest()
+  const [widgets, setWidgets] = useState<Widget[]>([])
+
+  const loadWidgets = useCallback(async () => {
+    // Create Query
+    const readRequest = new Query(['*']).from('Widget').toReadRequest()
+    // Pass ReadRequest object to authRequest
+    const response = await authRequest.read<Widget>(readRequest)
+    if (!response.succeeded) {
+      console.log(response.logMessage)
+    }
+
+    // Set the results
+    setWidgets(response.data.results)
+  }, [authRequest])
+
+  useEffect(() => {
+    loadWidgets()
+  }, [loadWidgets])
+
+  return (
+    <div>
+      {widgets.map((widget, index) => (
+        <div key={index}>{widget.Name}</div>
+      ))}
+    </div>
+  )
+}
+
+export default Index
+```
+
+## Filtering
+
+Results can be filtered using the `where` method on the Query class.
+
+```tsx {{ title: 'Query' }}
+const readRequest = new Query(['*'])
+  .from('Widget')
+  .where('Price', '>', 0)
+  .toReadRequest()
+```
+
+Additional criteria can be provided using the `and` and `or` methods.
+
+```tsx {{ title: 'Query' }}
+const readRequest = new Query(['*'])
+  .from('Widget')
+  .where('Price', '>', 0)
+  .and('Name', 'Contains', 'XX0')
+  .toReadRequest()
+
+const readRequest = new Query(['*'])
+  .from('Widget')
+  .where('Price', '>', 0)
+  .or('Name', 'Contains', 'XX0')
+  .toReadRequest()
+```
+
+## Filter Operators
+
+The following are valid filter operators. Contains applies to string fields only.
+
+`==` `!=` `>` `<` `>=` `<=` `Contains`
+
+## Inner Join
+
+Inner joins can be performed by using the `join` method.
+
+```tsx {{ title: 'Query' }}
+const readRequest = new Query(['*'])
+  .from('Account')
+  .join('Account.AccountId', 'Contact.AccountId', 'c', [
+    'FirstName',
+    'LastName',
+  ])
+  .toReadRequest()
+```
+
+The parameters for a join are -
+
+- From table and field
+- To table and field
+- Alias
+- Fields to include (Can be '\*' for all fields)
+
+## Filter on Join Fields
+
+Queries can be filtered on their joined tables by referencing their alias in the filters.
+
+```tsx {{ title: 'Query' }}
+const readRequest = new Query(['*'])
+  .from('Account')
+  .join('Account.AccountId', 'Contact.AccountId', 'c', [
+    'FirstName',
+    'LastName',
+  ])
+  .where('c.FirstName', 'Contains', 'Mark')
+  .toReadRequest()
+```
+
+## Left Join
+
+Left joins can be performed using the `leftjoin` method.
+
+```tsx {{ title: 'Query' }}
+const readRequest = new Query(['*'])
+  .from('Account')
+  .leftJoin('Account.AccountId', 'Contact.AccountId', 'c', [
+    'FirstName',
+    'LastName',
+  ])
+  .toReadRequest()
+```
+
+## Top
+
+The number of results returned can be limited by using the `top` method. In the example below, the first 100 results are returned.
+
+```tsx {{ title: 'Query' }}
+const readRequest = new Query(['*']).top(100).from('Widget').toReadRequest()
+```
+
+## Paging
+
+Paging can be performed by using the `page` method. The below example will return records 21 to 30.
+
+```tsx {{ title: 'Query' }}
+const readRequest = new Query(['*'])
+  .top(10)
+  .page(2)
+  .from('Widget')
+  .toReadRequest()
+```
+
+## Order
+
+The order of records can be set using the `orderBy` method.
+
+```tsx {{ title: 'Query' }}
+const readRequest = new Query(['*'])
+  .from('Widget')
+  .orderBy('Name', 'asc')
+  .toReadRequest()
+```
+
+Parameters for orderBy are -
+
+- Name of field
+- Order ("asc", "desc")
+
+There can be multiple orders. In the example below, first the Widgets are ordered by Price, then by Name.
+
+```tsx {{ title: 'Query' }}
+const readRequest = new Query(['*'])
+  .from('Widget')
+  .orderBy('Price', 'desc')
+  .orderBy('Name', 'asc')
+  .toReadRequest()
+```
+
+Ordering can also be performed on joined tables.
+
+```tsx {{ title: 'Query' }}
+const readRequest = new Query(['*'])
+  .from('Account')
+  .leftJoin('Account.AccountId', 'Contact.AccountId', 'c', [
+    'FirstName',
+    'LastName',
+  ])
+  .orderBy('c.LastName', 'asc')
+  .toReadRequest()
+```
+
+## Denormalize
+
+Denormalize is useful when joined tables need to return their data in arrays. Denormalization can be enabled by using the `denormalize` method.
+
+For example, a query without denormalization like the query below will return the following json.
+
+```tsx {{ title: 'Query' }}
+const readRequest = new Query(['AccountId', 'Name'])
+  .from('Account')
+  .join('Account.AccountId', 'Contact.AccountId', 'c', ['*'])
+  .toReadRequest()
+```
+
+```json {{ title: 'Response' }}
+{
+  "succeeded": true,
+  "friendlyMessage": null,
+  "logMessage": null,
+  "data": {
+    "pages": 1,
+    "currentPage": 1,
+    "totalResults": 4,
+    "maxResults": 15,
+    "tableName": "Account",
+    "orderBy": null,
+    "distinct": null,
+    "denormalize": null,
+    "results": [
+      {
+        "AccountId": "c4284ccd-b393-40bc-8e32-3e031a66055e",
+        "Name": "MegaCorp, Inc.",
+        "c.ContactId": "d8984649-956c-4844-9db8-8c667b904725",
+        "c.FirstName": "John",
+        "c.LastName": "Smith",
+        "c.AccountId": "c4284ccd-b393-40bc-8e32-3e031a66055e",
+        "c.Account": "MegaCorp, Inc.",
+        "_ui_info_": {
+          "canDelete": true,
+          "canUpdate": true,
+          "canAssign": true,
+          "tableName": "Account"
+        },
+        "_parameters_": {}
+      },
+      {
+        "AccountId": "c4284ccd-b393-40bc-8e32-3e031a66055e",
+        "Name": "MegaCorp, Inc.",
+        "c.ContactId": "85a8368d-9405-44eb-8143-e676aa6b60d2",
+        "c.FirstName": "Rick",
+        "c.LastName": "Stanley",
+        "c.AccountId": "c4284ccd-b393-40bc-8e32-3e031a66055e",
+        "c.Account": "MegaCorp, Inc.",
+        "_ui_info_": {
+          "canDelete": true,
+          "canUpdate": true,
+          "canAssign": true,
+          "tableName": "Account"
+        },
+        "_parameters_": {}
+      },
+      {
+        "AccountId": "d846ee11-78c3-49f4-9cc0-0e4470f5bf42",
+        "Name": "SuperStore",
+        "c.ContactId": "ae454123-d060-4099-9b05-f3a0e49f75ce",
+        "c.FirstName": "Sam",
+        "c.LastName": "Richards",
+        "c.AccountId": "d846ee11-78c3-49f4-9cc0-0e4470f5bf42",
+        "c.Account": "SuperStore",
+        "_ui_info_": {
+          "canDelete": true,
+          "canUpdate": true,
+          "canAssign": true,
+          "tableName": "Account"
+        },
+        "_parameters_": {}
+      },
+      {
+        "AccountId": "d846ee11-78c3-49f4-9cc0-0e4470f5bf42",
+        "Name": "SuperStore",
+        "c.ContactId": "4a3f2ed2-a827-4198-aee1-a3900e54dc51",
+        "c.FirstName": "Jack",
+        "c.LastName": "Frost",
+        "c.AccountId": "d846ee11-78c3-49f4-9cc0-0e4470f5bf42",
+        "c.Account": "SuperStore",
+        "_ui_info_": {
+          "canDelete": true,
+          "canUpdate": true,
+          "canAssign": true,
+          "tableName": "Account"
+        },
+        "_parameters_": {}
+      }
+    ]
+  }
+}
+```
+
+When denormalization is enabled as seen in the query below, the following json is returned.
+
+```tsx {{ title: 'Query' }}
+const readRequest = new Query(['AccountId', 'Name'])
+  .from('Account')
+  .join('Account.AccountId', 'Contact.AccountId', 'c', ['*'])
+  .toReadRequest()
+```
+
+```tsx {{ title: 'Query' }}
+{
+    "succeeded": true,
+    "friendlyMessage": null,
+    "logMessage": null,
+    "data": {
+        "pages": 1,
+        "currentPage": 1,
+        "totalResults": 4,
+        "maxResults": 15,
+        "tableName": "Account",
+        "orderBy": null,
+        "distinct": null,
+        "denormalize": true,
+        "results": [
+            {
+                "AccountId": "c4284ccd-b393-40bc-8e32-3e031a66055e",
+                "Name": "MegaCorp, Inc.",
+                "c": [
+                    {
+                        "ContactId": "d8984649-956c-4844-9db8-8c667b904725",
+                        "FirstName": "John",
+                        "LastName": "Smith",
+                        "AccountId": "c4284ccd-b393-40bc-8e32-3e031a66055e",
+                        "Account": "MegaCorp, Inc."
+                    },
+                    {
+                        "ContactId": "85a8368d-9405-44eb-8143-e676aa6b60d2",
+                        "FirstName": "Rick",
+                        "LastName": "Stanley",
+                        "AccountId": "c4284ccd-b393-40bc-8e32-3e031a66055e",
+                        "Account": "MegaCorp, Inc."
+                    }
+                ],
+                "_ui_info_": {
+                    "canDelete": true,
+                    "canUpdate": true,
+                    "canAssign": true,
+                    "tableName": "Account"
+                },
+                "_parameters_": {}
+            },
+            {
+                "AccountId": "d846ee11-78c3-49f4-9cc0-0e4470f5bf42",
+                "Name": "SuperStore",
+                "c": [
+                    {
+                        "ContactId": "ae454123-d060-4099-9b05-f3a0e49f75ce",
+                        "FirstName": "Sam",
+                        "LastName": "Richards",
+                        "AccountId": "d846ee11-78c3-49f4-9cc0-0e4470f5bf42",
+                        "Account": "SuperStore"
+                    },
+                    {
+                        "ContactId": "4a3f2ed2-a827-4198-aee1-a3900e54dc51",
+                        "FirstName": "Jack",
+                        "LastName": "Frost",
+                        "AccountId": "d846ee11-78c3-49f4-9cc0-0e4470f5bf42",
+                        "Account": "SuperStore"
+                    }
+                ],
+                "_ui_info_": {
+                    "canDelete": true,
+                    "canUpdate": true,
+                    "canAssign": true,
+                    "tableName": "Account"
+                },
+                "_parameters_": {}
+            }
+        ]
+    }
+}
+```
+
+Notice the contacts are now grouped into an array named after the alias provided.

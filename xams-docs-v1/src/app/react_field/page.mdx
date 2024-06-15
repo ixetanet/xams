@@ -1,0 +1,18 @@
+export const metadata = {
+  title: 'Performance',
+  description: 'How to maximize performance in Xams',
+}
+
+# Entities
+
+Entity definitions need to follow certain rules in order to work with Xams. {{ className: 'lead' }}
+
+## Release Mode
+
+Building in release mode can dramatically increase performance.
+
+## Batches
+
+Sending data in batches can increase performance.
+
+Entities with no service logic will hault saving until they've all been added to the change tracker.

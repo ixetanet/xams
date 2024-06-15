@@ -1,0 +1,60 @@
+import imgRequired from '@/images/attribute_required.png'
+import imgDisplayName from '@/images/attribute_displayname.png'
+
+export const metadata = {
+  title: 'Attributes',
+  description: 'Entity Attributes',
+}
+
+# Attributes
+
+Attributes can be assigned to fields in model classes to modify their behavior on both the front end and the back end. {{ className: 'lead' }}
+
+## UIDisplayName
+
+The `UIDisplayName` attribute sets the label for the field on forms in the user interface (UI).
+
+```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
+[Table("Widget")]
+public class Widget
+{
+    public Guid WidgetId { get; set; }
+    [UIDisplayName("Serial Number")]
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+}
+```
+
+<DocImage image={imgDisplayName} full={false} />
+
+## UIRequired
+
+The `UIRequired` attribute ensures that a value is provided both on the UI and the backend. An asterisk will appear on the form, along with form validation. If the value is not provided and sent to the server, the server will return a 400 error.
+
+```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
+[Table("Widget")]
+public class Widget
+{
+    public Guid WidgetId { get; set; }
+    [UIRequired] // Add the UIRequired attribute to a field
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+}
+```
+
+<DocImage image={imgRequired} full={false} />
+
+## UIHide
+
+The `UIHide` attribute ensures that a field is accessible only on the server within the service layer of your application. This field cannot be displayed in the user interface or queried from JavaScript.
+
+```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
+[Table("Widget")]
+public class Widget
+{
+    public Guid WidgetId { get; set; }
+    public string Name { get; set; }
+    [UIHide] // Hide this field from the UI
+    public decimal Price { get; set; }
+}
+```

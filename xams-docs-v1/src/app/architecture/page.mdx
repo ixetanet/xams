@@ -1,0 +1,63 @@
+import widgetForm from '@/images/diagrams/crud_architecture_diagram.png'
+
+export const metadata = {
+  title: 'Architecture',
+  description: 'The Xams Architecture',
+}
+
+# Architecture
+
+## Project Structure
+
+When creating a new Xams project, 4 C# projects are created in the solution.
+
+- Project.Web: This project is solely responsible for the API.
+- Project.Data: This project contains the database migrations and the DbContext.
+- Project.Services: This project houses all business and service logic including scheduled jobs.
+- Project.Common: This project is designated for entity models and classes shared across projects.
+
+## API
+
+The API consists of 10 endpoints:
+
+- Create: Creates records.
+- Read: Queries records.
+- Update: Updates records.
+- Delete: Deletes records.
+- Upsert: Updates or inserts a record based on its existence.
+- Bulk: Creates, updates, deletes, or upserts a batch of records.
+- Permissions: Checks if a user has specified permissions.
+- Metadata: Returns metadata about the entity, including field types and information for UI validation and display.
+- Action: Triggers custom service logic.
+- File: Initiates an action with an uploaded file.
+
+Every create, read, update and upserts endpoints support batch processing, allowing for multiple creates, updates, deletes, or upserts within a single transaction.
+
+The Bulk endpoint facilitates batch processing for all data operations.
+
+## Service logic
+
+Service logic is organized within the Project.Services project, each within its corresponding folder. There are four types of service logic:
+
+- ServiceLogic: Executable during the create, read, update, or delete operations of a record. It registers with specific data operations and phases of the pipeline.
+- ServiceActions: These actions execute logic beyond the standard create, read, update, or delete of a specific record, functioning as custom endpoints or methods. This is triggered by calling the Action or File endpoints.
+- ServiceJobs: A designated folder for scheduled jobs.
+- ServiceStartup: Includes any logic that executes upon the startup of the application.
+
+## CRUD Pipeline
+
+Every CRUD call made to one of the Xams endpoints is contained within a single transaction. If at any point an exception is thrown or ServiceResult.Error() is returned from a ServiceLogic class, the transaction is rolled back and nothing is committed.
+
+With every create, read, update or delete, the pipeline will execute logic in the order seen in the diagram below.
+
+<DocImage image={widgetForm} />
+
+First, all pre-validation logic executes. This stage of service logic is crucial for defining permissions based on criteria beyond the built-in teams and roles permissions.
+
+Next, the user's permissions to perform the operation are validated. If they lack permission, a 400 error is returned along with a message indicating that the user is missing the required permissions.
+
+Subsequently, the pre-operation service logic executes. This is valuable for performing logic before saving, and after security validation has been verified.
+
+Finally, the post-operation service logic takes place. This stage is beneficial for executing logic once the record(s) exist in the database and the primary key is required. For example, creating child records for a parent.
+
+Calls to the Action and File endpoints directly call Action service logic and do not adhere to the previously mentioned pipeline; however, they are contained within a transaction. Should any failure occur within the service logic of an Action or File call, the entire transaction will be rolled back.

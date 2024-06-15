@@ -1,0 +1,272 @@
+export const metadata = {
+  title: 'Actions',
+  description: 'Actions execute any serverside logic.',
+}
+
+# Actions
+
+If you want to execute serverside logic on a Create, Read, Update or Delete, there's ServiceLogic. For everything else, there's Actions. You can think of actions as a way to create unique endpoints. {{ className: 'lead' }}
+
+## Create an Action
+
+In the services project, in the ServiceActions folder create a new file with the name of your action.
+
+```c# {{ title: 'Project.Services / ServiceActions / MyAction.cs' }}
+// ServiceAction attribute sets the name of the action
+// which is called in JavaScript
+[ServiceAction(nameof(MyAction))]
+public class MyAction : IServiceAction
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        var dbContext = context.GetDbContext<DataContext>();
+        // Do something
+
+        return ServiceResult.Success();
+    }
+}
+```
+
+## Call an Action
+
+We can then use the following code in our NextJS project to call our action.
+
+```tsx {{ title: 'src / components / MyComponent.tsx' }}
+import { useAuthRequest } from '@ixeta/xams'
+import { Button } from '@mantine/core'
+import React from 'react'
+
+const MyComponent = () => {
+  const authRequest = useAuthRequest()
+
+  const onClick = async () => {
+    const response = await authRequest.action('MyAction')
+    if (response.succeeded) {
+      // do something
+    }
+  }
+
+  return <Button onClick={onClick}>Call Action</Button>
+}
+
+export default MyComponent
+```
+
+## Parameters
+
+You can pass parameters into the action using the second argument of the authRequest.action function.
+
+```tsx {{ title: 'src / components / MyComponent.tsx' }}
+import { useAuthRequest } from '@ixeta/xams'
+import { Button } from '@mantine/core'
+import React from 'react'
+
+const MyComponent = () => {
+  const authRequest = useAuthRequest()
+
+  const onClick = async () => {
+    const response = await authRequest.action('MyAction', {
+      myParam1: 'MyValue',
+      myParam2: 5,
+    })
+    if (response.succeeded) {
+      // do something
+    }
+  }
+
+  return <Button onClick={onClick}>Call Action</Button>
+}
+
+export default MyComponent
+```
+
+In our action, we can retrieve these parameters with context.Parameters.
+
+```c# {{ title: 'Project.Services / ServiceActions / MyAction.cs' }}
+[ServiceAction(nameof(MyAction))]
+public class MyAction : IServiceAction
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        if (!context.Parameters.ContainsKey("myParam1") || !context.Parameters.ContainsKey("myParam2"))
+        {
+            return ServiceResult.Error("Missing Parameters");
+        }
+        string myParam1 = context.Parameters["myParam1"].GetString();
+        int myParam2 = context.Parameters["myParam2"].GetInt32();
+
+        var dbContext = context.GetDbContext<DataContext>();
+        // Do something
+
+        return ServiceResult.Success();
+    }
+}
+```
+
+## Response Body
+
+To return a json object from the action, we can provide an object to ServiceResult.Success.
+
+```c# {{ title: 'Project.Services / ServiceActions / MyAction.cs' }}
+[ServiceAction(nameof(MyAction))]
+public class MyAction : IServiceAction
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        var dbContext = context.GetDbContext<DataContext>();
+        // Do something
+
+        return ServiceResult.Success(new
+        {
+            name = "John Smith",
+            age = 30
+        });
+    }
+}
+```
+
+If the call to the action succeeded, the data property of the response will contain the response body.
+
+```tsx {{ title: 'src / components / MyComponent.tsx' }}
+import { useAuthRequest } from '@ixeta/xams'
+import { Button } from '@mantine/core'
+import React from 'react'
+
+const MyComponent = () => {
+  const authRequest = useAuthRequest()
+
+  const onClick = async () => {
+    const response = await authRequest.action('MyAction')
+    if (response.succeeded) {
+      const result = response.data as {
+        name: string
+        age: number
+      }
+      // do something
+    }
+  }
+
+  return <Button onClick={onClick}>Call Action</Button>
+}
+
+export default MyComponent
+```
+
+## Upload File
+
+A file can be sent using FormData.
+
+```tsx {{ title: 'src / components / MyComponent.tsx' }}
+import { useAuthRequest } from '@ixeta/xams'
+import { Button, FileInput } from '@mantine/core'
+import React from 'react'
+
+const MyComponent = () => {
+  const authRequest = useAuthRequest()
+  const [currentFile, setCurrentFile] = React.useState<File | null>(null)
+
+  const onClick = async () => {
+    if (currentFile == null) return
+    const formData = new FormData()
+    formData.append('file', currentFile)
+    formData.append('name', 'MyAction') // Action Name
+    formData.append(
+      'parameters',
+      JSON.stringify({
+        myParam1: 'myValue',
+        myParam2: 5,
+      }),
+    )
+    const resp = await authRequest.file(formData) // Use the file method
+    if (!resp.succeeded) {
+      return
+    }
+    const data = resp.data // Response Json Object
+    // do something
+  }
+
+  return (
+    <>
+      <FileInput
+        placeholder="Select File"
+        label="File"
+        value={currentFile}
+        onChange={(file) => {
+          setCurrentFile(file)
+        }}
+      />
+      <Button onClick={onClick}>Submit File</Button>
+    </>
+  )
+}
+
+export default MyComponent
+```
+
+The file can be accessed in the Action using the File property on the ServiceContext.
+
+```c# {{ title: 'Project.Services / ServiceActions / MyAction.cs' }}
+[ServiceAction(nameof(MyAction))]
+public class MyAction : IServiceAction
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        Stream stream = context.File.OpenReadStream();
+
+        // do something with the stream
+
+        return ServiceResult.Success();
+    }
+}
+```
+
+## Download File
+
+To send a file for download from an action to the browser, respond with the FileData class.
+
+```c# {{ title: 'Project.Services / ServiceActions / MyAction.cs' }}
+[ServiceAction(nameof(MyAction))]
+public class MyAction : IServiceAction
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        var file = File.Open("file.txt", FileMode.Open);
+        file.Position = 0;
+
+        return ServiceResult.Success(new FileData()
+        {
+            Stream = file
+        });
+    }
+}
+```
+
+To call the action and download the file, specify the file name in the 3rd argument of the the call to the action.
+
+```tsx {{ title: 'src / components / MyComponent.tsx' }}
+import { useAuthRequest } from '@ixeta/xams'
+import { Button } from '@mantine/core'
+import React from 'react'
+
+const MyComponent = () => {
+  const authRequest = useAuthRequest()
+
+  const onClick = async () => {
+    const resp = await authRequest.action(
+      'MyAction',
+      {
+        myParam1: 'myValue1',
+        myParam2: 5,
+      }, // Optional parameter argument, can provide null
+      'MyFileName.txt', // Specify the name of the file to download
+    )
+    if (!resp.succeeded) {
+      return
+    }
+  }
+
+  return <Button onClick={onClick}>Download File</Button>
+}
+
+export default MyComponent
+```

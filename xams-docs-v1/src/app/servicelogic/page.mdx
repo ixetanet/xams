@@ -1,0 +1,130 @@
+export const metadata = {
+  title: 'Service Logic',
+  description:
+    'Service Logic executes on create, read, update or delete of an entity.',
+}
+
+# Service Logic
+
+Service Logic executes on create, read, update or delete of an entity. {{ className: 'lead' }}
+
+Service classes can be added to the Project.Services/ServiceLogic folder. {{ className: 'lead' }}
+
+## Logic Stage
+
+Service Logic can execute at the listed stages below.
+
+- PreValidation: Before security validation has occurred
+- PreOperation: After security validation and before the save to the database
+- PostOperation: After the save to the database
+
+## Create Service Logic
+
+To create Service Logic, create a new file in the Project.Services project in the ServiceLogic folder.
+
+```c# {{ title: 'Project.Services / ServiceLogic / MyEntityService.cs' }}
+// The ServiceLogic attribute specifies what table this will execute on, what operation(s), and when (before or after the transaction)
+[ServiceLogic(nameof(MyEntity), DataOperation.Create | DataOperation.Update, LogicStage.PreOperation, 100)]
+public class MyEntityService : IServiceLogic
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        if (context.DataOperation is DataOperation.Create)
+        {
+            // Do something on Create
+        }
+
+        if (context.DataOperation is DataOperation.Update)
+        {
+            // Do something on Update
+        }
+
+        return ServiceResult.Success();
+    }
+}
+```
+
+The ServiceLogic attribute takes the following parameters.
+
+- TableName: The name of the table the service logic will execute on
+- DataOperations: Flags that determine what data operations this should execute on, create, read, update, and delete.
+- LogicStages: Flags that determine which stages the service logic should exeucte on, PreValidation, PreOperation, or PostOperation.
+- Order: Service Logic classes executing on the same table, data operation, and logic stage, will execute following the order.
+
+## ServiceContext
+
+ServiceContext has a number of properties that can be used during execution.
+
+```c# {{ title: 'Project.Services / ServiceLogic / MyEntityService.cs' }}
+[ServiceLogic(nameof(MyEntity), DataOperation.Create | DataOperation.Update | DataOperation.Read, LogicStage.PreOperation | LogicStage.PostOperation, 100)]
+public class MyEntityService : IServiceLogic
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        // Get the db context
+        DataContext db = context.GetDbContext<DataContext>();
+
+        // Do something on Create or Update
+        if (context.DataOperation is DataOperation.Create or DataOperation.Update)
+        {
+            // If this is an update, PreEntity is populated with the entity before the update
+            MyEntity preEntity = context.GetPreEntity<MyEntity>();
+            // The Entity property will have the latest values to be saved to the database
+            MyEntity entity = context.GetEntity<MyEntity>()
+
+            // Do something before the SaveChanges call
+            if (context.LogicStage is LogicStage.PreOperation)
+            {
+                // If the Name field is being updated (always true on Create)
+                if (context.ValueChanged(nameof(MyEntity.Name)))
+                {
+
+                }
+            }
+
+            // Do something after the SaveChanges call
+            // On create if we need the id of the record being saved
+            if (context.LogicStage is LogicStage.PostOperation)
+            {
+
+            }
+        }
+
+        // Do something on Read
+        if (context.DataOperation is DataOperation.Read)
+        {
+            // Get the query that was sent to the api
+            ReadInput readInput = context.ReadInput;
+        }
+
+        return ServiceResult.Success();
+    }
+}
+```
+
+## DataService
+
+In order to ensure that ServiceLogic is run on Create, Update, or Delete of a record from within a ServiceLogic class, use the DataService on the ServiceContext.
+
+```c# {{ title: 'Project.Services / ServiceLogic / MyEntityService.cs' }}
+[ServiceLogic(nameof(MyEntity), DataOperation.Create | DataOperation.Update, LogicStage.PreOperation, 100)]
+public class MyEntityService : IServiceLogic
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        // Get the db context
+        DataContext db = context.GetDbContext<DataContext>();
+        List<Widget> widgets = await db.Widgets.ToListAsync();
+
+        // Update the price of all Widgets
+        foreach (Widget widget in widgets)
+        {
+            widget.Price = 9.99M;
+            // Update the Widget and trigger any service logic
+            await context.Update<Widget>(widget);
+        }
+
+        return ServiceResult.Success();
+    }
+}
+```
