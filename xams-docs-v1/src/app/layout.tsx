@@ -31,20 +31,22 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
-      <script
-        async
-        src="https://www.googletagmanager.com/gtag/js?id=G-QSSZF4R8BZ"
-      ></script>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
+      <head>
+        <script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-QSSZF4R8BZ"
+        ></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', 'G-QSSZF4R8BZ');
           `,
-        }}
-      />
+          }}
+        />
+      </head>
       <body className="flex min-h-full bg-white antialiased dark:bg-zinc-900">
         <Providers>
           <div className="w-full">
