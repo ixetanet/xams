@@ -20,4 +20,26 @@ The diagram below shows the relationships between the security entities. Users a
 
 Permissions for Roles can be configured from the Admin Dashboard under Security -> Roles. Permissions assigned to Users are additive, meaning they accumulate from multiple roles.
 
+Create, Read, Update, Delete and Assign permissions can be set to `User`, `Team`, or `System`. Entities that inherit from the `BaseEntity` class will have `OwningUserId` and `OwningTeamId` fields.
+
+When a user has `User` level permissions, they can only Create, Read, Update or Delete records where they are the owning user.
+
+When a user has `Team` level permissions, they can only Create, Read, Update or Delete records where they are the owning user or they belong to the team that owns the record.
+
+When a user has `System` level permissions they can Create, Read, Update or Delete all records.
+
+**Need to Verify**
+
+When a user has `User` level assign permissions, upon creating records they can only assign it to themselves.
+When a user has `Team` level assign permissions, they can assign it to themselves or to any Team they belong to.
+When a user has `System` level assign permissions, they can assign it to any User or Team in the system.
+
 <DocImage image={imgEditRole} full={true} />
+
+## Assign
+
+## Import & Export
+
+## Custom Permissions
+
+## Checking Permissions
