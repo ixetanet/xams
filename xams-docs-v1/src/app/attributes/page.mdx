@@ -3,6 +3,8 @@ import imgDescription from '@/images/order_create_uidescription.png'
 import imgRequired from '@/images/attribute_required.png'
 import imgRecommended from '@/images/widget_uirecommended.png'
 import imgDisplayName from '@/images/attribute_displayname.png'
+import imgCreateOption from '@/images/admin_create_option.png'
+import imgCreateWidgetOption from '@/images/option_create_widget.png'
 
 export const metadata = {
   title: 'Attributes',
@@ -101,7 +103,7 @@ public class Widget
 
 ## UIRecommended
 
-The UIRecommended attribute displays a blue cross, indicating to the user that filling out the field is recommended.
+The `UIRecommended` attribute displays a blue cross, indicating to the user that filling out the field is recommended.
 
 ```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
 [Table(nameof(Widget))]
@@ -133,7 +135,7 @@ public class Widget
 
 ## UIReadOnly
 
-The UIReadOnly attribute ensures that a field can only be read from the UI, even if the user has Update or Create permissions. The only way to update read-only fields is by using the DbContext directly to bypass the Service Logic pipeline.
+The `UIReadOnly` attribute ensures that a field can only be read from the UI, even if the user has Update or Create permissions. The only way to update read-only fields is by using the DbContext directly to bypass the Service Logic pipeline.
 
 ```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
 [Table(nameof(Widget))]
@@ -143,5 +145,26 @@ public class Widget
     public string Name { get; set; }
     [UIReadOnly] // Field is read only from the UI
     public decimal Price { get; set; }
+}
+```
+
+## UIOption
+
+The `UIOption` attribute allows the selection of an option record.
+Options are created from the Admin Dashboard.
+
+<DocImage image={imgCreateOption} full={true} />
+
+<DocImage image={imgCreateWidgetOption} full={false} />
+
+```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
+[Table(nameof(Widget))]
+public class Widget
+{
+    public Guid WidgetId { get; set; }
+    public string Name { get; set; }
+    [UIOption("WidgetType")]
+    public Guid? WidgetTypeId { get; set; }
+    public Option WidgetType { get; set; }
 }
 ```
