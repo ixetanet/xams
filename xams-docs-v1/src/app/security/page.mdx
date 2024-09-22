@@ -1,3 +1,6 @@
+import imgSecuritySchema from '@/images/xams_security_schema.png'
+import imgEditRole from '@/images/edit_role.png'
+
 export const metadata = {
   title: 'Security',
   description: 'Creating a Security service layer',
@@ -5,89 +8,16 @@ export const metadata = {
 
 # Security
 
-A security layer can be defined by creating a class with the `SecurityService` attribute and inheriting from IServiceLogic. {{ className: 'lead' }}
+Security is configured in the Admin Dashboard by using Teams, Roles, and Permissions. {{ className: 'lead' }}
 
-## Security Service
+## Schema
 
-Below is the default service security configuration, which grants everyone the ability to perform any operation.
+The diagram below shows the relationships between the security entities. Users are assigned to Teams, while Roles can be assigned to both Teams and Users. Permissions are assigned to Roles.
 
-```c# {{ title: 'Project.Services / ServiceSecurity / DefaultSecurity.cs' }}
-[ServiceSecurity]
-public class DefaultSecurity : IServiceSecurity
-{
-    public async Task Execute(SecurityContext context)
-    {
-        // Everyone has all permissions
-        foreach (var permissionRequest in context.PermissionRequests)
-        {
-            permissionRequest.Approved = true;
-        }
-    }
-}
-```
+<DocImage image={imgSecuritySchema} full={false} />
 
-## Example
+## Permissions
 
-Below is an example of how security could be implemented.
+Permissions for Roles can be configured from the Admin Dashboard under Security -> Roles. Permissions assigned to Users are additive, meaning they accumulate from multiple roles.
 
-```c# {{ title: 'Project.Services / ServiceSecurity / DefaultSecurity.cs' }}
-[ServiceSecurity]
-public class DefaultSecurity : IServiceSecurity
-{
-    public async Task Execute(SecurityContext context)
-    {
-        var db = context.GetDbContext<DataContext>();
-        var user = await db.Users.FindAsync(context.ExecutingUserId);
-
-        // Can create a IsAdmin field
-        // and check if user is admin
-        // to allow all operations
-        if (user.IsAdmin)
-        {
-            foreach (var permissionRequest in context.PermissionRequests)
-            {
-                permissionRequest.Approved = true;
-            }
-        }
-
-        // Can create a IsReadOnly field
-        // and check if user is read only
-        // to allow only read operations
-        if (user.IsReadOnly)
-        {
-            foreach (var permissionRequest in context.PermissionRequests)
-            {
-                if (permissionRequest.Type is PermissionType.Read)
-                {
-                    permissionRequest.Approved = true;
-                }
-            }
-        }
-
-        // Can create a IsSystemUser field
-        // to allow all operations
-        // on tables that start with "APP_"
-        if (user.IsSystemUser)
-        {
-            foreach (var permissionRequest in context.PermissionRequests)
-            {
-                if (permissionRequest.TableName.StartsWith("APP_"))
-                {
-                    permissionRequest.Approved = true;
-                }
-            }
-        }
-    }
-}
-```
-
-## Permission Types
-
-The following permission types exist.
-
-- Read: Allows read access to a specific table
-- Create: Allows creates to a specific table
-- Update: Allows updates to a specific table
-- Delete: Allows deletes to a specific table
-- Action: Allows an action to be called
-- Other: Any custom defined permissions
+<DocImage image={imgEditRole} full={true} />
