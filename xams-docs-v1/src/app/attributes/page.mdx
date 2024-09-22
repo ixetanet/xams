@@ -1,6 +1,7 @@
 import imgName from '@/images/order_create_uiname.png'
 import imgDescription from '@/images/order_create_uidescription.png'
 import imgRequired from '@/images/attribute_required.png'
+import imgRecommended from '@/images/widget_uirecommended.png'
 import imgDisplayName from '@/images/attribute_displayname.png'
 
 export const metadata = {
@@ -97,6 +98,23 @@ public class Widget
 ```
 
 <DocImage image={imgRequired} full={false} />
+
+## UIRecommended
+
+The UIRecommended attribute displays a blue cross, indicating to the user that filling out the field is recommended.
+
+```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
+[Table(nameof(Widget))]
+public class Widget
+{
+    public Guid WidgetId { get; set; }
+    public string Name { get; set; }
+    [UIRecommended]
+    public decimal Price { get; set; }
+}
+```
+
+<DocImage image={imgRecommended} full={false} />
 
 ## UIHide
 
