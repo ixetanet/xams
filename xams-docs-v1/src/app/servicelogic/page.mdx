@@ -102,9 +102,9 @@ public class MyEntityService : IServiceLogic
 }
 ```
 
-## DataService
+## Modify Records
 
-In order to ensure that ServiceLogic is run on Create, Update, or Delete of a record from within a ServiceLogic class, use the DataService on the ServiceContext.
+Use the Create, Update, and Delete methods of the ServiceContext to modify records. While it is possible to modify records directly using the Entity Framework DbContext, using the ServiceContext ensures that the service logic is executed.
 
 ```c# {{ title: 'Project.Services / ServiceLogic / MyEntityService.cs' }}
 [ServiceLogic(nameof(MyEntity), DataOperation.Create | DataOperation.Update, LogicStage.PreOperation, 100)]

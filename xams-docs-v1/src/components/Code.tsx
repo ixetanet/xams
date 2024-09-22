@@ -156,18 +156,20 @@ const Highlighter = (props: HighlighterProps) => {
           className=" rounded-xl p-4 text-sm shadow-xl "
         >
           <div className=" code-scrollbar overflow-x-scroll">
-            {tokens.map((line, i) => (
-              <>
-                {i !== tokens.length - 1 && (
-                  <div key={i} {...getLineProps({ line })}>
-                    {/* <span>{i + 1}</span> */}
-                    {line.map((token, key) => (
-                      <span key={key} {...getTokenProps({ token })} />
-                    ))}
-                  </div>
-                )}
-              </>
-            ))}
+            {tokens.map((line, i) => {
+              return (
+                <div key={i}>
+                  {i !== tokens.length - 1 && (
+                    <div key={i} {...getLineProps({ line })}>
+                      {/* <span>{i + 1}</span> */}
+                      {line.map((token, key) => (
+                        <span key={key} {...getTokenProps({ token })} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </pre>
       )}

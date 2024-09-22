@@ -39,10 +39,10 @@ The Bulk endpoint facilitates batch processing for all data operations.
 
 Service logic is organized within the Project.Services project, each within its corresponding folder. There are four types of service logic:
 
-- ServiceLogic: Executable during the create, read, update, or delete operations of a record. It registers with specific data operations and phases of the pipeline.
-- ServiceActions: These actions execute logic beyond the standard create, read, update, or delete of a specific record, functioning as custom endpoints or methods. This is triggered by calling the Action or File endpoints.
-- ServiceJobs: A designated folder for scheduled jobs.
-- ServiceStartup: Includes any logic that executes upon the startup of the application.
+- Logic: Executable during the create, read, update, or delete operations of a record. It registers with specific data operations and phases of the pipeline.
+- Actions: These actions execute logic beyond the standard create, read, update, or delete of a specific record, functioning as custom endpoints or methods. This is triggered by calling the Action or File endpoints.
+- Jobs: A designated folder for scheduled jobs.
+- Startup: Includes any logic that executes upon the startup of the application.
 
 ## CRUD Pipeline
 

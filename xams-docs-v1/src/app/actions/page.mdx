@@ -17,7 +17,7 @@ In the services project, in the ServiceActions folder create a new file with the
 [ServiceAction(nameof(MyAction))]
 public class MyAction : IServiceAction
 {
-    public async Task<Response<object?>> Execute(ServiceContext context)
+    public async Task<Response<object?>> Execute(ActionServiceContext context)
     {
         var dbContext = context.GetDbContext<DataContext>();
         // Do something
@@ -86,19 +86,19 @@ In our action, we can retrieve these parameters with context.Parameters.
 [ServiceAction(nameof(MyAction))]
 public class MyAction : IServiceAction
 {
-    public async Task<Response<object?>> Execute(ServiceContext context)
+    public async Task<Response<object?>> Execute(ActionServiceContext context)
     {
-        if (!context.Parameters.ContainsKey("myParam1") || !context.Parameters.ContainsKey("myParam2"))
-        {
-            return ServiceResult.Error("Missing Parameters");
-        }
-        string myParam1 = context.Parameters["myParam1"].GetString();
-        int myParam2 = context.Parameters["myParam2"].GetInt32();
-
+        var parameters = context.GetParameters<MyActionParameters>();
         var dbContext = context.GetDbContext<DataContext>();
         // Do something
-
+        Console.WriteLine($"Param1: {parameters.MyParam1} Param2: {parameters.MyParam2}");
         return ServiceResult.Success();
+    }
+
+    private class MyActionParameters
+    {
+        public string MyParam1 { get; set; }
+        public int MyParam2 { get; set; }
     }
 }
 ```
@@ -111,7 +111,7 @@ To return a json object from the action, we can provide an object to ServiceResu
 [ServiceAction(nameof(MyAction))]
 public class MyAction : IServiceAction
 {
-    public async Task<Response<object?>> Execute(ServiceContext context)
+    public async Task<Response<object?>> Execute(ActionServiceContext context)
     {
         var dbContext = context.GetDbContext<DataContext>();
         // Do something
@@ -203,13 +203,13 @@ const MyComponent = () => {
 export default MyComponent
 ```
 
-The file can be accessed in the Action using the File property on the ServiceContext.
+The file can be accessed in the Action using the File property on the ActionServiceContext.
 
 ```c# {{ title: 'Project.Services / ServiceActions / MyAction.cs' }}
 [ServiceAction(nameof(MyAction))]
 public class MyAction : IServiceAction
 {
-    public async Task<Response<object?>> Execute(ServiceContext context)
+    public async Task<Response<object?>> Execute(ActionServiceContext context)
     {
         Stream stream = context.File.OpenReadStream();
 
@@ -228,7 +228,7 @@ To send a file for download from an action to the browser, respond with the File
 [ServiceAction(nameof(MyAction))]
 public class MyAction : IServiceAction
 {
-    public async Task<Response<object?>> Execute(ServiceContext context)
+    public async Task<Response<object?>> Execute(ActionServiceContext context)
     {
         var file = File.Open("file.txt", FileMode.Open);
         file.Position = 0;
