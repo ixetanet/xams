@@ -7,6 +7,8 @@ export const metadata = {
 
 This endpoint allows you to create records. When creating a single record, the `entities` array is omitted. For bulk record creation, only the `entities` array is provided.
 
+The response includes the resulting entity data. Any modifications made by service logic to the fields will be reflected in the response.
+
 ### Single Create
 
 <Row>
@@ -112,6 +114,8 @@ This endpoint allows you to create records. When creating a single record, the `
 
 This endpoint allows you to update records. When updating a single record, the `entities` array is omitted. For bulk record updates, only the `entities` array is provided.
 
+The response includes the resulting entity data. Any modifications made by service logic to the fields will be reflected in the response.
+
 ### Single Update
 
 <Row>
@@ -162,11 +166,11 @@ This endpoint allows you to update records. When updating a single record, the `
   </Col>
 </Row>
 
-### Bulk Create
+### Bulk Update
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/create">
+    <CodeGroup title="Request" tag="POST" label="/data/update">
 
     ```json {{ title: 'Request' }}
 {
@@ -216,6 +220,10 @@ This endpoint allows you to update records. When updating a single record, the `
 ## Delete {{ tag: 'DELETE', label: '/data/delete' }}
 
 This endpoint allows you to delete records. When deleting a single record, the `entities` array is omitted. For bulk record deletes, only the `entities` array is provided.
+
+The only field required for deletion is the primary key, i.e., (TableName)Id.
+
+The response includes the resulting entity data. Any modifications made by service logic to the fields will be reflected in the response.
 
 ### Single Delete
 
@@ -271,7 +279,7 @@ This endpoint allows you to delete records. When deleting a single record, the `
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/delete">
+    <CodeGroup title="Request" tag="DELETE" label="/data/delete">
 
     ```json {{ title: 'Request' }}
 {
@@ -323,6 +331,8 @@ This endpoint allows you to delete records. When deleting a single record, the `
 This endpoint allows you to upsert records. When upserting a single record, the `entities` array is omitted. For bulk record upserting, only the `entities` array is provided.
 
 Upserting checks if a record already exists. If it does, the record is updated; if it doesn't, a new record is created.
+
+The response includes the resulting entity data. Any modifications made by service logic to the fields will be reflected in the response.
 
 ### Single Upsert
 
@@ -430,36 +440,71 @@ Upserting checks if a record already exists. If it does, the record is updated; 
 
 The bulk endpoint allows you to create, update, delete, or upsert multiple records in a single transaction.
 
+The response includes the resulting entity data. Any modifications made by service logic to the fields will be reflected in the response.
 
 <Row>
   <Col>
     <CodeGroup title="Request" tag="POST" label="/data/bulk">
 
-    ```json {{ title: 'cURL' }}
+    ```json {{ title: 'Request' }}
 {
-      "tableName": "string",
-      "fields": {
-        "field1Name": "value",
-        "field2Name": "value",
-        "field3Name": "value"
-      },
-      "parameters": {
-        "parameter1Name": "value",
-        "parameter2Name": "value",
-        "parameter3Name": "value"
-      },
-      "entities": [
+      "Creates": [
         {
           "tableName": "string",
           "fields": {
-            "field1Name": "value",
-            "field2Name": "value",
-            "field3Name": "value"
+            "additionalProp1": "string",
+            "additionalProp2": "string",
+            "additionalProp3": "string"
           },
           "parameters": {
-            "parameter1Name": "value",
-            "parameter2Name": "value",
-            "parameter3Name": "value"
+            "additionalProp1": "string",
+            "additionalProp2": "string",
+            "additionalProp3": "string"
+          }
+        }
+      ],
+      "Updates": [
+        {
+          "tableName": "string",
+          "fields": {
+            "additionalProp1": "string",
+            "additionalProp2": "string",
+            "additionalProp3": "string"
+          },
+          "parameters": {
+            "additionalProp1": "string",
+            "additionalProp2": "string",
+            "additionalProp3": "string"
+          }
+        }
+      ],
+      "Deletes": [
+        {
+          "tableName": "string",
+          "fields": {
+            "additionalProp1": "string",
+            "additionalProp2": "string",
+            "additionalProp3": "string"
+          },
+          "parameters": {
+            "additionalProp1": "string",
+            "additionalProp2": "string",
+            "additionalProp3": "string"
+          }
+        }
+      ],
+      "Upserts": [
+        {
+          "tableName": "string",
+          "fields": {
+            "additionalProp1": "string",
+            "additionalProp2": "string",
+            "additionalProp3": "string"
+          },
+          "parameters": {
+            "additionalProp1": "string",
+            "additionalProp2": "string",
+            "additionalProp3": "string"
           }
         }
       ]
@@ -472,25 +517,18 @@ The bulk endpoint allows you to create, update, delete, or upsert multiple recor
 
 
     ```json {{ title: 'Response' }}
-    {
-      "has_more": false,
+{
+      "succeeded": true,
+      "friendlyMessage": null,
+      "logMessage": null,
       "data": [
-        {
-          "id": "WAz8eIbvDR60rouK",
-          "username": "FrankMcCallister",
-          "phone_number": "1-800-759-3000",
-          "avatar_url": "https://assets.protocol.chat/avatars/frank.jpg",
-          "display_name": null,
-          "conversation_id": "xgQQXg3hrtjh7AvZ",
-          "last_active_at": 705103200,
-          "created_at": 692233200
-        },
-        {
-          "id": "hSIhXBhNe8X1d8Et"
-          // ...
-        }
+          {
+              "field1Name": "value",
+              "field2Name": "value",
+              "field3Name": "value",
+          }
       ]
-    }
+}
     ```
 
   </Col>
@@ -502,39 +540,76 @@ The bulk endpoint allows you to create, update, delete, or upsert multiple recor
 
 This endpoint enables querying of records.
 
+For single record queries, only the `id` property needs to be provided.
+
 
 <Row>
   <Col>
     <CodeGroup title="Request" tag="POST" label="/data/read">
 
-    ```json {{ title: 'cURL' }}
+    ```json {{ title: 'Request' }}
 {
       "tableName": "string",
-      "fields": {
-        "field1Name": "value",
-        "field2Name": "value",
-        "field3Name": "value"
-      },
-      "parameters": {
-        "parameter1Name": "value",
-        "parameter2Name": "value",
-        "parameter3Name": "value"
-      },
-      "entities": [
+      "fields": [
+        "string"
+      ],
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "orderBy": [
         {
-          "tableName": "string",
-          "fields": {
-            "field1Name": "value",
-            "field2Name": "value",
-            "field3Name": "value"
-          },
-          "parameters": {
-            "parameter1Name": "value",
-            "parameter2Name": "value",
-            "parameter3Name": "value"
-          }
+          "field": "string",
+          "order": "string"
         }
-      ]
+      ],
+      "maxResults": 0,
+      "page": 0,
+      "distinct": true,
+      "denormalize": true,
+      "filters": [
+        {
+          "logicalOperator": "string",
+          "filters": [
+            "string"
+          ],
+          "field": "string",
+          "operator": "string",
+          "value": "string"
+        }
+      ],
+      "joins": [
+        {
+          "type": "string",
+          "fields": [
+            "string"
+          ],
+          "alias": "string",
+          "fromTable": "string",
+          "fromField": "string",
+          "toTable": "string",
+          "toField": "string",
+          "filters": [
+            {
+              "logicalOperator": "string",
+              "filters": [
+                "string"
+              ],
+              "field": "string",
+              "operator": "string",
+              "value": "string"
+            }
+          ]
+        }
+      ],
+      "except": [
+        {
+          "fromField": "string",
+          "query": "string"
+        }
+      ],
+      "parameters": {
+        "additionalProp1": "string",
+        "additionalProp2": "string",
+        "additionalProp3": "string"
+      }
 }
     ```
     </CodeGroup>
@@ -544,25 +619,35 @@ This endpoint enables querying of records.
 
 
     ```json {{ title: 'Response' }}
-    {
-      "has_more": false,
-      "data": [
-        {
-          "id": "WAz8eIbvDR60rouK",
-          "username": "FrankMcCallister",
-          "phone_number": "1-800-759-3000",
-          "avatar_url": "https://assets.protocol.chat/avatars/frank.jpg",
-          "display_name": null,
-          "conversation_id": "xgQQXg3hrtjh7AvZ",
-          "last_active_at": 705103200,
-          "created_at": 692233200
-        },
-        {
-          "id": "hSIhXBhNe8X1d8Et"
-          // ...
-        }
-      ]
-    }
+{
+      "succeeded": true,
+      "friendlyMessage": null,
+      "logMessage": null,
+      "data": {
+          "pages": 1,
+          "currentPage": 1,
+          "totalResults": 5,
+          "maxResults": 999999,
+          "tableName": "tableName",
+          "orderBy": [],
+          "distinct": true,
+          "denormalize": false,
+          "results": [
+              {
+                  "field1Name": "value",
+                  "field2Name": "value",
+                  "field3Name": "value",
+                  "_ui_info_": {
+                      "canDelete": true,
+                      "canUpdate": true,
+                      "canAssign": true,
+                      "tableName": "tableName"
+                  },
+                  "_parameters_": {}
+              }
+          ]
+      }
+}
     ```
 
   </Col>
@@ -721,7 +806,7 @@ This endpoint allows provides permission related information.
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/create">
+    <CodeGroup title="Request" tag="POST" label="/data/permissions">
 
     ```json {{ title: 'cURL' }}
 {
