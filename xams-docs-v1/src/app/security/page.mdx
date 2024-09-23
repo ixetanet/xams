@@ -22,21 +22,29 @@ Permissions for Roles can be configured from the Admin Dashboard under Security 
 
 <DocImage image={imgEditRole} full={true} />
 
-Create, Read, Update, Delete and Assign permissions can be set to `User`, `Team`, or `System`. Entities that inherit from the `BaseEntity` class will have `OwningUserId` and `OwningTeamId` fields.
+Create, Read, Update, Delete, and Assign permissions can be set at the `User`, `Team`, or `System` level. Entities that inherit from the `BaseEntity` class will have `OwningUserId` and `OwningTeamId` fields, which determine the record owner.
 
-When a user has `User` level permissions, they can only Create, Read, Update or Delete records where they are the owning user.
+The `OwningUserId` and `OwningTeamId` fields can be set simultaneously, but at least one must always be specified.
 
-When a user has `Team` level permissions, they can only Create, Read, Update or Delete records where they are the owning user or they belong to the team that owns the record.
-
-When a user has `System` level permissions they can Create, Read, Update or Delete all records.
-
-**Need to Verify**
-
-When a user has `User` level assign permissions, upon creating records they can only assign it to themselves.
-When a user has `Team` level assign permissions, they can assign it to themselves or to any Team they belong to.
-When a user has `System` level assign permissions, they can assign it to any User or Team in the system.
+- <b>User-level permissions:</b> Users can only create, read, update, or delete records
+  where the `OwningUserId` field is set to their user ID.
+- <b>Team-level permissions:</b> Users can create, read, update, or delete records
+  where the `OwningUserId` field is set to their user ID or where the `OwningTeamId`
+  field is set to a team they belong to.
+- <b>System-level permissions:</b> Users can create, read, update, or delete any
+  record in the system.
 
 ## Assign
+
+- <b>User-level assign permissions:</b> When creating records, users can only assign
+  the record to themselves (`OwningUserId`).
+
+- <b>Team-level assign permissions:</b> Users can assign the `OwningUserId` to themselves
+  or any user in the teams they belong to. Additionally, they can set the `OwningTeamId`
+  to any of the teams they are a member of.
+
+- <b>System-level assign permissions:</b> Users can assign the record to any user
+  (`OwningUserId`) or team (`OwningTeamId`) in the system.
 
 ## Import & Export
 
