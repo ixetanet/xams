@@ -70,7 +70,7 @@ Custom permissions can be created from the Admin Dashboard by navigating to Secu
 
 ## Checking Permissions
 
-n React, you can check if a user has any or all permissions from an array by using the `hasAnyPermissions` or `hasAllPermissions` methods from the `useAuthRequest` hook.
+In React, you can check if a user has any or all permissions from an array by using the `hasAnyPermissions` or `hasAllPermissions` methods from the `useAuthRequest` hook.
 
 ```tsx {{ title: 'src / components / MyComponent.tsx' }}
 import { useAuthRequest } from '@ixeta/xams'
@@ -80,7 +80,7 @@ const MyComponent = () => {
   const authRequest = useAuthRequest()
 
   const checkPermissions = useCallback(async () => {
-    const hasAnyPermissions = await authRequest.hasAllPermissions([
+    const hasAnyPermissions = await authRequest.hasAnyPermissions([
       'TABLE_Widget_READ_USER',
       'TABLE_Widget_READ_TEAM',
       'TABLE_Widget_READ_SYSTEM',
