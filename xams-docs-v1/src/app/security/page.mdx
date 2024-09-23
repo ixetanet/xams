@@ -35,10 +35,13 @@ The `OwningUserId` and `OwningTeamId` fields can be set simultaneously, but at l
 - <b>System-level permissions:</b> Users can create, read, update, or delete any
   record in the system.
 
+If a table does not inherit from the `BaseEntity` class, System-level permissions are required to Create, Read, Update, and Delete records. In this case, records cannot be assigned or have ownership, as they lack the `OwningUserId` and `OwningTeamId` fields.
+
 ## Assign
 
 - <b>User-level assign permissions:</b> When creating records, users can only assign
-  the record to themselves (`OwningUserId`).
+  the record to themselves (`OwningUserId`). If this field is not set, it defaults
+  to the user creating the record.
 
 - <b>Team-level assign permissions:</b> Users can assign the `OwningUserId` to themselves
   or any user in the teams they belong to. Additionally, they can set the `OwningTeamId`
