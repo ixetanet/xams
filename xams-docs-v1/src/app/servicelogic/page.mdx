@@ -131,3 +131,7 @@ public class MyEntityService : IServiceLogic
     }
 }
 ```
+
+## Performance
+
+For optimal performance, prioritize using `PreOperation` logic whenever possible. This allows the database save to be delayed until all records are processed, or until an entity with `PostOperation` logic is triggered.

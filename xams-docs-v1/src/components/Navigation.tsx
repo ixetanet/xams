@@ -244,6 +244,7 @@ export const navigation: Array<NavGroup> = [
       { title: 'React', href: '/react_guide' },
       { title: 'Queries', href: '/queries' },
       { title: 'Attributes', href: '/attributes' },
+      { title: 'API', href: '/api' },
       // { title: 'Performance', href: '/performance' },
     ],
   },
