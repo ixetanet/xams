@@ -748,62 +748,47 @@ This endpoint allows provides permission related information.
   <Col>
     <CodeGroup title="Request" tag="POST" label="/data/permissions">
 
-    ```json {{ title: 'cURL' }}
+    ```json {{ title: 'Request' }}
 {
-      "tableName": "string",
-      "fields": {
-        "field1Name": "value",
-        "field2Name": "value",
-        "field3Name": "value"
-      },
+      "method": "table_metadata",
       "parameters": {
-        "parameter1Name": "value",
-        "parameter2Name": "value",
-        "parameter3Name": "value"
-      },
-      "entities": [
-        {
-          "tableName": "string",
-          "fields": {
-            "field1Name": "value",
-            "field2Name": "value",
-            "field3Name": "value"
-          },
-          "parameters": {
-            "parameter1Name": "value",
-            "parameter2Name": "value",
-            "parameter3Name": "value"
-          }
-        }
-      ]
+        "tableName": "tableName"
+      }
 }
     ```
     </CodeGroup>
   </Col>
   <Col>
-
-
-
     ```json {{ title: 'Response' }}
-    {
-      "has_more": false,
-      "data": [
-        {
-          "id": "WAz8eIbvDR60rouK",
-          "username": "FrankMcCallister",
-          "phone_number": "1-800-759-3000",
-          "avatar_url": "https://assets.protocol.chat/avatars/frank.jpg",
-          "display_name": null,
-          "conversation_id": "xgQQXg3hrtjh7AvZ",
-          "last_active_at": 705103200,
-          "created_at": 692233200
-        },
-        {
-          "id": "hSIhXBhNe8X1d8Et"
-          // ...
-        }
-      ]
-    }
+{
+      "succeeded": true,
+      "friendlyMessage": null,
+      "logMessage": null,
+      "data": {
+          "tableName": "Widget",
+          "displayName": "Widget",
+          "primaryKey": "WidgetId",
+          "fields": [
+              {
+                  "name": "Name",
+                  "displayName": "Name",
+                  "type": "String",
+                  "characterLimit": null,
+                  "order": 99999,
+                  "lookupName": null,
+                  "lookupTable": "",
+                  "lookupTableNameField": "",
+                  "lookupTableDescriptionField": "",
+                  "dateFormat": null,
+                  "isNullable": false,
+                  "isRequired": false,
+                  "isRecommended": false,
+                  "isReadOnly": false,
+                  "option": ""
+              }
+          ]
+      }
+}
     ```
 
   </Col>
@@ -815,62 +800,90 @@ This endpoint allows provides permission related information.
 
 This endpoint provides entity metadata information.
 
+The method property can be either `table_metadata` or `table_list`.
+
+- `table_metadata` returns the metadata for a specified table.
+- `table_list` returns a list of all tables.
+
+### table_metadata
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/metadata">
+    <CodeGroup title="Request" tag="POST" label="/data/permissions">
 
     ```json {{ title: 'Request' }}
 {
-      "tableName": "string",
-      "fields": {
-        "field1Name": "value",
-        "field2Name": "value",
-        "field3Name": "value"
-      },
+      "method": "table_metadata",
       "parameters": {
-        "parameter1Name": "value",
-        "parameter2Name": "value",
-        "parameter3Name": "value"
-      },
-      "entities": [
-        {
-          "tableName": "string",
-          "fields": {
-            "field1Name": "value",
-            "field2Name": "value",
-            "field3Name": "value"
-          },
-          "parameters": {
-            "parameter1Name": "value",
-            "parameter2Name": "value",
-            "parameter3Name": "value"
-          }
-        }
-      ]
+        "tableName": "tableName"
+      }
 }
     ```
     </CodeGroup>
   </Col>
   <Col>
-
     ```json {{ title: 'Response' }}
 {
-    "succeeded": true,
-    "friendlyMessage": null,
-    "logMessage": null,
-    "data": {
-        "WidgetId": "448743eb-9740-4535-ae27-764663b5e888",
-        "Name": "My Widget",
-        "Price": 10.0,
-        "_ui_info_": {
-            "canDelete": true,
-            "canUpdate": true,
-            "canAssign": true,
-            "tableName": "Widget"
-        },
-        "_parameters_": {}
-    }
+      "succeeded": true,
+      "friendlyMessage": null,
+      "logMessage": null,
+      "data": {
+          "tableName": "Widget",
+          "displayName": "Widget",
+          "primaryKey": "WidgetId",
+          "fields": [
+              {
+                  "name": "Name",
+                  "displayName": "Name",
+                  "type": "String",
+                  "characterLimit": null,
+                  "order": 99999,
+                  "lookupName": null,
+                  "lookupTable": "",
+                  "lookupTableNameField": "",
+                  "lookupTableDescriptionField": "",
+                  "dateFormat": null,
+                  "isNullable": false,
+                  "isRequired": false,
+                  "isRecommended": false,
+                  "isReadOnly": false,
+                  "option": ""
+              }
+          ]
+      }
+}
+    ```
+
+  </Col>
+</Row>
+
+### table_list
+
+<Row>
+  <Col>
+    <CodeGroup title="Request" tag="POST" label="/data/permissions">
+
+    ```json {{ title: 'Request' }}
+{
+      "method": "table_list",
+      "parameters": {}
+}
+    ```
+    </CodeGroup>
+  </Col>
+  <Col>
+    ```json {{ title: 'Response' }}
+{
+      "succeeded": true,
+      "friendlyMessage": null,
+      "logMessage": null,
+      "data": [
+          {
+              "tableName": "tableName",
+              "displayName": "tableDisplayName",
+              "tag": "string"
+          }
+      ]
 }
     ```
 
