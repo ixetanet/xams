@@ -43,7 +43,7 @@ dotnet tool install --global Xams.Cli --version 1.0.3
 
 1.  Create the directory you want your project to live in.
 2.  Open the command prompt or terminal in the directory.
-3.  Execute the Xams CLI. Choose "Create Api Project".
+3.  Execute the Xams CLI. Choose `Create Api Project`.
 
 <CodeGroup title="Terminal" tag="" label="">
             ```bash {{ title: 'Windows' }}
@@ -60,10 +60,10 @@ dotnet tool install --global Xams.Cli --version 1.0.3
 6. Enter the name of your project. All of the c# project will be prefixed with this name.
 7. Open the solution in your IDE of choice. The projects contained in this solution are:
 
-- Project.Common: Classes shared across projects including Entities
-- Project.Data: Entity Framework migrations as well as the DbContext
-- Project.Services: All service layer logic
-- Project.Web: The api endpoints
+- <b>Project.Common</b>: Classes shared across projects including Entities
+- <b>Project.Data</b>: Entity Framework migrations as well as the DbContext
+- <b>Project.Services</b>: All service layer logic
+- <b>Project.Web</b>: The api endpoints
 
 8. The project is configured to use SQLite by default. Run the following commands in the Project.Data folder to create the first migration and update the database.
 
@@ -72,12 +72,12 @@ dotnet ef migrations add migration01
 dotnet ef database update
 ```
 
-9. Run the project using https to connect to the React \ NextJS web app in the next step.
+9. Run the project using HTTPS. The project will launch the `Admin Dashboard` automatically. It may take a moment to start.
 
 ## Create NextJS Project
 
 1. Open the command prompt or terminal in the directory to create the React \ NextJS project.
-2. Execute the Xams CLI. Choose "Create React \ NextJS Project".
+2. Execute the Xams CLI. Choose `Create React \ NextJS Project`.
 
 <CodeGroup title="Terminal" tag="" label="">
             ```bash {{ title: 'Windows' }}
@@ -131,18 +131,24 @@ public class Widget
 ```c# {{ title: 'Project.Data / DataContext.cs' }}
 public class DataContext : BaseDbContext
 {
-    public DbSet<User> Users { get; set; } = null!;
-    public DbSet<Role> Roles { get; set; } = null!;
-    public DbSet<Permission> Permissions { get; set; } = null!;
-    public DbSet<Team> Teams { get; set; } = null!;
-    public DbSet<TeamUser> TeamUsers { get; set; } = null!;
-    public DbSet<TeamRole> TeamRoles { get; set; } = null!;
-    public DbSet<RolePermission> RolePermissions { get; set; } = null!;
-    public DbSet<UserRole> UserRoles { get; set; } = null!;
-    public DbSet<Option> Options { get; set; } = null!;
-    public DbSet<Setting> Settings { get; set; } = null!;
-    public DbSet<Job> Jobs { get; set; } = null!;
-    public DbSet<JobHistory> JobHistories { get; set; } = null!;
+    public DbSet<User> Users { get; set; }
+    public DbSet<Role> Roles { get; set; }
+    public DbSet<Permission> Permissions { get; set; }
+    public DbSet<RolePermission> RolePermissions { get; set; }
+    public DbSet<Team> Teams { get; set; }
+    public DbSet<TeamUser> TeamUsers { get; set; }
+    public DbSet<TeamRole> TeamRoles { get; set; }
+    public DbSet<UserRole> UserRoles { get; set; }
+    public DbSet<Option> Options { get; set; }
+    public DbSet<Setting> Settings { get; set; }
+    public DbSet<Common.Entities.System> Systems { get; set; }
+    public DbSet<Job> Jobs { get; set; }
+    public DbSet<JobHistory> JobHistories { get; set; }
+    public DbSet<Audit> Audits { get; set; }
+    public DbSet<AuditField> AuditFields { get; set; }
+    public DbSet<AuditHistory> AuditHistories { get; set; }
+    public DbSet<AuditHistoryDetail> AuditHistoryDetails { get; set; }
+
     public DbSet<Widget> Widgets { get; set; } // <-- Add this
 }
 ```

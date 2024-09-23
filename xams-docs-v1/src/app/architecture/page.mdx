@@ -11,25 +11,29 @@ export const metadata = {
 
 When creating a new Xams project, 4 C# projects are created in the solution.
 
-- Project.Web: This project is solely responsible for the API.
-- Project.Data: This project contains the database migrations and the DbContext.
-- Project.Services: This project houses all business and service logic including scheduled jobs.
-- Project.Common: This project is designated for entity models and classes shared across projects.
+- <b>Project.Web</b>: This project is solely responsible for the API.
+- <b>Project.Data</b>: This project contains the database migrations and the
+  DbContext.
+- <b>Project.Services</b>: This project houses all business and service logic
+  including scheduled jobs.
+- <b>Project.Common</b>: This project is designated for entity models and
+  classes shared across projects.
 
 ## API
 
 The API consists of 10 endpoints:
 
-- Create: Creates records.
-- Read: Queries records.
-- Update: Updates records.
-- Delete: Deletes records.
-- Upsert: Updates or inserts a record based on its existence.
-- Bulk: Creates, updates, deletes, or upserts a batch of records.
-- Permissions: Checks if a user has specified permissions.
-- Metadata: Returns metadata about the entity, including field types and information for UI validation and display.
-- Action: Triggers custom service logic.
-- File: Initiates an action with an uploaded file.
+- <b>Create</b>: Creates records.
+- <b>Read</b>: Queries records.
+- <b>Update</b>: Updates records.
+- <b>Delete</b>: Deletes records.
+- <b>Upsert</b>: Updates or inserts a record based on its existence.
+- <b>Bulk</b>: Creates, updates, deletes, or upserts a batch of records.
+- <b>Permissions</b>: Checks if a user has specified permissions.
+- <b>Metadata</b>: Returns metadata about the entity, including field types and
+  information for UI validation and display.
+- <b>Action</b>: Triggers custom service logic.
+- <b>File</b>: Initiates an action with an uploaded file.
 
 Every create, read, update and upserts endpoints support batch processing, allowing for multiple creates, updates, deletes, or upserts within a single transaction.
 
@@ -39,10 +43,15 @@ The Bulk endpoint facilitates batch processing for all data operations.
 
 Service logic is organized within the Project.Services project, each within its corresponding folder. There are four types of service logic:
 
-- Logic: Executable during the create, read, update, or delete operations of a record. It registers with specific data operations and phases of the pipeline.
-- Actions: These actions execute logic beyond the standard create, read, update, or delete of a specific record, functioning as custom endpoints or methods. This is triggered by calling the Action or File endpoints.
-- Jobs: A designated folder for scheduled jobs.
-- Startup: Includes any logic that executes upon the startup of the application.
+- <b>Logic</b>: Executable during the create, read, update, or delete operations
+  of a record. It registers with specific data operations and phases of the
+  pipeline.
+- <b>Actions</b>: These actions execute logic beyond the standard create, read,
+  update, or delete of a specific record, functioning as custom endpoints or
+  methods. This is triggered by calling the Action or File endpoints.
+- <b>Jobs</b>: A designated folder for scheduled jobs.
+- <b>Startup</b>: Includes any logic that executes upon the startup of the
+  application.
 
 ## CRUD Pipeline
 
@@ -50,11 +59,9 @@ Every CRUD call made to one of the Xams endpoints is contained within a single t
 
 With every create, read, update or delete, the pipeline will execute logic in the order seen in the diagram below.
 
-<DocImage image={widgetForm} />
+<DocImage image={widgetForm} full={true} />
 
-First, all pre-validation logic executes. This stage of service logic is crucial for defining permissions based on criteria beyond the built-in teams and roles permissions.
-
-Next, the user's permissions to perform the operation are validated. If they lack permission, a 400 error is returned along with a message indicating that the user is missing the required permissions.
+First, the user's permissions to perform the operation are validated. If they lack permission, a 400 error is returned along with a message indicating that the user is missing the required permissions.
 
 Subsequently, the pre-operation service logic executes. This is valuable for performing logic before saving, and after security validation has been verified.
 

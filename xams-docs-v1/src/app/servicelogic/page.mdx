@@ -8,21 +8,21 @@ export const metadata = {
 
 Service Logic executes on create, read, update or delete of an entity. {{ className: 'lead' }}
 
-Service classes can be added to the Project.Services/ServiceLogic folder. {{ className: 'lead' }}
+Service classes can be added to the Project.Services/Logic folder. {{ className: 'lead' }}
 
 ## Logic Stage
 
 Service Logic can execute at the listed stages below.
 
-- PreValidation: Before security validation has occurred
-- PreOperation: After security validation and before the save to the database
-- PostOperation: After the save to the database
+- <b>PreOperation</b>: After security validation and before the save to the
+  database
+- <b>PostOperation</b>: After the save to the database
 
 ## Create Service Logic
 
 To create Service Logic, create a new file in the Project.Services project in the ServiceLogic folder.
 
-```c# {{ title: 'Project.Services / ServiceLogic / MyEntityService.cs' }}
+```c# {{ title: 'Project.Services / Logic / MyEntityService.cs' }}
 // The ServiceLogic attribute specifies what table this will execute on, what operation(s), and when (before or after the transaction)
 [ServiceLogic(nameof(MyEntity), DataOperation.Create | DataOperation.Update, LogicStage.PreOperation, 100)]
 public class MyEntityService : IServiceLogic
@@ -46,16 +46,19 @@ public class MyEntityService : IServiceLogic
 
 The ServiceLogic attribute takes the following parameters.
 
-- TableName: The name of the table the service logic will execute on
-- DataOperations: Flags that determine what data operations this should execute on, create, read, update, and delete.
-- LogicStages: Flags that determine which stages the service logic should exeucte on, PreValidation, PreOperation, or PostOperation.
-- Order: Service Logic classes executing on the same table, data operation, and logic stage, will execute following the order.
+- <b>TableName</b>: The name of the table the service logic will execute on
+- <b>DataOperations</b>: Flags that determine what data operations this should
+  execute on, create, read, update, and delete.
+- <b>LogicStages</b>: Flags that determine which stages the service logic should
+  exeucte on, PreOperation, or PostOperation.
+- <b>Order</b>: Service Logic classes executing on the same table, data
+  operation, and logic stage, will execute following the order.
 
 ## ServiceContext
 
 ServiceContext has a number of properties that can be used during execution.
 
-```c# {{ title: 'Project.Services / ServiceLogic / MyEntityService.cs' }}
+```c# {{ title: 'Project.Services / Logic / MyEntityService.cs' }}
 [ServiceLogic(nameof(MyEntity), DataOperation.Create | DataOperation.Update | DataOperation.Read, LogicStage.PreOperation | LogicStage.PostOperation, 100)]
 public class MyEntityService : IServiceLogic
 {
@@ -106,7 +109,7 @@ public class MyEntityService : IServiceLogic
 
 Use the Create, Update, and Delete methods of the ServiceContext to modify records. While it is possible to modify records directly using the Entity Framework DbContext, using the ServiceContext ensures that the service logic is executed.
 
-```c# {{ title: 'Project.Services / ServiceLogic / MyEntityService.cs' }}
+```c# {{ title: 'Project.Services / Logic / MyEntityService.cs' }}
 [ServiceLogic(nameof(MyEntity), DataOperation.Create | DataOperation.Update, LogicStage.PreOperation, 100)]
 public class MyEntityService : IServiceLogic
 {

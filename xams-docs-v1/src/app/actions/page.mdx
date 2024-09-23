@@ -11,7 +11,7 @@ If you want to execute serverside logic on a Create, Read, Update or Delete, the
 
 In the services project, in the ServiceActions folder create a new file with the name of your action.
 
-```c# {{ title: 'Project.Services / ServiceActions / MyAction.cs' }}
+```c# {{ title: 'Project.Services / Actions / MyAction.cs' }}
 // ServiceAction attribute sets the name of the action
 // which is called in JavaScript
 [ServiceAction(nameof(MyAction))]
@@ -82,7 +82,7 @@ export default MyComponent
 
 In our action, we can retrieve these parameters with context.Parameters.
 
-```c# {{ title: 'Project.Services / ServiceActions / MyAction.cs' }}
+```c# {{ title: 'Project.Services / Actions / MyAction.cs' }}
 [ServiceAction(nameof(MyAction))]
 public class MyAction : IServiceAction
 {
@@ -107,7 +107,7 @@ public class MyAction : IServiceAction
 
 To return a json object from the action, we can provide an object to ServiceResult.Success.
 
-```c# {{ title: 'Project.Services / ServiceActions / MyAction.cs' }}
+```c# {{ title: 'Project.Services / Actions / MyAction.cs' }}
 [ServiceAction(nameof(MyAction))]
 public class MyAction : IServiceAction
 {
@@ -205,7 +205,7 @@ export default MyComponent
 
 The file can be accessed in the Action using the File property on the ActionServiceContext.
 
-```c# {{ title: 'Project.Services / ServiceActions / MyAction.cs' }}
+```c# {{ title: 'Project.Services / Actions / MyAction.cs' }}
 [ServiceAction(nameof(MyAction))]
 public class MyAction : IServiceAction
 {
@@ -224,7 +224,7 @@ public class MyAction : IServiceAction
 
 To send a file for download from an action to the browser, respond with the FileData class.
 
-```c# {{ title: 'Project.Services / ServiceActions / MyAction.cs' }}
+```c# {{ title: 'Project.Services / Actions / MyAction.cs' }}
 [ServiceAction(nameof(MyAction))]
 public class MyAction : IServiceAction
 {

@@ -57,31 +57,31 @@ const resources: Array<Resource> = [
       ],
     },
   },
-  // {
-  //   href: '/security',
-  //   name: 'Security',
-  //   description:
-  //     'Discover Xams security model and how to create Teams and Users and assign records.',
-  //   icon: KeyIcon,
-  //   pattern: {
-  //     y: 32,
-  //     squares: [
-  //       [0, 2],
-  //       [1, 4],
-  //     ],
-  //   },
-  // },
-  // {
-  //   href: '/scheduledjobs',
-  //   name: 'Scheduled Jobs',
-  //   description:
-  //     'Learn how to use Xams to schedule jobs to run on a schedule or at a specific time.',
-  //   icon: ClockIcon,
-  //   pattern: {
-  //     y: 22,
-  //     squares: [[0, 1]],
-  //   },
-  // },
+  {
+    href: '/security',
+    name: 'Security',
+    description:
+      'Discover Xams security model and how to create Teams and Users and assign records.',
+    icon: KeyIcon,
+    pattern: {
+      y: 32,
+      squares: [
+        [0, 2],
+        [1, 4],
+      ],
+    },
+  },
+  {
+    href: '/scheduledjobs',
+    name: 'Scheduled Jobs',
+    description:
+      'Learn how to use Xams to schedule jobs to run on a schedule or at a specific time.',
+    icon: ClockIcon,
+    pattern: {
+      y: 22,
+      squares: [[0, 1]],
+    },
+  },
 ]
 
 function ResourceIcon({ icon: Icon }: { icon: Resource['icon'] }) {

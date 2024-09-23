@@ -15,7 +15,7 @@ Entity definitions need to follow certain rules in order to work with Xams. {{ c
 4. Composite Primary Keys are not allowed.
 5. See [React Data Types](/react_guide#react-data-types) for fields types that are compaitabile with the React components.
 
-```c# {{ title: 'Widget.cs' }}
+```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
 // Table attribute is required
 [Table("Widget")] // Table attribute matches class name
 public class Widget
@@ -32,7 +32,7 @@ If a relationship is defined as non-nullable, it becomes required and will be de
 
 You can still make the field required by using the [UIRequired](/attributes#ui-required) attribute.
 
-```c# {{ title: 'Widget.cs' }}
+```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
 [Table("Widget")]
 public class Widget : BaseRecord
 {
