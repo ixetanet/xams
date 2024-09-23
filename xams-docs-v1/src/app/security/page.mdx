@@ -1,5 +1,6 @@
 import imgSecuritySchema from '@/images/xams_security_schema.png'
 import imgEditRole from '@/images/edit_role.png'
+import imgImportExport from '@/images/widget_import_export.png'
 
 export const metadata = {
   title: 'Security',
@@ -47,6 +48,16 @@ The `OwningUserId` and `OwningTeamId` fields can be set simultaneously, but at l
   (`OwningUserId`) or team (`OwningTeamId`) in the system.
 
 ## Import & Export
+
+To enable the ability to import, export, and download the Export Template, the following permissions must be enabled: `ACTION_TABLE_ExportData`, `ACTION_TABLE_ImportData`, and `ACTION_TABLE_ExportTemplate`. These permissions are located under Role -> System. Once these are enabled, Import and Export permissions can be configured for each table individually.
+
+- <b>Import permissions:</b> Users with import permissions can import data using
+  the provided Excel Export Template.
+
+- <b>Export permissions:</b> Users with export permissions can download the current
+  table view as an Excel file.
+
+<DocImage image={imgImportExport} full={false} />
 
 ## Custom Permissions
 
