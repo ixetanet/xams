@@ -64,4 +64,54 @@ To enable the ability to import, export, and download the Export Template, the f
 
 ## Custom Permissions
 
+Custom permissions are useful for creating permissions that are tailored to the specific needs of your application, allowing for detailed control over access to custom functionality.
+
+Custom permissions can be created from the Admin Dashboard by navigating to Security -> Permissions. Once created, custom permissions can be assigned to a role by selecting the Custom Permissions tab when updating the role.
+
 ## Checking Permissions
+
+n React, you can check if a user has any or all permissions from an array by using the `hasAnyPermissions` or `hasAllPermissions` methods from the `useAuthRequest` hook.
+
+```tsx {{ title: 'src / components / MyComponent.tsx' }}
+import { useAuthRequest } from '@ixeta/xams'
+import React, { useCallback, useEffect } from 'react'
+
+const MyComponent = () => {
+  const authRequest = useAuthRequest()
+
+  const checkPermissions = useCallback(async () => {
+    const hasAnyPermissions = await authRequest.hasAllPermissions([
+      'TABLE_Widget_READ_USER',
+      'TABLE_Widget_READ_TEAM',
+      'TABLE_Widget_READ_SYSTEM',
+    ])
+    if (hasAnyPermissions) {
+      console.log('User has one of the permissions')
+    }
+    const hasAllPermissions = await authRequest.hasAllPermissions([
+      'TABLE_Widget_CREATE_USER',
+      'TABLE_Widget_CREATE_TEAM',
+      'TABLE_Widget_CREATE_SYSTEM',
+    ])
+    if (hasAllPermissions) {
+      console.log('User has all the permissions')
+    }
+  }, [authRequest])
+
+  useEffect(() => {
+    checkPermissions()
+  }, [checkPermissions])
+
+  return <div>MyComponent</div>
+}
+```
+
+## Permission Names
+
+Table permissions follow the convention `TABLE_(TableName)_(Operation)_(Level)`.
+
+For example, the System-level read access permission for the Widget entity is `TABLE_Widget_READ_SYSTEM`.
+
+The operation can be one of the following: `CREATE`, `READ`, `UPDATE`, `DELETE`, or `ASSIGN`. The level can be `USER`, `TEAM`, or `SYSTEM`.
+
+Import and Export permissions follow the convention `TABLE_(TableName)_IMPORT` and `TABLE_(TableName)_EXPORT`.
