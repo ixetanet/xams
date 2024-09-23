@@ -1,0 +1,57 @@
+export const metadata = {
+  title: 'Scheduled Jobs',
+  description: 'Create Scheduled Jobs with Xams',
+}
+
+# Quickstart
+
+Scheduled jobs allow you to execute code at regular intervals or at specific times on designated days. {{ className: 'lead' }}
+
+## Create a Scheduled Job
+
+To create a scheduled job, define a new class that is tagged with the `ServiceJob` attribute and implements the `IServiceJob` interface.
+
+```c# {{ title: 'Project.Services / Jobs / MyJob.cs' }}
+[ServiceJob("MyJobName", "Primary-Queue", "00:05:00")]
+public class MyJob : IServiceJob
+{
+    public async Task<Response<object?>> Execute(JobServiceContext context)
+    {
+        var db = context.GetDbContext<DataContext>();
+        // Do something
+        return ServiceResult.Success();
+    }
+}
+```
+
+The `ServiceJob` attribute takes the following parameters.
+
+- <b>Job Name</b>: The name of the job as it will appear in the Admin Dashboard.
+- <b>Queue</b>: A queue executes one job at a time. Multiple jobs can run in
+  parallel if they are assigned to different queues.
+- <b>TimeSpan</b>: When the JobSchedule is set to interval, this defines the
+  time between executions. For example, a TimeSpan of "00:05:00" will trigger
+  the job every 5 minutes. When JobSchedule is set to TimeOfDay, this represents
+  the specific execution time in UTC. For instance, a TimeSpan of "05:00:00"
+  will execute the job at 5:00 AM UTC.
+- <b>Job Schedule</b>: Defines when the job runs and can be either Interval or
+  TimeOfDay.
+- <b>Days of Week</b>: Flags that specify which days of the week the job should
+  execute.
+
+## Time of Day Example
+
+Below is an example of a job that executes on Monday and Wednesday at 3:00 AM UTC:
+
+```c# {{ title: 'Project.Services / Jobs / MyJob.cs' }}
+[ServiceJob("MyJobName", "Primary-Queue", "00:03:00", JobSchedule.TimeOfDay, DaysOfWeek.Monday | DaysOfWeek.Wednesday)]
+public class MyJob : IServiceJob
+{
+    public async Task<Response<object?>> Execute(JobServiceContext context)
+    {
+        var db = context.GetDbContext<DataContext>();
+        // Do something
+        return ServiceResult.Success();
+    }
+}
+```
