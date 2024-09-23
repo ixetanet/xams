@@ -743,6 +743,11 @@ The response could be either a JSON object or a file download.
 
 This endpoint allows provides permission related information.
 
+The method property can be set to `has_permissions`.
+
+The `permissionsNames` property contains an array of permissions to check against the user. The response will include all of the permissions from the request that the user has.
+
+### has_permissions
 
 <Row>
   <Col>
@@ -750,9 +755,11 @@ This endpoint allows provides permission related information.
 
     ```json {{ title: 'Request' }}
 {
-      "method": "table_metadata",
+      "method": "has_permissions",
       "parameters": {
-        "tableName": "tableName"
+          "permissionNames": [
+              "permissionName"
+          ]
       }
 }
     ```
@@ -764,30 +771,9 @@ This endpoint allows provides permission related information.
       "succeeded": true,
       "friendlyMessage": null,
       "logMessage": null,
-      "data": {
-          "tableName": "Widget",
-          "displayName": "Widget",
-          "primaryKey": "WidgetId",
-          "fields": [
-              {
-                  "name": "Name",
-                  "displayName": "Name",
-                  "type": "String",
-                  "characterLimit": null,
-                  "order": 99999,
-                  "lookupName": null,
-                  "lookupTable": "",
-                  "lookupTableNameField": "",
-                  "lookupTableDescriptionField": "",
-                  "dateFormat": null,
-                  "isNullable": false,
-                  "isRequired": false,
-                  "isRecommended": false,
-                  "isReadOnly": false,
-                  "option": ""
-              }
-          ]
-      }
+      "data": [
+          "permissionName"
+      ]
 }
     ```
 
