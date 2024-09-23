@@ -657,41 +657,21 @@ For single record queries, only the `id` property needs to be provided.
 
 ## Action {{ tag: 'POST', label: '/data/action' }}
 
-This endpoint executes an action.
+This endpoint executes an action, and the response could be either a JSON object or a file download.
 
 
 <Row>
   <Col>
     <CodeGroup title="Request" tag="POST" label="/data/action">
 
-    ```json {{ title: 'cURL' }}
+    ```json {{ title: 'Request' }}
 {
-      "tableName": "string",
-      "fields": {
-        "field1Name": "value",
-        "field2Name": "value",
-        "field3Name": "value"
-      },
+      "name": "string",
       "parameters": {
-        "parameter1Name": "value",
-        "parameter2Name": "value",
-        "parameter3Name": "value"
-      },
-      "entities": [
-        {
-          "tableName": "string",
-          "fields": {
-            "field1Name": "value",
-            "field2Name": "value",
-            "field3Name": "value"
-          },
-          "parameters": {
-            "parameter1Name": "value",
-            "parameter2Name": "value",
-            "parameter3Name": "value"
-          }
-        }
-      ]
+        "additionalProp1": "string",
+        "additionalProp2": "string",
+        "additionalProp3": "string"
+      }
 }
     ```
     </CodeGroup>
@@ -701,25 +681,16 @@ This endpoint executes an action.
 
 
     ```json {{ title: 'Response' }}
-    {
-      "has_more": false,
-      "data": [
-        {
-          "id": "WAz8eIbvDR60rouK",
-          "username": "FrankMcCallister",
-          "phone_number": "1-800-759-3000",
-          "avatar_url": "https://assets.protocol.chat/avatars/frank.jpg",
-          "display_name": null,
-          "conversation_id": "xgQQXg3hrtjh7AvZ",
-          "last_active_at": 705103200,
-          "created_at": 692233200
-        },
-        {
-          "id": "hSIhXBhNe8X1d8Et"
-          // ...
-        }
-      ]
-    }
+{
+      "succeeded": true,
+      "friendlyMessage": null,
+      "logMessage": null,
+      "data": {
+          "outputData1": "string"
+          "outputData2": "string"
+          "outputData3": "string"
+      }
+}
     ```
 
   </Col>
@@ -729,41 +700,19 @@ This endpoint executes an action.
 
 ## File {{ tag: 'POST', label: '/data/file' }}
 
-This endpoint executes an action and provides a file to upload to the api.
+This endpoint executes an action and allows a file to be uploaded to the API. It accepts an action name and parameters in the request body.
 
+The response could be either a JSON object or a file download.
 
 <Row>
   <Col>
     <CodeGroup title="Request" tag="POST" label="/data/file">
 
-    ```json {{ title: 'cURL' }}
+    ```json {{ title: 'Request' }}
 {
-      "tableName": "string",
-      "fields": {
-        "field1Name": "value",
-        "field2Name": "value",
-        "field3Name": "value"
-      },
-      "parameters": {
-        "parameter1Name": "value",
-        "parameter2Name": "value",
-        "parameter3Name": "value"
-      },
-      "entities": [
-        {
-          "tableName": "string",
-          "fields": {
-            "field1Name": "value",
-            "field2Name": "value",
-            "field3Name": "value"
-          },
-          "parameters": {
-            "parameter1Name": "value",
-            "parameter2Name": "value",
-            "parameter3Name": "value"
-          }
-        }
-      ]
+      "parameter1": "string",
+      "parameter2": "string",
+      "parameter3": "string"
 }
     ```
     </CodeGroup>
@@ -773,25 +722,16 @@ This endpoint executes an action and provides a file to upload to the api.
 
 
     ```json {{ title: 'Response' }}
-    {
-      "has_more": false,
-      "data": [
-        {
-          "id": "WAz8eIbvDR60rouK",
-          "username": "FrankMcCallister",
-          "phone_number": "1-800-759-3000",
-          "avatar_url": "https://assets.protocol.chat/avatars/frank.jpg",
-          "display_name": null,
-          "conversation_id": "xgQQXg3hrtjh7AvZ",
-          "last_active_at": 705103200,
-          "created_at": 692233200
-        },
-        {
-          "id": "hSIhXBhNe8X1d8Et"
-          // ...
-        }
-      ]
-    }
+{
+      "succeeded": true,
+      "friendlyMessage": null,
+      "logMessage": null,
+      "data": {
+          "outputData1": "string"
+          "outputData2": "string"
+          "outputData3": "string"
+      }
+}
     ```
 
   </Col>
