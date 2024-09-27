@@ -54,6 +54,24 @@ const Index = () => {
 export default Index
 ```
 
+ ## Fields
+
+Select the fields to return by providing a string array to the `Query` constructor.
+
+```tsx {{ title: 'Query' }}
+const readRequest = new Query(['Name', 'CreatedDate'])
+  .from('Widget')
+  .toReadRequest()
+```
+
+Select all fields by providing a `*`.
+
+```tsx {{ title: 'Query' }}
+const readRequest = new Query(['*'])
+  .from('Widget')
+  .toReadRequest()
+```
+
 ## Filtering
 
 Results can be filtered using the `where` method on the Query class.

@@ -13,13 +13,13 @@ Security is configured in the Admin Dashboard by using Teams, Roles, and Permiss
 
 ## Schema
 
-The diagram below shows the relationships between the security entities. Users are assigned to Teams, while Roles can be assigned to both Teams and Users. Permissions are assigned to Roles.
+The diagram below shows the relationships between the security entities. Users are assigned to Teams, while Roles can be assigned to both Teams and Users. Permissions are assigned to Roles. Users inherit permissions from their Roles and Team's Roles.
 
 <DocImage image={imgSecuritySchema} full={false} />
 
 ## Permissions
 
-Permissions for Roles can be configured from the Admin Dashboard under Security -> Roles. Permissions assigned to Users are additive, meaning they accumulate from multiple roles.
+Permissions for Roles can be configured from the Admin Dashboard under Security -> Roles. Permissions are additive, meaning they accumulate from multiple roles.
 
 <DocImage image={imgEditRole} full={true} />
 
@@ -52,7 +52,7 @@ If a table does not inherit from the `BaseEntity` class, System-level permission
 
 ## Import & Export
 
-To enable the ability to import, export, and download the Export Template, the following permissions must be enabled: `ACTION_TABLE_ExportData`, `ACTION_TABLE_ImportData`, and `ACTION_TABLE_ExportTemplate`. These permissions are located under Role -> System. Once these are enabled, Import and Export permissions can be configured for each table individually.
+To enable the ability to export, import, and download the Import Template, the following permissions must be enabled: `ACTION_TABLE_ExportData`, `ACTION_TABLE_ImportData`, and `ACTION_TABLE_ImportTemplate`. These permissions are located under Role -> System. Once these are enabled, Import and Export permissions can be configured for each table individually.
 
 - <b>Import permissions:</b> Users with import permissions can import data using
   the provided Excel Export Template.
@@ -103,6 +103,21 @@ const MyComponent = () => {
   }, [checkPermissions])
 
   return <div>MyComponent</div>
+}
+```
+
+From the ServiceLogic use the Permissions method of the ServiceContext to return an array of matching permissions the user has.
+
+```c# {{ title: 'Project.Services / Logic / MyEntityService.cs' }}
+[ServiceLogic(nameof(Widget), DataOperation.Create, LogicStage.PreOperation)]
+public class WidgetService : IServiceLogic
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        string[] permissions = await context.Permissions(context.ExecutingUserId,
+            ["TABLE_Widget_CREATE_USER", "TABLE_Widget_CREATE_TEAM", "TABLE_Widget_CREATE_SYSTEM"]);
+        return ServiceResult.Success();
+    }
 }
 ```
 
