@@ -133,6 +133,19 @@ public class Widget
 }
 ```
 
+The field can be made queryable by passing a value of true into the first parameter.
+
+```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
+[Table(nameof(Widget))]
+public class Widget
+{
+    public Guid WidgetId { get; set; }
+    public string Name { get; set; }
+    [UIHide(true)] // Cannot but read from the UI but can be filtered on
+    public decimal Price { get; set; }
+}
+```
+
 ## UIReadOnly
 
 The `UIReadOnly` attribute ensures that a field can only be read from the UI, even if the user has Update or Create permissions. The only way to update read-only fields is by using the DbContext directly to bypass the Service Logic pipeline.
