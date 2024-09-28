@@ -181,3 +181,23 @@ public class Widget
     public Option WidgetType { get; set; }
 }
 ```
+
+## UIDateFormat
+
+The `UIDateFormat` attribute defines the display format for DateTime fields.
+
+Set this parameter to any valid [Day.js format](https://day.js.org/docs/en/display/format).
+
+
+```c# {{ title: 'Project.Common / Entities / Order.cs' }}
+[Table(nameof(Order))]
+public class Order
+{
+    public Guid OrderId { get; set; }
+    public Guid WidgetId { get; set; }
+    public Widget Widget { get; set; }
+    public int Quantity { get; set; }
+    [UIDateFormat("lll")]
+    public DateTime OrderDate {get;set;}
+}
+```
