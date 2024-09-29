@@ -123,11 +123,11 @@ function SmallPrint() {
       <div className="flex gap-4">
         {/* <SocialLink href="#" icon={TwitterIcon}>
           Follow us on Twitter
-        </SocialLink>
-        <SocialLink href="#" icon={GitHubIcon}>
+        </SocialLink> */}
+        <SocialLink href="https://github.com/ixetanet/xams" icon={GitHubIcon}>
           Follow us on GitHub
         </SocialLink>
-        <SocialLink href="#" icon={DiscordIcon}>
+        {/* <SocialLink href="#" icon={DiscordIcon}>
           Join our Discord server
         </SocialLink> */}
       </div>

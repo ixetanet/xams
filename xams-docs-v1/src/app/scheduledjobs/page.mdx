@@ -44,7 +44,7 @@ The `ServiceJob` attribute takes the following parameters.
 Below is an example of a job that executes on Monday and Wednesday at 3:00 AM UTC:
 
 ```c# {{ title: 'Project.Services / Jobs / MyJob.cs' }}
-[ServiceJob("MyJobName", "Primary-Queue", "00:03:00", JobSchedule.TimeOfDay, DaysOfWeek.Monday | DaysOfWeek.Wednesday)]
+[ServiceJob("MyJobName", "Primary-Queue", "03:00:00", JobSchedule.TimeOfDay, DaysOfWeek.Monday | DaysOfWeek.Wednesday)]
 public class MyJob : IServiceJob
 {
     public async Task<Response<object?>> Execute(JobServiceContext context)
