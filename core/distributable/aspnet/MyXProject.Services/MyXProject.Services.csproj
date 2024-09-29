@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>MyXProject.Services</RootNamespace>
+        <LangVersion>12</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\MyXProject.Data\MyXProject.Data.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Folder Include="Actions\" />
+      <Folder Include="Jobs\" />
+      <Folder Include="Logic\" />
+      <Folder Include="Startup\" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <PackageReference Include="Xams.Core" Version="1.0.1" />
+    </ItemGroup> 
+    
+</Project>

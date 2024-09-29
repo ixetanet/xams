@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>MyXProject.Common</RootNamespace>
+
+
+
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Folder Include="Dtos\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.6" />
+      <PackageReference Include="System.Linq.Dynamic.Core" Version="1.3.9" />
+      <PackageReference Include="Xams.Core" Version="1.0.1" />
+    </ItemGroup>
+
+
+
+
+</Project>

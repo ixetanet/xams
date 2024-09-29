@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Example.Services</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Example.Data\Example.Data.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.9" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Folder Include="ServiceActions\" />
+      <Folder Include="ServiceLogic\" />
+      <Folder Include="ServiceStartup\" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Reference Include="Xams.Core">
+        <HintPath>..\Xams\Xams.Core.dll</HintPath>
+      </Reference>
+    </ItemGroup> 
+    
+</Project>

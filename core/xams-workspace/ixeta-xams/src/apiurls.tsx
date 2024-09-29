@@ -1,0 +1,10 @@
+export const API_DATA_PERMISSIONS = `/data/Permissions`;
+export const API_DATA_METADATA = `/data/MetaData`;
+export const API_DATA_CREATE = `/data/Create`;
+export const API_DATA_READ = `/data/Read`;
+export const API_DATA_UPDATE = `/data/Update`;
+export const API_DATA_DELETE = `/data/Delete`;
+export const API_DATA_UPSERT = `/data/Upsert`;
+export const API_DATA_BULK = `/data/Bulk`;
+export const API_DATA_ACTION = `/data/Action`;
+export const API_DATA_FILE = `/data/File`;
