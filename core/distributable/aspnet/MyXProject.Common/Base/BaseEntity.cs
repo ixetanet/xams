@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyXProject.Common.Entities;
+using Xams.Core.Attributes;
 
 namespace MyXProject.Common.Base;
 
@@ -12,7 +13,9 @@ public class BaseEntity
     public User? OwningUser { get; set; }
     public Guid? OwningTeamId { get; set; }
     public Team? OwningTeam { get; set; }
+    [UIDateFormat("lll")]
     public DateTime CreatedDate { get; set; }
+    [UIDateFormat("lll")]
     public DateTime UpdatedDate { get; set; }
     public Guid CreatedById { get; set; }
     public User? CreatedBy { get; set; }

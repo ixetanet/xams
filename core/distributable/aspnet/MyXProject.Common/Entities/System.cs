@@ -11,5 +11,5 @@ public class System
     public string? Name { get; set; }
     [MaxLength(250)]
     public string? Value { get; set; }
-    public DateTime? Date { get; set; }
+    public DateTime? DateTime { get; set; }
 }
