@@ -8,9 +8,10 @@ namespace MyXProject.Common.Base;
 [Index(nameof(OwningTeamId))]
 public class BaseEntity
 {
-    
+    [UIDisplayName("Owning User")]
     public Guid? OwningUserId { get; set; }
     public User? OwningUser { get; set; }
+    [UIDisplayName("Owning Team")]
     public Guid? OwningTeamId { get; set; }
     public Team? OwningTeam { get; set; }
     [UIDateFormat("lll")]
