@@ -2,6 +2,8 @@ import { Button, Loader, Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import React, { useMemo, useState } from "react";
 import useAuthStore from "../stores/useAuthStore";
+import dayjs from "dayjs";
+import localizedFormat from "dayjs/plugin/localizedFormat";
 
 export type AppContextShape = {
   showError: (message: string) => void;
@@ -31,6 +33,7 @@ interface AppContextProviderProps {
 }
 
 export const AppContextProvider = (props: AppContextProviderProps) => {
+  const [initialized, setInitialized] = useState(false);
   const [loadingOpened, loading] = useDisclosure(false);
   const [errorOpened, error] = useDisclosure(false);
   const [confirmOpened, confirm] = useDisclosure(false);
@@ -44,8 +47,10 @@ export const AppContextProvider = (props: AppContextProviderProps) => {
   );
   const authStore = useAuthStore();
 
-  // const { mode, accesstoken } = router.query;
-  // const [mobileAppAccessToken, setMobileAppAccessToken] = useState<string>("");
+  if (!initialized) {
+    dayjs.extend(localizedFormat);
+    setInitialized(true);
+  }
 
   const showError = (message: string) => {
     setErrorMessage(message);

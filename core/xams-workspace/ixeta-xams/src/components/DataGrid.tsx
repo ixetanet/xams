@@ -192,8 +192,8 @@ const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
       if (props.onEndEdit != null) {
         props.onEndEdit(editValue, activeCell, cell.data);
       }
-      if (cell.onChange != null) {
-        cell.onChange(editValue, activeCell, cell.data);
+      if (cell.onEndEdit != null) {
+        cell.onEndEdit(editValue, activeCell, cell.data);
       }
       setEditValue("");
       setIsEditing(false);
@@ -279,10 +279,16 @@ const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
             <DataGridContext.Provider
               value={{
                 props,
+                activeCell:
+                  activeCell != null &&
+                  props.rows[activeCell.row] != null &&
+                  props.rows[activeCell.row].columns[activeCell.col] != null
+                    ? props.rows[activeCell.row].columns[activeCell.col]
+                    : undefined,
                 editValue,
                 setEditValue,
-                activeCell,
-                setActiveCell,
+                activeCellLocation: activeCell,
+                setActiveCellLocation: setActiveCell,
                 isEditing,
                 setIsEditing,
                 onKeyDown,

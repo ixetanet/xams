@@ -11,7 +11,7 @@ namespace Xams.Core.Dtos.Data
 
     public class MetadataField
     {
-        public string? name { get; set; }
+        public required string name { get; set; }
         public string? displayName { get; set; }
         public string? type { get; set; }
         public int? characterLimit { get; set; }
@@ -26,5 +26,6 @@ namespace Xams.Core.Dtos.Data
         public bool isRecommended { get; set; }
         public bool isReadOnly { get; set; }
         public string option { get; set; }
+        public string? numberRange { get; set; }
     }
 }

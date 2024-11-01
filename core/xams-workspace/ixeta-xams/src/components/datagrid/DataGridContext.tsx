@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Cell, CellLocation, DataGridProps } from "./DataGridTypes";
 import { useDataGridCellSizeType } from "./useDataGridCellSize";
 
@@ -8,10 +8,13 @@ export interface VGridContextProps {
 
 export type DataGridContextShape = {
   props: DataGridProps;
+  activeCell?: Cell;
   editValue: string;
   setEditValue: (value: string) => void;
-  activeCell?: CellLocation;
-  setActiveCell: React.Dispatch<React.SetStateAction<CellLocation | undefined>>;
+  activeCellLocation?: CellLocation;
+  setActiveCellLocation: React.Dispatch<
+    React.SetStateAction<CellLocation | undefined>
+  >;
   isEditing: boolean;
   setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
   onKeyDown: (w: Window, e?: KeyboardEvent, value?: string) => void;

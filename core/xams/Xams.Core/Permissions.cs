@@ -326,7 +326,7 @@ namespace Xams.Core
             return tablePermissions;
         }
 
-        internal static async Task RefreshCache(BaseDbContext dataContext, ILogger logger)
+        public static async Task RefreshCache(BaseDbContext dataContext, ILogger logger)
         {
             // Is Permission Cache enabled?
             var settingMetadta = Cache.Instance.GetTableMetadata("Setting");

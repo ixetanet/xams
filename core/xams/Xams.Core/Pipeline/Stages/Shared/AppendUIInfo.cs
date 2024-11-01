@@ -130,7 +130,7 @@ public static class AppendUIInfo
                 if (expandoDictionary.ContainsKey("OwningUserId") && expandoObject.OwningUserId != null &&
                     !canDelete)
                 {
-                    canUpdate = expandoObject.OwningUserId == context.UserId;
+                    canDelete = expandoObject.OwningUserId == context.UserId;
                 }
             }
             else if (deletePermissionLevel == Permissions.PermissionLevel.User)

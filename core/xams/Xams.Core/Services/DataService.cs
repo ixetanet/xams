@@ -15,13 +15,16 @@ namespace Xams.Core.Services
 {
     public class DataService<TDbContext> : IDataService where TDbContext : BaseDbContext, new()
     {
+        private readonly Guid ExecutionId = Guid.NewGuid();
         private readonly DataRepository _dataRepository = new(typeof(TDbContext));
         private readonly MetadataRepository _metadataRepository = new(typeof(TDbContext));
         private readonly SecurityRepository _securityRepository = new(typeof(TDbContext));
+        private readonly Dictionary<string, HashSet<Guid>> _deletes = new();
         private List<TablePermission> TablePermissions { get; set; } = new();
         private List<ServiceContext> ServiceContexts { get; set; } = new();
         internal ILogger Logger { get; private set; }
 
+        
         public DataService(ILogger<DataService<TDbContext>> logger)
         {
             Logger = logger;
@@ -32,6 +35,11 @@ namespace Xams.Core.Services
             return Logger;
         }
 
+        public Guid GetExecutionId()
+        {
+            return ExecutionId;
+        }
+        
         public DataRepository GetDataRepository()
         {
             return _dataRepository;
@@ -46,7 +54,32 @@ namespace Xams.Core.Services
         {
             return _securityRepository;
         }
+        
+        /// <summary>
+        /// Return false if the entity has already been tracked for deletion
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public bool TrackDelete(string entity, Guid id)
+        {
+            if (!_deletes.ContainsKey(entity))
+            {
+                _deletes.Add(entity, new HashSet<Guid>());
+            }
+            if (!_deletes[entity].Contains(id))
+            {
+                _deletes[entity].Add(id);
+                return true;
+            }
 
+            return false;
+        }
+
+        public bool TrackingDelete(string entity, Guid id)
+        {
+            return _deletes.ContainsKey(entity) && _deletes[entity].Contains(id);
+        }
 
         public async Task<Response<ReadOutput>> Read(Guid userId, ReadInput readInput, PipelineContext? parent = null)
         {
@@ -702,8 +735,36 @@ namespace Xams.Core.Services
                     ["CREATE", "UPDATE", "DELETE", "ASSIGN"]);
                 TablePermissions.AddRange(permissions.ToTablePermissions());
             }
-
+            
+            // It's possible that hierarchy of deletes is occuring from a PostTraversalDelete and as part of the
+            // ServiceLogic, a deleted is called on an entity that has been or will be deleted. In this case, we need
+            // to prevent the delete from happening again.
             Type entityType = entity.GetType();
+            var entityId = entity.GetIdValue(entityType);
+            if (dataOperation is DataOperation.Delete)
+            {
+                
+                if (!TrackDelete(entityType.Name, entityId))
+                {
+                    return new Response<object?>()
+                    {
+                        Succeeded = true
+                    };
+                }
+            }
+            
+            // If attempting to update a record that's been deleted return success
+            if (dataOperation is DataOperation.Update)
+            {
+                if (TrackingDelete(entityType.Name, entityId))
+                {
+                    return new Response<object?>()
+                    {
+                        Succeeded = true
+                    };
+                }
+            }
+            
             var pipelineContext = new PipelineContext()
             {
                 Parent = parent,

@@ -2,7 +2,8 @@ import React from "react";
 import { useAdminDashContext } from "../AdminDashboard";
 import { NavLink } from "@mantine/core";
 import { IconSelector } from "@tabler/icons-react";
-import { DataTable } from "../..";
+import DataTable from "../../components/DataTable";
+import CopyId from "../components/CopyId";
 
 const AdminDashOptions = () => {
   const ctx = useAdminDashContext();
@@ -16,11 +17,25 @@ const AdminDashOptions = () => {
             onClick={() =>
               ctx.setActiveComponent({
                 component: (
-                  <div className="w-full h-full flex flex-col">
-                    <div className="grow h-1">
-                      <DataTable tableName="Option" maxResults={100} />
-                    </div>
-                  </div>
+                  <DataTable
+                    tableName="Option"
+                    maxResults={100}
+                    formAppendButton={(formbuilder) => {
+                      return (
+                        <>
+                          {formbuilder.operation === "UPDATE" && (
+                            <div className="w-full flex justify-start items-center gap-1">
+                              <CopyId
+                                value={
+                                  formbuilder.data[`${formbuilder.tableName}Id`]
+                                }
+                              />
+                            </div>
+                          )}
+                        </>
+                      );
+                    }}
+                  />
                 ),
               })
             }

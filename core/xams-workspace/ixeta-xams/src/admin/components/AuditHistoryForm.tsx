@@ -3,6 +3,7 @@ import { useFormBuilderType } from "../../hooks/useFormBuilder";
 import { Grid, TextInput } from "@mantine/core";
 import Field from "../../components/Field";
 import DataTable from "../../components/DataTableImp";
+import CopyId from "./CopyId";
 
 interface AuditHistoryFormProps {
   formBuilder: useFormBuilderType;
@@ -97,6 +98,13 @@ const AuditHistoryForm = (props: AuditHistoryFormProps) => {
                 value: props.formBuilder.snapshot?.AuditHistoryId,
               },
             ]}
+          />
+        </div>
+      )}
+      {props.formBuilder.operation === "UPDATE" && (
+        <div className="w-full flex justify-start items-center gap-1">
+          <CopyId
+            value={props.formBuilder.data[`${props.formBuilder.tableName}Id`]}
           />
         </div>
       )}

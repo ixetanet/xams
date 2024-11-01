@@ -8,6 +8,7 @@ import useAuthRequest from "../../hooks/useAuthRequest";
 import { useFormBuilderType } from "../../hooks/useFormBuilder";
 import { DataTableRef } from "../../components/datatable/DataTableTypes";
 import { IconAlertCircle } from "@tabler/icons-react";
+import CopyId from "./CopyId";
 
 interface AuditFieldDataTableProps {
   formBuilder: useFormBuilderType;
@@ -272,7 +273,15 @@ const AuditForm = (props: AuditFieldDataTableProps) => {
           }}
         ></DataTable>
       </div>
-      <div className="w-full flex justify-end">
+      <div className="w-full flex justify-between">
+        {props.formBuilder.operation === "UPDATE" && (
+          <div className="w-full flex justify-start items-center gap-1">
+            <CopyId
+              value={props.formBuilder.data[`${props.formBuilder.tableName}Id`]}
+            />
+          </div>
+        )}
+
         <SaveButton />
       </div>
     </div>

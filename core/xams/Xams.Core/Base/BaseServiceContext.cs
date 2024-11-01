@@ -13,6 +13,7 @@ public class BaseServiceContext(PipelineContext pipelineContext)
     internal DataRepository DataRepository => PipelineContext.DataRepository;
     internal MetadataRepository MetadataRepository => PipelineContext.MetadataRepository;
     internal SecurityRepository SecurityRepository => PipelineContext.SecurityRepository;
+    public Guid ExecutionId => PipelineContext.DataService.GetExecutionId();
     public Guid ExecutingUserId => PipelineContext.UserId;
     public Dictionary<string, JsonElement> Parameters => PipelineContext.InputParameters;
     public ILogger Logger => PipelineContext.DataService.GetLogger();

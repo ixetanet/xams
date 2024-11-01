@@ -1,5 +1,6 @@
 import React from "react";
 import { useDataGridContext } from "./DataGridContext";
+import { CellLocation } from "./DataGridTypes";
 
 interface TextInputCellProps {
   rightAlign: boolean;
@@ -7,6 +8,23 @@ interface TextInputCellProps {
 
 const TextInputCell = (props: TextInputCellProps) => {
   const dgContext = useDataGridContext();
+
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    if (
+      dgContext.activeCell &&
+      dgContext.activeCell.onEditing &&
+      dgContext.activeCellLocation
+    ) {
+      value = dgContext.activeCell.onEditing(
+        value,
+        dgContext.activeCellLocation,
+        dgContext.activeCell?.data
+      );
+    }
+    dgContext.setEditValue(value);
+  };
+
   return (
     <div>
       <input
@@ -18,9 +36,10 @@ const TextInputCell = (props: TextInputCellProps) => {
         }}
         className={`w-full h-full border-none outline-none`}
         value={dgContext.editValue}
-        onChange={(e) => {
-          dgContext.setEditValue(e.target.value);
-        }}
+        onChange={onChange}
+        // onChange={(e) => {
+        //   dgContext.setEditValue(e.target.value);
+        // }}
         autoFocus
       />
     </div>

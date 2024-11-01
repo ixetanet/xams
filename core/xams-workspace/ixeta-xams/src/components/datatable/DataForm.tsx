@@ -59,8 +59,7 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
             (ctx.props.formCloseOnUpdate === true ||
               ctx.props.formCloseOnUpdate === undefined))
         ) {
-          // This will also close the form because the form closes when the state is
-          // no longer OPEN_FORM
+          ctx.closeForm();
           ctx.getData({
             ...getDataOptions,
             page: ctx.state.data?.currentPage,
@@ -75,11 +74,32 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
     if (ctx.props.formTitle != null) {
       return ctx.props.formTitle;
     }
-    return `${formBuilder.operation === "UPDATE" ? "Edit" : "Create"} ${
+
+    let prefix = "";
+    if (
+      formBuilder.operation === "UPDATE" &&
+      formBuilder.data != null &&
+      (formBuilder.data as any)._ui_info_.canUpdate === true
+    ) {
+      prefix = "Edit";
+    }
+    if (
+      formBuilder.operation === "CREATE" &&
+      ctx.state.permissions.create !== "NONE"
+    ) {
+      prefix = "Create";
+    }
+
+    const displayName =
       ctx.state.metadata === undefined
         ? ctx.props.tableName
-        : ctx.state.metadata?.displayName
-    }`;
+        : ctx.state.metadata?.displayName;
+
+    if (prefix !== "") {
+      return `${prefix} ${displayName}`;
+    }
+
+    return displayName;
   };
 
   const onClose = () => {
@@ -88,8 +108,7 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
     }
     // If the record has been saved since being opened, we need to reload the data
     if (formBuilder.isSubmitted) {
-      // This will also close the form because the form closes when the state is
-      // no longer OPEN_FORM
+      ctx.closeForm();
       ctx.getData({
         ...getDataOptions,
         page: ctx.state.data?.currentPage,
@@ -281,11 +300,9 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
             <></>
           )}
           {ctx.props.customForm == null && (
-            <div className="w-full flex justify-end">
+            <div className="w-full flex justify-end mt-4">
               {ctx.props.formAppendButton != null ? (
-                <div className="mr-2 mt-4">
-                  {ctx.props.formAppendButton(formBuilder)}
-                </div>
+                <>{ctx.props.formAppendButton(formBuilder)}</>
               ) : (
                 <></>
               )}
@@ -294,9 +311,7 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
                   formBuilder.canUpdate === true) ||
                 (formBuilder.snapshot === undefined &&
                   formBuilder.canCreate === true) ? (
-                  <div className="mt-4">
-                    <SaveButton></SaveButton>
-                  </div>
+                  <SaveButton></SaveButton>
                 ) : (
                   <></>
                 )

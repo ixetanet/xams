@@ -1,5 +1,6 @@
 using System.Linq.Dynamic.Core;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
 using Xams.Core.Contexts;
@@ -36,17 +37,18 @@ namespace Xams.Core.Actions
                 foreach (var import in imports)
                 {
                     var dataContext = context.DataRepository.GetDbContext<BaseDbContext>();
+                    dataContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                     var dbContextType = Cache.Instance.GetTableMetadata(import.tableName);
                     
                     // Retrieve all the id's from the table
                     DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(dataContext, dbContextType.Type);
                     IQueryable query = dynamicLinq.Query;
                     
-                    // If RolePermission, TeamRole, UserRole, or TeamUser match on the joining tables instead of the Primary Key
+                    // If TeamRole, UserRole, or TeamUser match on the joining tables instead of the Primary Key
                     if ("RolePermission" == import.tableName)
                     {
-                        query = query.Select($"new(RoleId, PermissionId)");
-                    }
+                        // Do nothing
+                    } 
                     else if ("TeamRole" == import.tableName)
                     {
                         query = query.Select("new(TeamId, RoleId)");
@@ -93,7 +95,8 @@ namespace Xams.Core.Actions
                             RoleId = x.GetValue<Guid>("RoleId"),
                             PermissionId = x.GetValue<Guid>("PermissionId")
                         }).ToList();
-                        
+
+                        HashSet<Guid> updateIds = [];
                         foreach (var item in ((JsonElement)import.data).EnumerateArray())
                         {
                             object entity = JsonSerializer.Deserialize(item.GetRawText(), dbContextType.Type) ??
@@ -101,7 +104,44 @@ namespace Xams.Core.Actions
                             if (!existingEntities.Any(x => x.RoleId == entity.GetValue<Guid>("RoleId")
                                                           && x.PermissionId == entity.GetValue<Guid>("PermissionId")))
                             {
-                                dataContextUpsert.Add(entity);
+                                var updateEntity = existing
+                                    .FirstOrDefault(x => x.GetValue<Guid>("RolePermissionId") == entity.GetValue<Guid>("RolePermissionId"));
+                                if (updateEntity != null)
+                                {
+                                    updateIds.Add(updateEntity.GetValue<Guid>("RolePermissionId"));
+                                    dataContextUpsert.Update(entity);
+                                }
+                                else
+                                {
+                                    dataContextUpsert.Add(entity);
+                                    existing.Add(entity);
+                                    existingEntities.Add(new
+                                    {
+                                        RoleId = entity.GetValue<Guid>("RoleId"),
+                                        PermissionId = entity.GetValue<Guid>("PermissionId")
+                                    });
+                                }
+                            }
+                        }
+                        
+                        // Remove all RolePermissions that are not in the import
+                        foreach (var existingEntity in existingEntities)
+                        {
+                            if (!((JsonElement)import.data).EnumerateArray().Any(x =>
+                                x.GetProperty("RoleId").GetGuid() == existingEntity.RoleId &&
+                                x.GetProperty("PermissionId").GetGuid() == existingEntity.PermissionId))
+                            {
+                                var entity = existing.First(x =>
+                                    x.GetValue<Guid>("RoleId") == existingEntity.RoleId &&
+                                    x.GetValue<Guid>("PermissionId") == existingEntity.PermissionId);
+                                
+                                // This might be an update because the primary key already exists in the database
+                                if (updateIds.Contains(entity.GetValue<Guid>("RolePermissionId")))
+                                {
+                                    continue;
+                                }
+                                
+                                dataContextUpsert.Remove(entity);
                             }
                         }
                     }

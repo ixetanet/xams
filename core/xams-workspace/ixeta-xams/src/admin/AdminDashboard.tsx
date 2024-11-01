@@ -256,7 +256,11 @@ const AdminDashboard = (props: AdminDashboardProps) => {
         }
       >
         <div className="flex w-full">
-          {activeComponent != null && activeComponent.component}
+          <div className="w-full h-full flex flex-col">
+            <div className="grow h-1">
+              {activeComponent != null && activeComponent.component}
+            </div>
+          </div>
         </div>
       </AppShell>
     </AdminDashContext.Provider>

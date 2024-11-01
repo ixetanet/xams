@@ -81,6 +81,15 @@ const TableShell = (props: TableShellProps) => {
       ></DataTableOverlay>
     ) : undefined;
 
+  const showTopOptions =
+    ctx.props.title === undefined ||
+    ctx.props.title !== "" ||
+    showOptions ||
+    showActiveSwitch ||
+    searchEnabled ||
+    addEnabled ||
+    addButton != null;
+
   const onChangePage = async (page: number) => {
     await ctx.getData({
       ...getDataOptions,
@@ -133,7 +142,9 @@ const TableShell = (props: TableShellProps) => {
               }s`}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div
+          className={`${showTopOptions ? `flex` : `hidden`} items-center gap-2`}
+        >
           {showOptions && <DataTableOptions></DataTableOptions>}
 
           {showActiveSwitch && (

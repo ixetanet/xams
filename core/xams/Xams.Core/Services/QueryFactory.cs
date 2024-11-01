@@ -1,6 +1,7 @@
-using System.ComponentModel;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
 using Xams.Core.Dtos.Data;
@@ -35,10 +36,13 @@ public class QueryFactory
         {
             throw new Exception("Failed to copy readInput");
         }
-        
+
         // If '*' is in the fields, replace it with all fields
         OmitHiddenFields(readInputCopy);
-        
+
+        // If the query doesn't include OwningUserId or OwningTeamId, add it
+        AddOwnerFields(readInputCopy);
+
         // Ensure all fields are distinct
         readInputCopy.fields = readInputCopy.fields.Distinct().ToArray();
         if (readInputCopy.joins != null)
@@ -46,12 +50,12 @@ public class QueryFactory
             foreach (var join in readInputCopy.joins)
             {
                 join.fields = join.fields.Distinct().ToArray();
-            }    
+            }
         }
-        
+
 
         var query = Base(readInputCopy);
-        
+
         // add joins
         if (readInputCopy.joins != null)
         {
@@ -115,7 +119,7 @@ public class QueryFactory
                 var joinQuery = new Query(_dbContext, ["TeamId"], "system_base")
                     .From("TeamUser")
                     .Where("system_base_UserId == @0", _queryOptions.UserId);
-                
+
                 query = new Query(_dbContext, readInput.fields, fieldPrefix)
                     .From("User")
                     .Join("User.UserId", "TeamUser.UserId", "system_tu", [])
@@ -176,7 +180,7 @@ public class QueryFactory
                 {
                     subQuery.Where($"{fieldPrefix}_{readInput.tableName}Id == @0", readInput.id);
                 }
-                
+
                 // Security - Filter by user permissions
                 AddSecurityFilter(subQuery, joinOn, hasOwningUserId, hasOwningTeamId);
 
@@ -202,13 +206,13 @@ public class QueryFactory
                 // Ignore the hidden fields
                 if (Attribute.GetCustomAttribute(property, typeof(UIHideAttribute)) != null)
                     continue;
-         
+
                 rootFields.Add(property.Name);
             }
-        
+
             readInput.fields = rootFields.ToArray();
         }
-        
+
         // Join fields
         if (readInput.joins != null)
         {
@@ -224,15 +228,15 @@ public class QueryFactory
                         // Ignore the hidden fields
                         if (Attribute.GetCustomAttribute(property, typeof(UIHideAttribute)) != null)
                             continue;
-                
+
                         joinFields.Add(property.Name);
                     }
-                
+
                     join.fields = joinFields.ToArray();
                 }
             }
         }
-        
+
         // Except fields
         if (readInput.except != null)
         {
@@ -242,7 +246,26 @@ public class QueryFactory
             }
         }
     }
-    
+
+    private void AddOwnerFields(ReadInput readInput)
+    {
+        var metadata = Cache.Instance.GetTableMetadata(readInput.tableName);
+        if (metadata == null)
+        {
+            throw new Exception($"Table {readInput.tableName} does not exist");
+        }
+
+        if (metadata.HasOwningUserField && !readInput.fields.Contains("OwningUserId"))
+        {
+            readInput.fields = readInput.fields.Append("OwningUserId").ToArray();
+        }
+
+        if (metadata.HasOwningTeamField && !readInput.fields.Contains("OwningTeamId"))
+        {
+            readInput.fields = readInput.fields.Append("OwningTeamId").ToArray();
+        }
+    }
+
     private void AddSecurityFilter(Query query, string joinOn, bool hasOwningUserId, bool hasOwningTeamId)
     {
         // Can this table only be managed with System level access?
@@ -367,8 +390,10 @@ public class QueryFactory
             // Get filter field type
             Type? fieldType;
             Type? underlyingType;
+            bool isNullable = false;
 
             // If this is a filter on a joined table
+            PropertyInfo? property;
             if (joins is { Length: > 0 } && filter.field.Contains('.'))
             {
                 string[] fieldParts = filter.field.Split('.');
@@ -391,7 +416,7 @@ public class QueryFactory
                 }
 
                 // Get the type of the field on the joined table
-                var property = joinType.GetProperty(joinField);
+                property = joinType.GetProperty(joinField);
                 if (property == null)
                 {
                     throw new Exception($"Field {joinField} does not exist on {join.toTable}");
@@ -402,12 +427,13 @@ public class QueryFactory
                 if (underlyingType != null)
                 {
                     fieldType = underlyingType;
+                    isNullable = true;
                 }
             }
             else
             {
                 field = filter.field;
-                var property = targetType.GetProperty(filter.field);
+                property = targetType.GetProperty(filter.field);
                 if (property == null)
                 {
                     throw new Exception($"{targetType.Name} does not contain a field named {filter.field}");
@@ -418,6 +444,7 @@ public class QueryFactory
                 if (underlyingType != null)
                 {
                     fieldType = underlyingType;
+                    isNullable = true;
                 }
             }
 
@@ -540,12 +567,67 @@ public class QueryFactory
             }
             else if (fieldType == typeof(DateTime))
             {
-                if (filter.@operator != null && DateTime.TryParse(filter.value, out DateTime dt) &&
-                    IsValidOperator(filter.@operator))
+                filter.@operator = string.IsNullOrEmpty(filter.@operator) ? "==" : filter.@operator;
+                Regex regUtcOffset = new Regex("~[-+]+[0-9][0-9]?");
+                var match = regUtcOffset.Match(filter.value);
+                filter.value = filter.value.Replace(match.Value, "");
+                var conditionField = $"{table}{field}{(isNullable ? ".Value" : "")}";
+
+                // The query can send the user's local date time offset in the format of "~-12" or "~+12"
+                // But we only want to take this into account if the date time field has a time part
+                if (!string.IsNullOrEmpty(match.Value) &&
+                    property.GetCustomAttribute<UIDateFormatAttribute>()?.HasTimePart() == true)
                 {
-                    dt = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
-                    conditions.Add($"{table}{field} {filter.@operator} @{index}");
-                    values.Add(dt);
+                    conditionField += $".AddHours({match.Value.Replace("~", "")})";
+                }
+
+                string[] parts = filter.value.Split(" ");
+                int valuesCount = values.Count;
+                foreach (var part in parts)
+                {
+                    if (string.IsNullOrEmpty(part))
+                    {
+                        continue;
+                    }
+
+                    if (part.All(char.IsDigit) && part.Length == 4)
+                    {
+                        index = values.Count != valuesCount ? index + 1 : index;
+                        conditions.Add($"{conditionField}.Year {filter.@operator} @{index}");
+                        values.Add(part);
+                    }
+                    else if (part.All(char.IsDigit) && part.Length <= 2)
+                    {
+                        index = values.Count != valuesCount ? index + 1 : index;
+                        conditions.Add($"{conditionField}.Day {filter.@operator} @{index}");
+                        values.Add(part);
+                    }
+                    else if (part.All(char.IsLetter))
+                    {
+                        string[] months =
+                        [
+                            "January", "February", "March", "April", "May", "June", "July", "August", "September",
+                            "October", "November", "December"
+                        ];
+                        for (int i = 0; i < months.Length; i++)
+                        {
+                            string month = months[i];
+                            if (month.Contains(part))
+                            {
+                                index = values.Count != valuesCount ? index + 1 : index;
+                                conditions.Add($"{conditionField}.Month {filter.@operator} @{index}");
+                                values.Add(i + 1);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // If no parts were able to parse
+                if (valuesCount == values.Count)
+                {
+                    conditions.Add($"{conditionField}.ToString().Contains(@{index})");
+                    values.Add(filter.value);
                 }
             }
             else if (fieldType == typeof(Boolean))
@@ -674,7 +756,6 @@ public class QueryFactory
 
     private static bool Validate(ReadInput readInput)
     {
-        
         if (readInput.fields.Length > 0 && readInput.fields[0] != "*")
         {
             foreach (var field in readInput.fields)
@@ -685,7 +766,7 @@ public class QueryFactory
                 {
                     throw new Exception($"Field {field} does not exist on {readInput.tableName}");
                 }
-                
+
                 // Verify fields are not hidden
                 if (Attribute.GetCustomAttribute(property, typeof(UIHideAttribute)) != null)
                 {
@@ -693,7 +774,7 @@ public class QueryFactory
                 }
             }
         }
-        
+
 
         // Make sure at least 1 field has been selected either on the root table or a joined table
         if ((readInput.fields == null || readInput.fields.Length == 0)
@@ -731,7 +812,7 @@ public class QueryFactory
             }
         }
 
-        
+
         ValidateFilters(readInput, readInput.filters);
 
         if (readInput.joins != null)
@@ -751,7 +832,7 @@ public class QueryFactory
                 {
                     if (join.alias == "system_tu")
                     {
-                        throw new Exception($"Cannot use alias system_tu is a reserved alias");    
+                        throw new Exception($"Cannot use alias system_tu is a reserved alias");
                     }
 
                     if (join.alias == "system_base")
@@ -759,7 +840,7 @@ public class QueryFactory
                         throw new Exception($"Cannot use alias system_base is a reserved alias");
                     }
                 }
-                
+
 
                 // Verify from table exists in query
                 bool isAliasJoin = readInput.joins.FirstOrDefault(x => x != join && x.alias == join.fromTable) != null;
@@ -820,7 +901,7 @@ public class QueryFactory
                     {
                         throw new Exception($"Field {joinField} does not exist on {join.toTable}");
                     }
-                    
+
                     // Verify fields are not hidden
                     if (Attribute.GetCustomAttribute(property, typeof(UIHideAttribute)) != null)
                     {
@@ -904,7 +985,7 @@ public class QueryFactory
         {
             return;
         }
-        
+
         foreach (var filter in filters)
         {
             // Make sure this is either a logical grouping or a filter
@@ -952,7 +1033,7 @@ public class QueryFactory
                 {
                     throw new Exception($"Field {field} does not exist on {join.toTable}");
                 }
-                
+
                 // If the field is hidden and none-queryable throw an exception
                 if (Attribute.GetCustomAttribute(property, typeof(UIHideAttribute)) is UIHideAttribute
                     {
@@ -967,9 +1048,9 @@ public class QueryFactory
                 var property = Cache.Instance.GetTableMetadata(readInput.tableName).Type.GetProperty(filter.field);
                 if (property == null)
                 {
-                    throw new Exception($"Field {filter.field} does not exist on {readInput.tableName}");    
+                    throw new Exception($"Field {filter.field} does not exist on {readInput.tableName}");
                 }
-                
+
                 // If the field is hidden and none-queryable throw an exception
                 if (Attribute.GetCustomAttribute(property, typeof(UIHideAttribute)) is UIHideAttribute
                     {

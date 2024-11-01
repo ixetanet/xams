@@ -60,7 +60,8 @@ const DataTableOptions = () => {
     if (
       permissions.find((p) => p === `TABLE_${ctx.props.tableName}_EXPORT`) &&
       permissions.find((p) => p === `ACTION_TABLE_ExportData`) &&
-      tablePermissions.read !== "NONE"
+      tablePermissions.read !== "NONE" &&
+      (ctx.props.canExport == null || ctx.props.canExport)
     ) {
       canExport = true;
     }

@@ -11,6 +11,7 @@ namespace Xams.Core.Interfaces
 {
     public interface IDataService
     {
+        public Guid GetExecutionId();
         public DataRepository GetDataRepository();
         public MetadataRepository GetMetadataRepository();
         public SecurityRepository GetSecurityRepository();
@@ -44,6 +45,10 @@ namespace Xams.Core.Interfaces
 
         internal Task<Response<object?>> BatchPreEntitySecurity(List<PipelineContext> pipelineContexts,
             bool checkSecurity);
+
+        internal bool TrackDelete(string entity, Guid id);
+        
+        internal bool TrackingDelete(string entity, Guid id);
         
         internal ILogger GetLogger();
     }

@@ -420,7 +420,7 @@ const DataTable = forwardRef(
       });
     };
 
-    const close = () => {
+    const closeForm = () => {
       dispatch({
         type: "CLOSE_FORM",
       });
@@ -483,7 +483,7 @@ const DataTable = forwardRef(
     }, [props.tableName, props.disabledMessage]);
 
     useEffect(() => {
-      if (state.type !== "OPEN_FORM" && props.refreshInterval != null) {
+      if (state.isFormOpen && props.refreshInterval != null) {
         const interval = setInterval(async () => {
           await refresh(false);
         }, props.refreshInterval);
@@ -525,17 +525,18 @@ const DataTable = forwardRef(
           refHandle: refObject,
           dispatch,
           openForm,
+          closeForm,
           refresh,
           formDisclosure: {
-            opened: state.type === "OPEN_FORM",
-            close,
+            opened: state.isFormOpen,
+            close: closeForm,
           },
           getData,
           getFields,
           sort: onSort,
         }}
       >
-        {state.type === "OPEN_FORM" && <DataForm ref={dataFormRef}></DataForm>}
+        {state.isFormOpen && <DataForm ref={dataFormRef}></DataForm>}
         {state.data && (
           <TableShell>
             <DataRows></DataRows>

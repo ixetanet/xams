@@ -1,8 +1,9 @@
 import React from "react";
 import { useAdminDashContext } from "../AdminDashboard";
-import { NavLink } from "@mantine/core";
-import { IconBox } from "@tabler/icons-react";
+import { Button, CopyButton, NavLink } from "@mantine/core";
+import { IconBox, IconClipboard, IconCheck } from "@tabler/icons-react";
 import DataTable from "../../components/DataTable";
+import CopyId from "../components/CopyId";
 
 const AdminDashEntities = () => {
   const ctx = useAdminDashContext();
@@ -42,14 +43,27 @@ const AdminDashEntities = () => {
                     ctx.setActiveComponent((prev) => {
                       return {
                         component: (
-                          <div className="w-full h-full flex flex-col">
-                            <div className="grow h-1">
-                              <DataTable
-                                tableName={table.tableName}
-                                maxResults={100}
-                              />
-                            </div>
-                          </div>
+                          <DataTable
+                            tableName={table.tableName}
+                            maxResults={100}
+                            formAppendButton={(formbuilder) => {
+                              return (
+                                <>
+                                  {formbuilder.operation === "UPDATE" && (
+                                    <div className="w-full flex justify-start items-center gap-1">
+                                      <CopyId
+                                        value={
+                                          formbuilder.data[
+                                            `${formbuilder.tableName}Id`
+                                          ]
+                                        }
+                                      />
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            }}
+                          />
                         ),
                       };
                     })

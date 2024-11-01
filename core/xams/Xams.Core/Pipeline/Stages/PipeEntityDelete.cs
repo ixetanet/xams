@@ -27,11 +27,11 @@ public class PipeEntityDelete : BasePipelineStage
         // TODO: This should be optimized either by keeping track of entities in a Dictionary on the DbContext
         // TODO: Or another method (potentially disabling tracking and re-enabling https://learn.microsoft.com/en-us/ef/core/querying/tracking)
         string primaryKey = $"{context.TableName}Id";
+        Guid entityId = context.Entity.GetValue<Guid>(primaryKey);
         var entry = context.DataRepository.GetDbContext<BaseDbContext>().ChangeTracker
             .Entries().FirstOrDefault(e =>
                 context.Entity != null && e.Entity.GetType().Name == context.TableName &&
-                e.Entity.GetValue<Guid>(primaryKey) ==
-                context.Entity.GetValue<Guid>(primaryKey));
+                e.Entity.GetValue<Guid>(primaryKey) == entityId);
         if (entry != null)
         {
             entry.State = EntityState.Detached;
@@ -82,13 +82,13 @@ public class PipeEntityDelete : BasePipelineStage
             .ToDictionary();
 
         // Keep track of entities that will be deleted to avoid duplicate deletes
-        Dictionary<string, HashSet<Guid>> entityIds = new();
+        // Dictionary<string, HashSet<Guid>> uniqueRecords = new();
 
         // Delete from the highest depth to lowest
         while (maxDepth > -1)
         {
             // Create Pipeline Contexts and get Pre-Entities first
-            Dictionary<Guid, PipelineContext> pipelineContexts = new();
+            Dictionary<Guid, PipelineDependency> pipelineDependencies = new();
             var records = postOrderTraversal
                 .Where(x => x.Value.Depth == maxDepth).ToList();
             maxDepth--;
@@ -103,18 +103,6 @@ public class PipeEntityDelete : BasePipelineStage
                 var dependency = recordDependency.Value.Dependency;
                 var tableMetadata = Cache.Instance.GetTableMetadata(dependency.Type.Name);
 
-                if (!entityIds.ContainsKey(dependency.Type.Name))
-                {
-                    entityIds.Add(dependency.Type.Name, new HashSet<Guid>());
-                }
-
-                if (entityIds[dependency.Type.Name].Contains(id))
-                {
-                    continue;
-                }
-
-                entityIds[dependency.Type.Name].Add(id);
-
                 var fields = new Dictionary<string, dynamic>()
                 {
                     { $"{dependency.Type.Name}Id", id }
@@ -127,7 +115,25 @@ public class PipeEntityDelete : BasePipelineStage
                 // If the reference is nullable, skip as this record will be updated
                 if (dependency.IsNullable)
                 {
+                    pipelineDependencies.Add(id, new PipelineDependency()
+                    {
+                        Dependency = dependency,
+                        PipelineContext = new PipelineContext()
+                    });
                     continue;
+                }
+                
+                // If this record is already being deleted, skip
+                if (!context.DataService.TrackDelete(dependency.Type.Name, id))
+                {
+                    continue;
+                }
+                
+                // If a pipelineDependency was previously created as IsNullable (to set nullable reference to null), remove it
+                // as instead of updating the reference, we will delete the record
+                if (pipelineDependencies.ContainsKey(id))
+                {
+                    pipelineDependencies.Remove(id);
                 }
 
                 var pipelineEntity = EntityUtil.ConvertToEntityId(dependency.Type, fields).Entity;
@@ -152,26 +158,29 @@ public class PipeEntityDelete : BasePipelineStage
                     DataService = context.DataService,
                 };
                 newPipelineContext.CreateServiceContext();
-                pipelineContexts.Add(id, newPipelineContext);
+                pipelineDependencies.Add(id, new PipelineDependency()
+                {
+                    PipelineContext = newPipelineContext,
+                    Dependency = dependency
+                });
             }
 
             // Get the Pre-Entities in Batches for Entities with Service Logic 
             // Don't check security for the dependent records
             // Not checking for security on cascade\dependent records is default behavior for delete in most CRM systems
             await context.DataService
-                .BatchPreEntitySecurity(pipelineContexts
-                    .Where(x => Cache.Instance.GetTableMetadata(x.Value.TableName).HasDeleteServiceLogic)
-                    .Select(x => x.Value).ToList(), false);
+                .BatchPreEntitySecurity(pipelineDependencies
+                    .Where(x => !string.IsNullOrEmpty(x.Value.PipelineContext.TableName))
+                    .Where(x => Cache.Instance.GetTableMetadata(x.Value.PipelineContext.TableName).HasDeleteServiceLogic)
+                    .Select(x => x.Value.PipelineContext).ToList(), false);
 
             // Execute Deletes
             int toDeleteCount = 0;
-            List<Guid> ids = new();
-            foreach (var recordDependency in records)
+            foreach (var pipelineDependency in pipelineDependencies)
             {
-                var id = recordDependency.Key;
-                var dependency = recordDependency.Value.Dependency;
+                var id = pipelineDependency.Key;
+                var dependency = pipelineDependency.Value.Dependency;
                 var tableMetadata = Cache.Instance.GetTableMetadata(dependency.Type.Name);
-                ids.Add(id);
 
                 // Prevent the save if there's no service logic
                 // Save when we reach an entity with service logic or the end of the batch
@@ -188,7 +197,8 @@ public class PipeEntityDelete : BasePipelineStage
                 }
 
                 // If the reference is nullable, update the record to null
-                if (dependency.IsNullable)
+                // and If we plan to delete the entity, don't update the reference
+                if (dependency.IsNullable && !context.DataService.TrackingDelete(dependency.Type.Name, id))
                 {
                     var entity = await dbContext.FindAsync(dependency.Type, id);
                     if (entity == null)
@@ -200,9 +210,8 @@ public class PipeEntityDelete : BasePipelineStage
                     await context.DataRepository.Update(entity, preventSave);
                     continue;
                 }
-
-                var newPipelineContext = pipelineContexts[id];
-                var response = await Pipelines.Delete.Execute(newPipelineContext);
+                
+                var response = await Pipelines.Delete.Execute(pipelineDependency.Value.PipelineContext);
                 if (!response.Succeeded)
                 {
                     return response;
@@ -221,4 +230,11 @@ public class PipeEntityDelete : BasePipelineStage
             Succeeded = true
         };
     }
+
+    public class PipelineDependency
+    {
+        public required PipelineContext PipelineContext { get; set; } 
+        public required Dependency Dependency { get; set; }
+    }
+    
 }

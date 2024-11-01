@@ -26,6 +26,7 @@ export interface DataTableState {
   isLoadingData?: boolean;
   permissions: TablePermissions;
   isTableNotFound?: boolean;
+  isFormOpen: boolean;
   metadata?: MetadataResponse | undefined;
   joinMetadata: MetadataResponse[];
   data: ReadResponse<any>;
@@ -93,6 +94,7 @@ export const dataTableInitState = {
     update: "NONE",
   },
   isTableNotFound: false,
+  isFormOpen: false,
   metadata: undefined,
   joinMetadata: [],
   data: emptyReadResponse,
@@ -202,6 +204,7 @@ export const datatableReducer = (
     case "OPEN_FORM":
       return {
         ...state,
+        isFormOpen: true,
         editRecordId: (action.payload as TypeOpenForm).editRecordId,
         formTableName: state.metadata?.tableName,
         type: "OPEN_FORM",
@@ -209,6 +212,7 @@ export const datatableReducer = (
     case "CLOSE_FORM":
       return {
         ...state,
+        isFormOpen: false,
         editRecordId: undefined,
         formTableName: undefined,
         type: "CLOSE_FORM",

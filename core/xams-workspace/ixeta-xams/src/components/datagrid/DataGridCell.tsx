@@ -67,7 +67,7 @@ const DataGridCell = (props: DataGridCellProps) => {
     if (dgContext.props.editable === false) {
       return;
     }
-    dgContext.setActiveCell({
+    dgContext.setActiveCellLocation({
       row: row + sgContext.skipRows,
       col: col + sgContext.skipColumns,
     });
@@ -90,8 +90,9 @@ const DataGridCell = (props: DataGridCellProps) => {
   };
 
   const isActiveCell =
-    dgContext.activeCell?.row === props.rowIndex + sgContext.skipRows &&
-    dgContext.activeCell?.col === props.columnIndex + sgContext.skipColumns;
+    dgContext.activeCellLocation?.row === props.rowIndex + sgContext.skipRows &&
+    dgContext.activeCellLocation?.col ===
+      props.columnIndex + sgContext.skipColumns;
 
   return (
     <>
@@ -141,12 +142,6 @@ const DataGridCell = (props: DataGridCellProps) => {
           >
             {cell.errorMessage != null && (
               <div className="w-full h-full absolute">
-                {/* {cell.overlay(
-                  cellValue,
-                  cellLocation,
-                  cell.data,
-                  isActiveCell && dgContext.isEditing
-                )} */}
                 <DataGridCellError
                   isEditing={isActiveCell && dgContext.isEditing}
                   errorMessage={cell.errorMessage}

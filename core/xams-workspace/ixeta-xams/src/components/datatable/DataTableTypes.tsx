@@ -119,6 +119,7 @@ export type DataTableProps = {
   canUpdate?: boolean; // If true or undefined, will use the users permissions to show\hide the update button
   canCreate?: boolean;
   canImport?: boolean;
+  canExport?: boolean;
   tableStyle?: TableStyle;
 };
 
@@ -157,6 +158,7 @@ export interface DataTableShape {
   dispatch: React.Dispatch<DataTableAction>;
   formDisclosure: FormDisclosure;
   openForm: (recordData: any | undefined, triggerOnRowClick?: boolean) => void;
+  closeForm: () => void;
   refresh: () => Promise<void>;
   getData: (
     options?: GetDataOptions | null

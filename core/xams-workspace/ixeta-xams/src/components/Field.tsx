@@ -28,6 +28,7 @@ interface FieldProps {
   disabled?: boolean;
   readOnly?: boolean;
   required?: boolean;
+  allowNegative?: boolean;
 }
 
 const Field = (props: FieldProps) => {
@@ -61,10 +62,26 @@ const Field = (props: FieldProps) => {
     const fieldName = field.name;
     const fieldType = field.type;
     const isNullable = field.isNullable;
-    if (
-      !isNullable &&
-      ["Single", "Int32", "Int64", "Double", "Decimal"].includes(fieldType)
-    ) {
+    const numberTypes = ["Single", "Int32", "Int64", "Double", "Decimal"];
+
+    if (numberTypes.includes(fieldType)) {
+      // If the user presses "-" when there's already a value, make it negative
+      if (value.endsWith("-") && !value.startsWith("-")) {
+        value = "-" + value.replace("-", "");
+      }
+      // If there's a leading zero, remove it
+      if (value.startsWith("-0") || value.startsWith("0")) {
+        try {
+          if (fieldType.startsWith("Int") && parseInt(value) !== 0) {
+            value = parseInt(value).toString();
+          } else if (!fieldType.startsWith("Int") && parseFloat(value) !== 0) {
+            value = parseFloat(value).toString();
+          }
+        } catch {}
+      }
+    }
+
+    if (!isNullable && numberTypes.includes(fieldType)) {
       if (value === "-") {
         updateValue = true;
       }
@@ -84,9 +101,36 @@ const Field = (props: FieldProps) => {
     } else if (
       isNullable &&
       (value === "-" || value === ".") &&
-      ["Single", "Int32", "Int64", "Double", "Decimal"].includes(fieldType)
+      numberTypes.includes(fieldType)
     ) {
       updateValue = true;
+    }
+
+    if (numberTypes.includes(fieldType)) {
+      // If the field doesn't allow negative numbers, remove the negative sign
+      if (props.allowNegative === false && value.startsWith("-")) {
+        value = value.replace("-", "");
+        if (value === "") {
+          value = "0";
+        }
+      }
+      // If there's a specific number range for the field, enforce it
+      if (field.numberRange != null) {
+        const range = field.numberRange.split("-");
+        const min = parseFloat(range[0]);
+        const max = parseFloat(range[1]);
+        try {
+          const num = parseFloat(value);
+          if (num <= min) {
+            value = min.toString();
+          }
+          if (num > max) {
+            value = max.toString();
+          }
+        } catch (e) {
+          console.log(e);
+        }
+      }
     }
 
     if (fieldType === "String" || fieldType === "Guid") {
@@ -153,10 +197,7 @@ const Field = (props: FieldProps) => {
       } else if (isNullable === false && value === "") {
         updateState(fieldName, "0");
       } else if (updateValue) {
-        updateState(
-          fieldName,
-          value.startsWith("0") ? value.substring(1, value.length) : value
-        );
+        updateState(fieldName, value);
       }
     } else if (updateValue) {
       updateState(fieldName, value);
@@ -465,7 +506,7 @@ const Field = (props: FieldProps) => {
                 : removeTime(field.dateFormat)
                 ? (() => {
                     dateTime?.setUTCHours(0, 0, 0, 0);
-                    dateTime?.toISOString().replace("Z", "");
+                    return dateTime?.toISOString().replace("Z", "");
                   })()
                 : dateTime?.toISOString()
             );

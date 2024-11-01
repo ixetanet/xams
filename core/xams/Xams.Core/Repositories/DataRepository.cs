@@ -165,6 +165,12 @@ namespace Xams.Core.Repositories
                     .Take((int)readInput.maxResults);
 
                 var results = await query.ToDynamicListAsync();
+
+                // If using SQL Server, dates come back as "Unspecified" by default, convert dates to UTC
+                if (dataContext.GetDBProvider() != DbProvider.Postgres)
+                {
+                    DatesToUTC(results);
+                }
                 
                 // Remove root_ prefix from fields and change alias prefixes to "alias."
                 results = UpdateFieldPrefixes(results, readInput);
@@ -260,6 +266,11 @@ namespace Xams.Core.Repositories
         /// <returns></returns>
         private List<dynamic> UpdateFieldPrefixes(List<dynamic> results, ReadInput? readInput = null)
         {
+            if (results.Count == 0)
+            {
+                return results;
+            }
+            PropertyInfo[] properties = results.First().GetType().GetProperties(); //result.GetType().GetProperties();
             List<dynamic> newResults = new();
             List<string?> aliases = readInput?.joins?.Select(x => x.alias).ToList() ?? new List<string?>();
             foreach (var result in results)
@@ -267,8 +278,7 @@ namespace Xams.Core.Repositories
                 dynamic expando = new ExpandoObject();
                 IDictionary<string, object?> expandoDictionary = ((IDictionary<string, object?>)expando);
                 newResults.Add(expando);
-
-                PropertyInfo[] properties = result.GetType().GetProperties();
+                
                 foreach (var property in properties)
                 {
                     
@@ -441,6 +451,25 @@ namespace Xams.Core.Repositories
             {
                 Succeeded = true
             };
+        }
+
+        private void DatesToUTC(List<dynamic> results)
+        {
+            PropertyInfo[] properties = [];
+            foreach (var result in results)
+            {
+                if (properties!.Length == 0)
+                {
+                    properties = result.GetType().GetProperties();
+                }
+                properties.Where(x => x.PropertyType == typeof(DateTime)).ToList().ForEach(x =>
+                {
+                    if (x.GetValue(result) is DateTime date)
+                    {
+                        x.SetValue(result, DateTime.SpecifyKind(date, DateTimeKind.Utc));
+                    }
+                });
+            }
         }
 
         private bool IsNullable(PropertyInfo property)

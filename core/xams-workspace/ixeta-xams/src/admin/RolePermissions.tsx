@@ -14,6 +14,7 @@ import CustomPermissions from "./components/CustomPermissions";
 import JobPermissions from "./components/JobPermissions";
 import SystemPermissions from "./components/SystemPermissions";
 import ActionPermissions from "./components/ActionPermissions";
+import CopyId from "./components/CopyId";
 
 interface RolePermissionsProps {
   roleId?: string;
@@ -284,6 +285,15 @@ const RolePermissions = (props: RolePermissionsProps) => {
                 </span>
               </>
             )}
+          {props.formBuilder.operation === "UPDATE" && (
+            <div className="w-full flex justify-start items-center pr-2">
+              <CopyId
+                value={
+                  props.formBuilder.data[`${props.formBuilder.tableName}Id`]
+                }
+              />
+            </div>
+          )}
         </div>
         <SaveButton onPreSave={onSave}></SaveButton>
       </div>

@@ -22,4 +22,5 @@ export interface MetadataField {
   isRecommended: boolean;
   isReadOnly: boolean;
   option: string;
+  numberRange: string;
 }

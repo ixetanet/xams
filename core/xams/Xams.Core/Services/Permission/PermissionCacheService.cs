@@ -46,7 +46,7 @@ public class PermissionCacheService : IBulkService
         }
 
         var systemMetadata = Cache.Instance.GetTableMetadata("System");
-        var db = context.GetDbContext<BaseDbContext>();
+        var db = context.DataRepository.CreateNewDbContext<BaseDbContext>();
 
         Dictionary<string, dynamic> systemRecord = new();
         systemRecord["SystemId"] = GuidUtil.FromString(SystemRecords.CachePermissionsLastUpdateSystem);
@@ -55,6 +55,8 @@ public class PermissionCacheService : IBulkService
         var entity = EntityUtil.DictionaryToEntity(systemMetadata.Type, systemRecord);
         db.Update(entity);
         await db.SaveChangesAsync();
+        
+        await Permissions.RefreshCache(context.GetDbContext<BaseDbContext>(), context.Logger);
         
         return ServiceResult.Success();
     }

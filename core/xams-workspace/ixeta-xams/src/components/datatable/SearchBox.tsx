@@ -3,6 +3,7 @@ import { useDebouncedValue } from "@mantine/hooks";
 import React, { useEffect, useState } from "react";
 import { useDataTableContext } from "../DataTableImp";
 import { getDataOptions } from "./DataTableTypes";
+import { getLocalTimeOffsetFromUTC } from "../../utils/Util";
 
 const SearchBox = () => {
   const ctx = useDataTableContext();
@@ -32,18 +33,30 @@ const SearchBox = () => {
   };
 
   const onSearchChange = async () => {
+    // if search field a DateTime field
+    const fieldType = ctx.state.metadata?.fields.find(
+      (f) => f.name === state.searchField
+    )?.type;
+    let searchAppend = "";
+    if (fieldType === "DateTime" && debouncedSearchValue?.trim() !== "") {
+      const utcOffset = getLocalTimeOffsetFromUTC();
+      searchAppend = `~${utcOffset}`;
+    }
+
+    const searchValue = debouncedSearchValue + searchAppend;
+
     const resp = await ctx.getData({
       ...getDataOptions,
       page: 1,
       searchField: state.searchField,
-      searchValue: debouncedSearchValue,
+      searchValue: searchValue,
       active: ctx.state.activeSwitch === "Active",
       orderBy: ctx.state.data.orderBy,
     });
     ctx.dispatch({
       type: "SEARCH_VALUE_CHANGE",
       payload: {
-        searchValue: debouncedSearchValue,
+        searchValue: searchValue,
         searchField: state.searchField,
         data: resp.data,
       },

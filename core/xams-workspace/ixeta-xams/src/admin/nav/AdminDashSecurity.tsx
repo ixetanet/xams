@@ -7,9 +7,10 @@ import {
   IconUserCircle,
 } from "@tabler/icons-react";
 import React from "react";
-import DataTable from "../../components/DataTableImp";
 import RolePermissions from "../RolePermissions";
 import { useAdminDashContext } from "../AdminDashboard";
+import DataTable from "../../components/DataTable";
+import CopyId from "../components/CopyId";
 
 const AdminDashSecurity = () => {
   const ctx = useAdminDashContext();
@@ -36,6 +37,23 @@ const AdminDashSecurity = () => {
                               tableName="User"
                               maxResults={100}
                               formMaxWidth={72}
+                              formAppendButton={(formbuilder) => {
+                                return (
+                                  <>
+                                    {formbuilder.operation === "UPDATE" && (
+                                      <div className="w-full flex justify-start items-center gap-1">
+                                        <CopyId
+                                          value={
+                                            formbuilder.data[
+                                              `${formbuilder.tableName}Id`
+                                            ]
+                                          }
+                                        />
+                                      </div>
+                                    )}
+                                  </>
+                                );
+                              }}
                               appendCustomForm={(formbuilder) => {
                                 if (formbuilder.snapshot === undefined) {
                                   return <></>;
@@ -155,6 +173,23 @@ const AdminDashSecurity = () => {
                               formCloseOnCreate={false}
                               maxResults={100}
                               formMaxWidth={72}
+                              formAppendButton={(formbuilder) => {
+                                return (
+                                  <>
+                                    {formbuilder.operation === "UPDATE" && (
+                                      <div className="w-full flex justify-start items-center gap-1">
+                                        <CopyId
+                                          value={
+                                            formbuilder.data[
+                                              `${formbuilder.tableName}Id`
+                                            ]
+                                          }
+                                        />
+                                      </div>
+                                    )}
+                                  </>
+                                );
+                              }}
                               appendCustomForm={(formbuilder) => {
                                 if (formbuilder.snapshot === undefined) {
                                   return <></>;
@@ -266,26 +301,22 @@ const AdminDashSecurity = () => {
                   onClick={() => {
                     ctx.setActiveComponent({
                       component: (
-                        <div className="w-full h-full flex flex-col">
-                          <div className="grow h-1">
-                            <DataTable
-                              tableName="Role"
-                              formMaxWidth={72}
-                              maxResults={100}
-                              // formCloseOnUpdate={false}
-                              formCloseOnCreate={false}
-                              customForm={(formbuilder) => {
-                                return (
-                                  <RolePermissions
-                                    key={formbuilder.snapshot?.RoleId}
-                                    roleId={formbuilder.snapshot?.RoleId}
-                                    formBuilder={formbuilder}
-                                  ></RolePermissions>
-                                );
-                              }}
-                            ></DataTable>
-                          </div>
-                        </div>
+                        <DataTable
+                          tableName="Role"
+                          formMaxWidth={72}
+                          maxResults={100}
+                          // formCloseOnUpdate={false}
+                          formCloseOnCreate={false}
+                          customForm={(formbuilder) => {
+                            return (
+                              <RolePermissions
+                                key={formbuilder.snapshot?.RoleId}
+                                roleId={formbuilder.snapshot?.RoleId}
+                                formBuilder={formbuilder}
+                              ></RolePermissions>
+                            );
+                          }}
+                        ></DataTable>
                       ),
                     });
                   }}
@@ -321,6 +352,23 @@ const AdminDashSecurity = () => {
                               formCloseOnCreate={true}
                               formMaxWidth={36}
                               maxResults={100}
+                              formAppendButton={(formbuilder) => {
+                                return (
+                                  <>
+                                    {formbuilder.operation === "UPDATE" && (
+                                      <div className="w-full flex justify-start items-center gap-1">
+                                        <CopyId
+                                          value={
+                                            formbuilder.data[
+                                              `${formbuilder.tableName}Id`
+                                            ]
+                                          }
+                                        />
+                                      </div>
+                                    )}
+                                  </>
+                                );
+                              }}
                             />
                           </div>
                         </div>

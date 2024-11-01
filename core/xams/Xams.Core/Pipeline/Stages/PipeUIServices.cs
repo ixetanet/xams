@@ -21,6 +21,12 @@ public class PipeUIServices : BasePipelineStage
         {
             return response;
         }
+
+        response = NumberRange(context);
+        if (!response.Succeeded)
+        {
+            return response;
+        }
         
         return await base.Execute(context);
     }
@@ -98,6 +104,80 @@ public class PipeUIServices : BasePipelineStage
                 }
             }
         }
+        return new Response<object?>()
+        {
+            Succeeded = true
+        };
+    }
+
+    private Response<object?> NumberRange(PipelineContext context)
+    {
+        if (context.Entity == null)
+        {
+            return new Response<object?>()
+            {
+                Succeeded = true,
+                FriendlyMessage = "Entity is null."
+            };
+        }
+
+        if (context.DataOperation is not (DataOperation.Create or DataOperation.Update))
+        {
+            return ServiceResult.Success();
+        }
+
+        var metadata = Cache.Instance.GetTableMetadata(context.TableName);
+        var numberRangeFields = metadata.MetadataOutput.fields.Where(f => f.numberRange != null);
+
+        foreach (var numberRangeField in numberRangeFields)
+        {
+            float min = float.Parse(numberRangeField.numberRange?.Split('-')[0] ?? throw new InvalidOperationException());
+            float max = float.Parse(numberRangeField.numberRange?.Split('-')[1] ?? throw new InvalidOperationException());
+            var property = context.Entity.GetType().GetProperty(numberRangeField.name);
+            var value = property?.GetValue(context.Entity);
+            if (property != null && value != null)
+            {
+                var displayName = numberRangeField.displayName ?? property.Name;
+                var fieldPropertyType = property.PropertyType;
+                fieldPropertyType = Nullable.GetUnderlyingType(fieldPropertyType) ?? fieldPropertyType;
+                if (fieldPropertyType == typeof(int))
+                {
+                    if ((int)value < min || (int)value > max)
+                    {
+                        return ServiceResult.Error($"{displayName} is out of range.");
+                    }
+                }
+                else if (fieldPropertyType == typeof(float))
+                {
+                    if ((float)value < min || (float)value > max)
+                    {
+                        return ServiceResult.Error($"{displayName} is out of range.");
+                    }
+                }
+                else if (fieldPropertyType == typeof(double))
+                {
+                    if ((double)value < min || (double)value > max)
+                    {
+                        return ServiceResult.Error($"{displayName} is out of range.");
+                    }
+                }
+                else if (fieldPropertyType == typeof(decimal))
+                {
+                    if ((decimal)value < (decimal)min || (decimal)value > (decimal)max)
+                    {
+                        return ServiceResult.Error($"{displayName} is out of range.");
+                    }
+                }
+                else if (fieldPropertyType == typeof(long))
+                {
+                    if ((long)value < min || (long)value > max)
+                    {
+                        return ServiceResult.Error($"{displayName} is out of range.");
+                    }
+                }
+            }
+        }
+        
         return new Response<object?>()
         {
             Succeeded = true

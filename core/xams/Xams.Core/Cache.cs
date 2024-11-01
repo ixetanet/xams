@@ -65,7 +65,9 @@ namespace Xams.Core
                                            .GetProperties()
                                            .FirstOrDefault(x => x.GetCustomAttribute<UINameAttribute>() != null)
                                        ?? propType.GenericTypeArguments[0].GetProperty("Name"),
-                        IsProxy = propType.GenericTypeArguments[0].GetCustomAttribute<UIProxyAttribute>() != null
+                        IsProxy = propType.GenericTypeArguments[0].GetCustomAttribute<UIProxyAttribute>() != null,
+                        HasOwningUserField = propType.GenericTypeArguments[0].GetProperty("OwningUserId") != null,
+                        HasOwningTeamField = propType.GenericTypeArguments[0].GetProperty("OwningTeamId") != null
                     };
                     cache.TableMetadata.Add(tableMetadata.TableAttribute.Name, tableMetadata);
 
@@ -158,6 +160,10 @@ namespace Xams.Core
                         UIRecommendedAttribute? recommendedAttribute =
                             Attribute.GetCustomAttribute(property, typeof(UIRecommendedAttribute)) as
                                 UIRecommendedAttribute;
+                        
+                        UINumberRangeAttribute? numberRangeAttribute = 
+                            Attribute.GetCustomAttribute(property, typeof(UINumberRangeAttribute)) as
+                                UINumberRangeAttribute;
 
                         string fieldType = GetFieldType(isLookup, property);
 
@@ -201,7 +207,8 @@ namespace Xams.Core
                             isRequired = requiredAttribute != null,
                             isRecommended = recommendedAttribute != null,
                             isReadOnly = readOnlyAttribute != null,
-                            option = optionAttribute?.Name ?? ""
+                            option = optionAttribute?.Name ?? "",
+                            numberRange = numberRangeAttribute != null ? $"{numberRangeAttribute.Min}-{numberRangeAttribute.Max}" : null
                         });
                     }
 
@@ -625,6 +632,8 @@ namespace Xams.Core
             public bool HasPostOpServiceLogic { get; set; }
             public bool HasPreOpServiceLogic { get; set; }
             public bool HasDeleteServiceLogic { get; set; }
+            public bool HasOwningUserField { get; set; }
+            public bool HasOwningTeamField { get; set; }
             public bool IsProxy { get; set; }
 
             public MetadataOutput MetadataOutput { get; set; } = null!;
