@@ -4,12 +4,12 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <Version>1.0.2</Version>
+        <Version>1.0.3</Version>
         <Authors>iXeta, LLC</Authors>
         <PackageOutputPath>./nupkg</PackageOutputPath>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-        <AssemblyVersion>1.0.2</AssemblyVersion>
+        <AssemblyVersion>1.0.3</AssemblyVersion>
     </PropertyGroup>
 
     <ItemGroup>
