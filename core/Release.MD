@@ -1,5 +1,9 @@
 # Release Notes
 
+## v1.0.3
+
+- Fixed unable to create Role's with SQLite
+
 ## v1.0.2
 
 - Created "ExecutionId" in contexts to uniquely identify each transaction
