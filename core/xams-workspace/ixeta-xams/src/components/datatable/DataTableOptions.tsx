@@ -150,13 +150,13 @@ const DataTableOptions = () => {
           {visibleOptions?.Import && (
             <>
               <Menu.Item
-                icon={<IconTableExport size={14} />}
+                leftSection={<IconTableExport size={14} />}
                 onClick={downloadImportTemplate}
               >
                 Import Template
               </Menu.Item>
               <Menu.Item
-                icon={<IconFileImport size={14} />}
+                leftSection={<IconFileImport size={14} />}
                 onClick={importDataDisclosure.open}
               >
                 Import Data
@@ -166,7 +166,7 @@ const DataTableOptions = () => {
           {visibleOptions?.Export && (
             <>
               <Menu.Item
-                icon={<IconFileExport size={14} />}
+                leftSection={<IconFileExport size={14} />}
                 onClick={downloadExport}
               >
                 Export Data

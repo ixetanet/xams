@@ -1,6 +1,7 @@
 import React from "react";
 import DataCell from "./DataCell";
 import { useDataTableContext } from "../DataTableImp";
+import { Table } from "@mantine/core";
 
 const DataRows = () => {
   const ctx = useDataTableContext();
@@ -13,13 +14,16 @@ const DataRows = () => {
           .map((r, j) => {
             if (ctx.props.customRow !== undefined) {
               return (
-                <tr key={r[ctx.props.tableName + "Id"]} className="w-full">
+                <Table.Tr
+                  key={r[ctx.props.tableName + "Id"]}
+                  className="w-full"
+                >
                   {ctx.props.customRow(r)}
-                </tr>
+                </Table.Tr>
               );
             }
             return (
-              <tr
+              <Table.Tr
                 key={r[ctx.props.tableName + "Id"]}
                 className="flex relative items-start"
                 onClick={() => {
@@ -35,7 +39,7 @@ const DataRows = () => {
                     <DataCell key={key} record={r} fieldInfo={f}></DataCell>
                   );
                 })}
-              </tr>
+              </Table.Tr>
             );
           })}
     </>

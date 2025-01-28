@@ -105,7 +105,9 @@ const DataGridCell = (props: DataGridCellProps) => {
           borderBottom: `1px solid gray`,
           ...(cellStyle != null ? cellStyle : {}),
         }}
-        className={`h-full py-0.5 relative whitespace-nowrap text-ellipsis text-sm flex items-center ${
+        className={`h-full ${
+          cell.custom == null ? `py-0.5` : ``
+        } relative whitespace-nowrap text-ellipsis text-sm flex items-center ${
           cell.isDisabled ? disabledColor : ``
         } ${rightAlignCell ? `justify-end` : ``} ${
           dgContext.props.editable === false ? `` : `cursor-pointer`

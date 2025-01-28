@@ -1,13 +1,6 @@
 import { TablesResponse } from "../api/TablesResponse";
 import useAuthRequest from "../hooks/useAuthRequest";
-import {
-  AppShell,
-  Button,
-  Header,
-  Loader,
-  Navbar,
-  ScrollArea,
-} from "@mantine/core";
+import { AppShell, Burger, Button, Loader, ScrollArea } from "@mantine/core";
 import React, { useEffect } from "react";
 import { useDisclosure } from "@mantine/hooks";
 import ExportDataModal from "./ExportDataModal";
@@ -91,6 +84,7 @@ export const useAdminDashContext = () => {
 
 const AdminDashboard = (props: AdminDashboardProps) => {
   const authRequest = useAuthRequest();
+  const [opened, { toggle }] = useDisclosure();
   const [hasAccess, setHasAccess] = React.useState<boolean | undefined>(
     undefined
   );
@@ -215,53 +209,63 @@ const AdminDashboard = (props: AdminDashboardProps) => {
 
       <AppShell
         padding="md"
-        styles={(theme) => ({
-          main: {
-            backgroundColor:
-              theme.colorScheme === "dark"
-                ? theme.colors.dark[8]
-                : theme.colors.gray[0],
-            overflow: "hidden",
-            display: "flex",
+        header={{ height: 60 }}
+        navbar={{
+          width: 300,
+          breakpoint: "sm",
+          collapsed: { mobile: !opened },
+        }}
+        styles={{
+          navbar: {
+            overflowY: "scroll",
           },
-        })}
-        header={
-          <Header height={60} p="xs">
-            <div className="w-full h-full flex items-center justify-between text-xl">
-              <div className=" pl-2">{props.title ?? `Admin Dashboard`}</div>
-              <div className="flex items-center gap-2">
-                {!props.forceHideToggleMode && <ToggleMode></ToggleMode>}
-                {canExportImport.canImport === true &&
-                  !props.forceHideImportData && (
-                    <Button variant="outline" onClick={importData.open}>
-                      Import Data
-                    </Button>
-                  )}
-                {canExportImport.canExport === true &&
-                  !props.forceHideExportData && (
-                    <Button onClick={exportData.open}>Export Data</Button>
-                  )}
-              </div>
-            </div>
-          </Header>
-        }
-        navbar={
-          <Navbar width={{ base: 320 }} p="xs">
-            <Navbar.Section grow component={ScrollArea} mx="-xs" px="xs">
-              {sortedNavLinks.map((navItem, i) => {
-                return <span key={i}>{navItem.navLink}</span>;
-              })}
-            </Navbar.Section>
-          </Navbar>
-        }
+        }}
       >
-        <div className="flex w-full">
-          <div className="w-full h-full flex flex-col">
-            <div className="grow h-1">
-              {activeComponent != null && activeComponent.component}
+        <AppShell.Header>
+          <div className="w-full h-full flex items-center justify-between text-xl px-2">
+            <div className="flex">
+              <Burger
+                opened={opened}
+                onClick={toggle}
+                hiddenFrom="sm"
+                size="sm"
+              />
+              {props.title ?? `Admin Dashboard`}
+            </div>
+            <div className="flex items-center gap-2">
+              {!props.forceHideToggleMode && <ToggleMode></ToggleMode>}
+              {canExportImport.canImport === true &&
+                !props.forceHideImportData && (
+                  <Button variant="outline" onClick={importData.open}>
+                    Import Data
+                  </Button>
+                )}
+              {canExportImport.canExport === true &&
+                !props.forceHideExportData && (
+                  <Button onClick={exportData.open}>Export Data</Button>
+                )}
             </div>
           </div>
-        </div>
+        </AppShell.Header>
+        <AppShell.Navbar>
+          {sortedNavLinks.map((navItem, i) => {
+            return <span key={i}>{navItem.navLink}</span>;
+          })}
+        </AppShell.Navbar>
+        <AppShell.Main
+          styles={{
+            main: {
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            },
+          }}
+        >
+          <div className="w-full h-1 grow">
+            {activeComponent != null && activeComponent.component}
+          </div>
+        </AppShell.Main>
       </AppShell>
     </AdminDashContext.Provider>
   );

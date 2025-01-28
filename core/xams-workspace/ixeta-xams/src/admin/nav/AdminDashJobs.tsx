@@ -15,7 +15,9 @@ const AdminDashJobs = () => {
         !ctx.props.hiddenMenuItems?.includes("Jobs") && (
           <NavLink
             label="Jobs"
-            icon={<IconClock size={16} strokeWidth={2} color={ctx.color} />}
+            leftSection={
+              <IconClock size={16} strokeWidth={2} color={ctx.color} />
+            }
             onClick={() =>
               ctx.setActiveComponent({
                 component: (

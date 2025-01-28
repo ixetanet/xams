@@ -575,49 +575,84 @@ public class QueryFactory
 
                 // The query can send the user's local date time offset in the format of "~-12" or "~+12"
                 // But we only want to take this into account if the date time field has a time part
-                if (!string.IsNullOrEmpty(match.Value) &&
-                    property.GetCustomAttribute<UIDateFormatAttribute>()?.HasTimePart() == true)
+                var dateTimeFormatAttribute = property.GetCustomAttribute<UIDateFormatAttribute>();
+                if (!string.IsNullOrEmpty(match.Value) && dateTimeFormatAttribute?.HasTimePart() == true)
                 {
                     conditionField += $".AddHours({match.Value.Replace("~", "")})";
                 }
 
                 string[] parts = filter.value.Split(" ");
-                int valuesCount = values.Count;
-                foreach (var part in parts)
+                if (filter.value.Contains("/"))
                 {
+                    parts = filter.value.Split("/");
+                }
+                
+                int valuesCount = values.Count;
+                for (int j = 0; j < parts.Length; j++)
+                {
+                    string part = parts[j].Trim();
                     if (string.IsNullOrEmpty(part))
                     {
                         continue;
                     }
 
-                    if (part.All(char.IsDigit) && part.Length == 4)
+                    // If there's no date time format attribute, the date time will be shown in tables as 'MM/dd/yyyy'
+                    if (filter.value.Contains("/") || dateTimeFormatAttribute == null)
                     {
-                        index = values.Count != valuesCount ? index + 1 : index;
-                        conditions.Add($"{conditionField}.Year {filter.@operator} @{index}");
-                        values.Add(part);
-                    }
-                    else if (part.All(char.IsDigit) && part.Length <= 2)
-                    {
-                        index = values.Count != valuesCount ? index + 1 : index;
-                        conditions.Add($"{conditionField}.Day {filter.@operator} @{index}");
-                        values.Add(part);
-                    }
-                    else if (part.All(char.IsLetter))
-                    {
-                        string[] months =
-                        [
-                            "January", "February", "March", "April", "May", "June", "July", "August", "September",
-                            "October", "November", "December"
-                        ];
-                        for (int i = 0; i < months.Length; i++)
+                        part = part.TrimStart('0');
+                        // Month Part
+                        if (j == 0 && part.All(char.IsDigit) && part.Length <= 2)
                         {
-                            string month = months[i];
-                            if (month.Contains(part))
+                            index = values.Count != valuesCount ? index + 1 : index;
+                            conditions.Add($"{conditionField}.Month {filter.@operator} @{index}");
+                            values.Add(part);
+                        }
+                        // Day part
+                        else if (j == 1 && part.All(char.IsDigit) && part.Length <= 2)
+                        {
+                            index = values.Count != valuesCount ? index + 1 : index;
+                            conditions.Add($"{conditionField}.Day {filter.@operator} @{index}");
+                            values.Add(part);
+                        }
+                        // Year part
+                        else if (j == 2 || part.All(char.IsDigit) && part.Length == 4)
+                        {
+                            index = values.Count != valuesCount ? index + 1 : index;
+                            conditions.Add($"{conditionField}.Year {filter.@operator} @{index}");
+                            values.Add(part);
+                        }
+                    }
+                    else
+                    {
+                        if (part.All(char.IsDigit) && part.Length == 4)
+                        {
+                            index = values.Count != valuesCount ? index + 1 : index;
+                            conditions.Add($"{conditionField}.Year {filter.@operator} @{index}");
+                            values.Add(part);
+                        }
+                        else if (part.All(char.IsDigit) && part.Length <= 2)
+                        {
+                            index = values.Count != valuesCount ? index + 1 : index;
+                            conditions.Add($"{conditionField}.Day {filter.@operator} @{index}");
+                            values.Add(part);
+                        }
+                        else if (part.All(char.IsLetter))
+                        {
+                            string[] months =
+                            [
+                                "January", "February", "March", "April", "May", "June", "July", "August", "September",
+                                "October", "November", "December"
+                            ];
+                            for (int i = 0; i < months.Length; i++)
                             {
-                                index = values.Count != valuesCount ? index + 1 : index;
-                                conditions.Add($"{conditionField}.Month {filter.@operator} @{index}");
-                                values.Add(i + 1);
-                                break;
+                                string month = months[i];
+                                if (month.Contains(part))
+                                {
+                                    index = values.Count != valuesCount ? index + 1 : index;
+                                    conditions.Add($"{conditionField}.Month {filter.@operator} @{index}");
+                                    values.Add(i + 1);
+                                    break;
+                                }
                             }
                         }
                     }

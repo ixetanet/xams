@@ -937,6 +937,11 @@ namespace Xams.Core.Services
                     .Select(x => x.Entity?.GetValue<Guid>($"{x.TableName}Id")
                                  ?? throw new Exception($"Failed to get Id from {x.TableName} entity.")).ToList();
 
+                if (ids.Contains(Guid.Empty))
+                {
+                    throw new Exception($"Entity must contain primary key");
+                }
+                
                 var tableType = Cache.Instance.GetTableMetadata(tableGroup.TableName).Type;
 
                 int batchSize = 100;
