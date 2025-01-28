@@ -14,5 +14,3 @@ dotnet ef database update --connection $1
 
 # Dev, Update
 # dotnet ef database update --connection 'Host=localhost:6001;Database=myxproject;Username=postgres;Password=pgpass;ApplicationName=myxproject'
-
-

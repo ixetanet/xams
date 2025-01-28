@@ -7,7 +7,8 @@ namespace Example.Common.Entities;
 public class Option
 {
     public Guid OptionId { get; set; }
-    [UILookupName]
+    
+    [UIName]
     public string Label { get; set; }
     
     [UIDisplayName("Option Name")]
