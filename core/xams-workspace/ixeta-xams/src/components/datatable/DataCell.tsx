@@ -2,7 +2,12 @@ import { AppContext } from "../../contexts/AppContext";
 import useAuthRequest from "../../hooks/useAuthRequest";
 import React, { useContext } from "react";
 import { IconCheck, IconCircleOff, IconTrash } from "@tabler/icons-react";
-import { useMantineColorScheme, useMantineTheme } from "@mantine/core";
+import {
+  MantineColorShade,
+  Table,
+  useMantineColorScheme,
+  useMantineTheme,
+} from "@mantine/core";
 import { useDataTableContext } from "../DataTableImp";
 import dayjs from "dayjs";
 import { DataTableFieldInfo } from "./DataTableTypes";
@@ -24,8 +29,12 @@ const DataCell = (props: DataCellProps) => {
 
   const iconColor =
     colorScheme === "dark"
-      ? theme.colors[theme.primaryColor][theme.fn.primaryShade() - 3]
-      : theme.colors[theme.primaryColor][theme.fn.primaryShade()];
+      ? theme.colors[theme.primaryColor][
+          (theme.primaryShade as MantineColorShade) - 3
+        ]
+      : theme.colors[theme.primaryColor][
+          theme.primaryShade as MantineColorShade
+        ];
 
   const getDataValue = (fieldType: string, value: any) => {
     if (fieldType === "Boolean") {
@@ -138,8 +147,12 @@ const DataCell = (props: DataCellProps) => {
           style={{
             backgroundColor:
               colorScheme === "dark"
-                ? theme.colors.gray[theme.fn.primaryShade() + 2]
-                : theme.colors.gray[theme.fn.primaryShade() - 5],
+                ? theme.colors.gray[
+                    (theme.primaryShade as MantineColorShade) + 2
+                  ]
+                : theme.colors.gray[
+                    (theme.primaryShade as MantineColorShade) - 5
+                  ],
           }}
         >
           {ctx.props.deleteBehavior == null ||
@@ -170,7 +183,7 @@ const DataCell = (props: DataCellProps) => {
     }
   }
   return (
-    <td
+    <Table.Td
       className={`${
         ctx.props.tableStyle?.truncate === true ||
         ctx.props.tableStyle?.truncate == null
@@ -195,7 +208,7 @@ const DataCell = (props: DataCellProps) => {
       {props.record["_ui_info_"]["canDelete"] === true &&
         (ctx.props.canDelete === undefined || ctx.props.canDelete === true) &&
         deleteJsx(props.record)}
-    </td>
+    </Table.Td>
   );
 };
 

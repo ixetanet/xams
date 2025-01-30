@@ -1,5 +1,6 @@
 import {
   Button,
+  MantineColorShade,
   Pagination,
   SegmentedControl,
   Table,
@@ -14,11 +15,11 @@ import { PermissionLevel } from "../../stores/usePermissionStore";
 import DataTableHeader from "./DataTableHeader";
 import DataTableOverlay from "./DataTableOverlay";
 import DataTableOptions from "./DataTableOptions";
+import useColor from "../../hooks/useColor";
 
 export interface TableOptions {
   highlighOnHover?: boolean;
   striped?: boolean;
-  withBorder?: boolean;
   withColumnBorders?: boolean;
   truncate?: boolean;
 }
@@ -30,7 +31,7 @@ interface TableShellProps {
 
 const TableShell = (props: TableShellProps) => {
   const ctx = useDataTableContext();
-  const theme = useMantineTheme();
+  const color = useColor();
 
   const isMetadataLoaded = ctx.state.metadata !== undefined;
 
@@ -182,35 +183,36 @@ const TableShell = (props: TableShellProps) => {
               }}
               className="p-1 rounded-full w-8 h-8 flex justify-center items-center cursor-pointer"
               style={{
-                backgroundColor: theme.fn.primaryColor(),
+                backgroundColor: color.getPrimaryColor(),
               }}
             >
               <IconPlus size={22} strokeWidth={2} color={"white"} />
             </div>
           )}
-          {addEnabled && addButton != null && addButton}
+          {addEnabled && addButton != null && <div>{addButton}</div>}
         </div>
       </div>
       <Table
         aria-label={ctx.props.title}
         highlightOnHover={ctx.props.tableStyle?.highlighOnHover ?? true}
         striped={ctx.props.tableStyle?.striped ?? false}
-        withBorder={ctx.props.tableStyle?.withBorder ?? false}
         withColumnBorders={ctx.props.tableStyle?.withColumnBorders ?? false}
         className={`${scroll ? `  overflow-x-hidden` : ``} flex flex-col grow`}
       >
-        <thead className={`${scroll ? `px-2` : ``}`}>
-          <tr className={`flex`}>
-            <DataTableHeader />
-          </tr>
-        </thead>
-        <tbody
+        <Table.Thead className={`${scroll ? `px-2` : ``}`}>
+          {!ctx.state.isLoadingData && (
+            <Table.Tr className={`flex`}>
+              <DataTableHeader />
+            </Table.Tr>
+          )}
+        </Table.Thead>
+        <Table.Tbody
           className={`relative overflow-x-hidden ${
             scroll ? `grow overflow-y-scroll pl-2 pr-0.5` : ``
           } `}
         >
           {props.children}
-        </tbody>
+        </Table.Tbody>
       </Table>
       {paginationEnabled === true && (
         <div className="w-full flex justify-between items-center mt-4 px-2">

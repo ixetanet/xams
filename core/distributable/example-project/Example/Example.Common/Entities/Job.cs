@@ -1,25 +1,34 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Xams.Core.Attributes;
 
 namespace Example.Common.Entities;
 
-[Table("Job")]
+[Table(nameof(Job))]
 public class Job
 {
     public Guid JobId { get; set; }
     [UIReadOnly]
-    public string Name { get; set; }
+    [MaxLength(250)]
+    public string? Name { get; set; }
     [UIDisplayName("Active")]
     public bool IsActive { get; set; }
     [UIReadOnly]
-    public string Queue { get; set; }
+    [MaxLength(100)]
+    public string? Queue { get; set; }
     [UIReadOnly]
-    public string Status { get; set; }
+    [MaxLength(50)]
+    public string? Status { get; set; }
     [UIReadOnly]
     [UIDisplayName("Last Execution")]
+    [UIDateFormat("lll")]
     public DateTime LastExecution { get; set; }
     [UIReadOnly]
+    [UIDateFormat("lll")]
     public DateTime Ping { get; set; }
+    [UIHide(true)]
+    [MaxLength(100)]
+    public string? Tag { get; set; }
     
     public ICollection<JobHistory> JobHistories { get; set; } = null!;
 }

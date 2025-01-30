@@ -13,7 +13,7 @@ const ToggleMode = () => {
   return (
     <ActionIcon
       variant="outline"
-      color={dark ? "yellow" : theme.fn.primaryColor()}
+      color={dark ? "yellow" : theme.primaryColor}
       onClick={() => toggleColorScheme()}
       title="Toggle color scheme"
     >

@@ -8,7 +8,7 @@ const useColor = () => {
   const color = dark ? theme.colors.gray[4] : theme.colors.dark[7];
   return {
     getIconColor: () => color,
-    getPrimaryColor: () => theme.fn.primaryColor(),
+    getPrimaryColor: () => theme.colors[theme.primaryColor][dark ? 8 : 6],
     colorScheme: colorScheme as "light" | "dark",
   };
 };

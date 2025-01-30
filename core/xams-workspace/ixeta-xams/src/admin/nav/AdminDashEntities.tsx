@@ -14,7 +14,9 @@ const AdminDashEntities = () => {
         !ctx.props.hiddenMenuItems?.includes("Entities") && (
           <NavLink
             label="Entities"
-            icon={<IconBox size={16} strokeWidth={2} color={ctx.color} />}
+            leftSection={
+              <IconBox size={16} strokeWidth={2} color={ctx.color} />
+            }
           >
             {ctx.tables
               .filter(
@@ -38,7 +40,9 @@ const AdminDashEntities = () => {
                       ? table.displayName
                       : table.tableName
                   }
-                  icon={<IconBox size={16} strokeWidth={2} color={ctx.color} />}
+                  leftSection={
+                    <IconBox size={16} strokeWidth={2} color={ctx.color} />
+                  }
                   onClick={() =>
                     ctx.setActiveComponent((prev) => {
                       return {

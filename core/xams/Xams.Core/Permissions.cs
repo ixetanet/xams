@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Xams.Core.Base;
@@ -328,6 +329,8 @@ namespace Xams.Core
 
         public static async Task RefreshCache(BaseDbContext dataContext, ILogger logger)
         {
+            // Allow up to 5 minutes for the cache to refresh
+            dataContext.Database.SetCommandTimeout(new TimeSpan(0, 5, 0));
             // Is Permission Cache enabled?
             var settingMetadta = Cache.Instance.GetTableMetadata("Setting");
             DynamicLinq<BaseDbContext> settingDynamicLinq = new DynamicLinq<BaseDbContext>(dataContext, settingMetadta.Type);

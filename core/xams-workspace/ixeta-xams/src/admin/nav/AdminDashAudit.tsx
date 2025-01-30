@@ -15,7 +15,7 @@ const AdminDashAudit = () => {
         !ctx.props.hiddenMenuItems?.includes("Options") && (
           <NavLink
             label="Audit"
-            icon={
+            leftSection={
               <IconReportSearch size={16} strokeWidth={2} color={ctx.color} />
             }
             onClick={() =>

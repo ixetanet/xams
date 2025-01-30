@@ -156,7 +156,7 @@ const RolePermissions = (props: RolePermissionsProps) => {
             <Tabs
               defaultValue="entities"
               className="h-full flex flex-col"
-              onTabChange={setActiveTab}
+              onChange={setActiveTab}
             >
               <Tabs.List>
                 <Tabs.Tab value="entities">Entities</Tabs.Tab>
