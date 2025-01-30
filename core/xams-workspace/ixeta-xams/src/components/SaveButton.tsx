@@ -1,4 +1,4 @@
-import { Button, Variants } from "@mantine/core";
+import { Button } from "@mantine/core";
 import React, {
   forwardRef,
   useCallback,
@@ -16,9 +16,14 @@ import { PostSaveEvent, PreSaveEvent } from "../hooks/useFormBuilder";
 
 interface SaveButtonProps {
   label?: string;
-  varient?: Variants<
-    "filled" | "outline" | "light" | "white" | "default" | "subtle" | "gradient"
-  >;
+  varient?:
+    | "filled"
+    | "outline"
+    | "light"
+    | "white"
+    | "default"
+    | "subtle"
+    | "gradient";
   className?: string;
   onPreValidate?: PreSaveEvent;
   onPreSave?: PreSaveEvent; // If returns false, save will be cancelled

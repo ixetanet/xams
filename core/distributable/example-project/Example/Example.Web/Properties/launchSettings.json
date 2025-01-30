@@ -17,7 +17,7 @@
       "applicationUrl": "http://localhost:5277",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "DB_CONNECTION_STRING": "Host=localhost:6001;Database=example;Username=pgadmin;Password=pgpass;ApplicationName=example"
+        "DB_CONNECTION_STRING": "Host=localhost:6002;Database=example;Username=pgadmin;Password=pgpass;ApplicationName=example"
       }
     },
     "https": {
@@ -28,7 +28,7 @@
       "applicationUrl": "https://localhost:7102;http://localhost:5277",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "DB_CONNECTION_STRING": "Host=localhost:6001;Database=example;Username=pgadmin;Password=pgpass;ApplicationName=example"
+        "DB_CONNECTION_STRING": "Host=localhost:6002;Database=example;Username=pgadmin;Password=pgpass;ApplicationName=example"
       }
     },
     "IIS Express": {

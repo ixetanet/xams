@@ -1,14 +1,15 @@
 import React from "react";
 import { Checkbox, TextInput, Textarea, Tooltip } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
-// import Lookup from "./Lookup";
 import useLookupStore, { LookupStoreInfo } from "../stores/useLookupStore";
 import { LookupQuery } from "../reducers/formbuilderReducer";
 import { useFormContext } from "../contexts/FormContext";
 import { DateInputProps } from "@mantine/dates";
 import { MetadataField } from "../api/MetadataResponse";
-const RichText = React.lazy(() => import("./RichText"));
-const Lookup = React.lazy(() => import("./Lookup"));
+import Lookup from "./Lookup";
+import RichText from "./RichText";
+// const RichText = React.lazy(() => import("./RichText"));
+// const Lookup = React.lazy(() => import("./Lookup"));
 // const DateInput = React.lazy(() =>
 //   import("@mantine/dates").then((module) => ({ default: module.DateInput }))
 // );

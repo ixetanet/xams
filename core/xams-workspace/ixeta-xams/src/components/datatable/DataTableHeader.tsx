@@ -1,6 +1,6 @@
 import React from "react";
 import { IconCaretDown, IconCaretUp } from "@tabler/icons-react";
-import { useMantineTheme, useMantineColorScheme } from "@mantine/core";
+import { useMantineTheme, useMantineColorScheme, Table } from "@mantine/core";
 import { useDataTableContext } from "../DataTableImp";
 
 interface DataTableHeaderProps {}
@@ -24,7 +24,7 @@ const DataTableHeader = (props: DataTableHeaderProps) => {
       {ctx.getFields().map((f, i) => {
         if (f.metadataField == null) {
           return (
-            <th
+            <Table.Th
               key={i}
               style={{
                 width: f.width,
@@ -38,7 +38,7 @@ const DataTableHeader = (props: DataTableHeaderProps) => {
                   ? f.displayName
                   : f.displayName(ctx.refHandle)}
               </div>
-            </th>
+            </Table.Th>
           );
         }
 
@@ -49,7 +49,7 @@ const DataTableHeader = (props: DataTableHeaderProps) => {
           return;
         }
         return (
-          <th
+          <Table.Th
             key={withAlias}
             style={{
               width: f.width,
@@ -82,7 +82,7 @@ const DataTableHeader = (props: DataTableHeaderProps) => {
                 />
               )}
             </div>
-          </th>
+          </Table.Th>
         );
       })}
     </>

@@ -22,7 +22,9 @@ const AdminDashSecurity = () => {
         !ctx.props.hiddenMenuItems?.includes("Security") && (
           <NavLink
             label="Security"
-            icon={<IconLock size={16} strokeWidth={2} color={ctx.color} />}
+            leftSection={
+              <IconLock size={16} strokeWidth={2} color={ctx.color} />
+            }
           >
             {ctx.tables.find((table) => table.tableName === "User") &&
               !ctx.props.hiddenMenuItems?.includes("Users") && (
@@ -153,7 +155,7 @@ const AdminDashSecurity = () => {
                       ),
                     })
                   }
-                  icon={
+                  leftSection={
                     <IconUser size={16} strokeWidth={2} color={ctx.color} />
                   }
                 ></NavLink>
@@ -289,7 +291,7 @@ const AdminDashSecurity = () => {
                       ),
                     })
                   }
-                  icon={
+                  leftSection={
                     <IconUsers size={16} strokeWidth={2} color={ctx.color} />
                   }
                 ></NavLink>
@@ -320,7 +322,7 @@ const AdminDashSecurity = () => {
                       ),
                     });
                   }}
-                  icon={
+                  leftSection={
                     <IconUserCircle
                       size={16}
                       strokeWidth={2}
@@ -375,7 +377,9 @@ const AdminDashSecurity = () => {
                       ),
                     })
                   }
-                  icon={<IconKey size={16} strokeWidth={2} color={ctx.color} />}
+                  leftSection={
+                    <IconKey size={16} strokeWidth={2} color={ctx.color} />
+                  }
                 ></NavLink>
               )}
           </NavLink>

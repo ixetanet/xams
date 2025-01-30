@@ -305,7 +305,7 @@ const dataTableFormExamples = [
 
 export default function Home() {
   const router = useRouter();
-  const exampleId = parseInt(getQueryParam("id", router.asPath) ?? "100");
+  const exampleId = parseInt(getQueryParam("id", router.asPath) ?? "1000");
   const color = useColor();
   const examples = useMemo(
     () => [
@@ -386,7 +386,7 @@ export default function Home() {
             <CodeExample example={currentExample.codeComponent} />
           </div>
           <div className=" w-full">{currentExample.component}</div>
-          <div className="w-full flex justify-between">
+          <div className="w-full flex justify-between mt-2">
             <Button variant="subtle" onClick={prev}>
               Prev
             </Button>

@@ -1,25 +1,31 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Xams.Core.Attributes;
 
 namespace Example.Common.Entities;
 
-[Table("JobHistory")]
+[Table(nameof(JobHistory))]
 public class JobHistory 
 {
     public Guid JobHistoryId { get; set; }
     
     [UIReadOnly]
     [UISetFieldFromLookup(nameof(JobId))]
-    public string Name { get; set; }
+    [MaxLength(250)]
+    public string? Name { get; set; } 
+
     [UIReadOnly]
     public Guid JobId { get; set; }
-    public Job Job { get; set; }
-    
+    public Job Job { get; set; } = null!;
+
     [UIReadOnly]
-    public string Status { get; set; }
+    [MaxLength(250)]
+    public string? Status { get; set; }
+
     [UIReadOnly]
-    public string Message { get; set; }
-    
+    [MaxLength(2000)]
+    public string? Message { get; set; }
+
     [UIReadOnly]
     [UIDateFormat("lll")]
     public DateTime CreatedDate { get; set; }

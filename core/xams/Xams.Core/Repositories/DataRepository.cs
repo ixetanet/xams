@@ -446,7 +446,7 @@ namespace Xams.Core.Repositories
                     }
                 }
             }
-
+            
             return new Response<object?>()
             {
                 Succeeded = true
@@ -462,11 +462,12 @@ namespace Xams.Core.Repositories
                 {
                     properties = result.GetType().GetProperties();
                 }
-                properties.Where(x => x.PropertyType == typeof(DateTime)).ToList().ForEach(x =>
+                properties.Where(x => x.PropertyType == typeof(DateTime) || x.PropertyType == typeof(DateTime?)).ToList().ForEach(x =>
                 {
-                    if (x.GetValue(result) is DateTime date)
+                    var date = x.GetValue(result);
+                    if (date != null)
                     {
-                        x.SetValue(result, DateTime.SpecifyKind(date, DateTimeKind.Utc));
+                        x.SetValue(result, DateTime.SpecifyKind(date, DateTimeKind.Utc));    
                     }
                 });
             }

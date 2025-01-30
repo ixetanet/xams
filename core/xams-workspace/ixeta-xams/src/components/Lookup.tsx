@@ -1,7 +1,7 @@
 import { API_DATA_READ } from "../apiurls";
 import { MetadataField } from "../api/MetadataResponse";
 import useAuthRequest from "../hooks/useAuthRequest";
-import { Avatar, Group, Select, Text } from "@mantine/core";
+import { Avatar, Group, Select, SelectProps, Text } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import React, {
   Ref,
@@ -50,10 +50,36 @@ interface ItemProps extends React.ComponentPropsWithoutRef<"div"> {
   description: string;
 }
 
+interface CustomSelectOption {
+  value: string;
+  label: string;
+  description: string; // Add your additional prop
+}
+
+// Update the renderOption type to work with your custom option type
+const renderSelectOption: SelectProps["renderOption"] = ({
+  option,
+  checked,
+}) => {
+  // Cast the option to your custom type
+  const customOption = option as CustomSelectOption;
+
+  return (
+    <Group flex="1" gap="xs">
+      <div>
+        <Text size="sm">{customOption.label}</Text>
+        <Text size="xs" opacity={0.65}>
+          {customOption.description}
+        </Text>
+      </div>
+    </Group>
+  );
+};
+
 const SelectItem = forwardRef<HTMLDivElement, ItemProps>(
   ({ image, label, description, ...others }: ItemProps, ref) => (
     <div ref={ref} {...others}>
-      <Group noWrap>
+      <Group>
         <div>
           <Text size="sm">{label}</Text>
           <Text size="xs" opacity={0.65}>
@@ -209,9 +235,9 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
       label={props.label}
       data={data}
       className={props.className}
-      itemComponent={
+      renderOption={
         props.metaDataField.lookupTableDescriptionField != null
-          ? SelectItem
+          ? renderSelectOption
           : undefined
       }
       defaultValue={

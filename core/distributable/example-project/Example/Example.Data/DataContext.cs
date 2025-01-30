@@ -17,8 +17,13 @@ public class DataContext : BaseDbContext
     public DbSet<UserRole> UserRoles { get; set; }
     public DbSet<Option> Options { get; set; }
     public DbSet<Setting> Settings { get; set; }
+    public DbSet<Common.Entities.System> Systems { get; set; }
     public DbSet<Job> Jobs { get; set; }
     public DbSet<JobHistory> JobHistories { get; set; }
+    public DbSet<Audit> Audits { get; set; }
+    public DbSet<AuditField> AuditFields { get; set; }
+    public DbSet<AuditHistory> AuditHistories { get; set; }
+    public DbSet<AuditHistoryDetail> AuditHistoryDetails { get; set; }
     public DbSet<Widget> Widgets { get; set; }
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

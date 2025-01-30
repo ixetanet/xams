@@ -165,6 +165,11 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
     formBuilder,
   }));
 
+  const showSaveButton =
+    ctx.props.formHideSaveButton !== true &&
+    ((formBuilder.snapshot !== undefined && formBuilder.canUpdate === true) ||
+      (formBuilder.snapshot === undefined && formBuilder.canCreate === true));
+
   return (
     <>
       {/* This creates an overlay while the record from a clicked row is loading */}
@@ -293,14 +298,20 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
                 return <div key={i} className="hidden"></div>;
               })}
           {ctx.props.appendCustomForm !== undefined ? (
-            <div className=" mt-2">
+            <div className="mt-2">
               {ctx.props.appendCustomForm(formBuilder)}
             </div>
           ) : (
             <></>
           )}
           {ctx.props.customForm == null && (
-            <div className="w-full flex justify-end mt-4">
+            <div
+              className={`w-full flex justify-end ${
+                ctx.props.formAppendButton != null || showSaveButton
+                  ? `mt-3`
+                  : ``
+              }`}
+            >
               {ctx.props.formAppendButton != null ? (
                 <>{ctx.props.formAppendButton(formBuilder)}</>
               ) : (
@@ -311,7 +322,9 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
                   formBuilder.canUpdate === true) ||
                 (formBuilder.snapshot === undefined &&
                   formBuilder.canCreate === true) ? (
-                  <SaveButton></SaveButton>
+                  <div>
+                    <SaveButton></SaveButton>
+                  </div>
                 ) : (
                   <></>
                 )

@@ -14,7 +14,6 @@ public class JobHistoryRetentionJob : IServiceJob
 {
     public async Task<Response<object?>> Execute(JobServiceContext context)
     {
-        Console.WriteLine("Deleting Job History outside of retention period");
         var db = context.GetDbContext<BaseDbContext>();
         Type jobHistoryType = Cache.Instance.GetTableMetadata("JobHistory").Type;
         

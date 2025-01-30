@@ -13,7 +13,9 @@ const AdminDashSettings = () => {
         !ctx.props.hiddenMenuItems?.includes("Settings") && (
           <NavLink
             label="Settings"
-            icon={<IconSettings size={16} strokeWidth={2} color={ctx.color} />}
+            leftSection={
+              <IconSettings size={16} strokeWidth={2} color={ctx.color} />
+            }
             onClick={() =>
               ctx.setActiveComponent({
                 component: (
