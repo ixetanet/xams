@@ -40,23 +40,17 @@ const SaveButton = (props: SaveButtonProps) => {
   }
 
   return (
-    <div>
-      <Button
-        className={props.className}
-        onClick={() =>
-          formBuilder.save(
-            props.onPreValidate,
-            props.onPreSave,
-            props.onPostSave
-          )
-        }
-        variant={props.varient}
-      >
-        {props.label !== undefined ? props.label : ""}
-        {props.label === undefined &&
-          (formBuilder.snapshot !== undefined ? "Update" : "Create")}
-      </Button>
-    </div>
+    <Button
+      className={props.className}
+      onClick={() =>
+        formBuilder.save(props.onPreValidate, props.onPreSave, props.onPostSave)
+      }
+      variant={props.varient}
+    >
+      {props.label !== undefined ? props.label : ""}
+      {props.label === undefined &&
+        (formBuilder.snapshot !== undefined ? "Update" : "Create")}
+    </Button>
   );
 };
 export default SaveButton;

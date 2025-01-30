@@ -217,13 +217,13 @@ const AdminDashboard = (props: AdminDashboardProps) => {
         }}
         styles={{
           navbar: {
-            overflowY: "scroll",
+            overflowY: "auto",
           },
         }}
       >
         <AppShell.Header>
           <div className="w-full h-full flex items-center justify-between text-xl px-2">
-            <div className="flex">
+            <div className="flex pl-2">
               <Burger
                 opened={opened}
                 onClick={toggle}
@@ -247,7 +247,7 @@ const AdminDashboard = (props: AdminDashboardProps) => {
             </div>
           </div>
         </AppShell.Header>
-        <AppShell.Navbar>
+        <AppShell.Navbar className=" p-2">
           {sortedNavLinks.map((navItem, i) => {
             return <span key={i}>{navItem.navLink}</span>;
           })}

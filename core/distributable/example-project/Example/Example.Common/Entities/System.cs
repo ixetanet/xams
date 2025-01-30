@@ -3,12 +3,13 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Example.Common.Entities;
 
-[Table(nameof(Role))]
-public class Role
+[Table(nameof(System))]
+public class System
 {
-    public Guid RoleId { get; set; }
+    public Guid SystemId { get; set; }
     [MaxLength(250)]
     public string? Name { get; set; }
-    
-    public ICollection<RolePermission> RolePermissions { get; set; } = null!;
+    [MaxLength(250)]
+    public string? Value { get; set; }
+    public DateTime? DateTime { get; set; }
 }

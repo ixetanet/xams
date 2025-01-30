@@ -2,12 +2,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Example.Common.Entities;
 
-[Table("UserRole")]
+[Table(nameof(UserRole))]
 public class UserRole
 {
     public Guid UserRoleId { get; set; }
-    public User User { get; set; }
+    public User User { get; set; } = null!;
     public Guid UserId { get; set; }
-    public Role Role { get; set; }
+    public Role Role { get; set; } = null!;
     public Guid RoleId { get; set; }
 }

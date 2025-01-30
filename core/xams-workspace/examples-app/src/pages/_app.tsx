@@ -1,4 +1,5 @@
 import "@mantine/core/styles.css";
+import "@mantine/tiptap/styles.css";
 import "@/styles/globals.css";
 import "@ixeta/xams/styles.css";
 import "@ixeta/xams/global.css";

@@ -189,7 +189,7 @@ const TableShell = (props: TableShellProps) => {
               <IconPlus size={22} strokeWidth={2} color={"white"} />
             </div>
           )}
-          {addEnabled && addButton != null && addButton}
+          {addEnabled && addButton != null && <div>{addButton}</div>}
         </div>
       </div>
       <Table
