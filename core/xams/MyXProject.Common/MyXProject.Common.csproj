@@ -15,13 +15,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Dtos\" />
-      <Folder Include="Entities\Test\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.6" />
-      <PackageReference Include="System.Linq.Dynamic.Core" Version="1.3.9" />
+      <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.0.1" />
     </ItemGroup>
 
 

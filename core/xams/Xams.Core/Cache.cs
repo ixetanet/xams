@@ -34,7 +34,7 @@ namespace Xams.Core
             Console.WriteLine("Initializing Cache");
             Cache cache = new Cache();
             Instance = cache;
-
+            
             // Cache entity metadata
             var props = dbContext.GetProperties();
             var nullabilityInfoContext = new NullabilityInfoContext();
