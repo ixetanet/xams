@@ -317,6 +317,7 @@ When denormalization is enabled as seen in the query below, the following json i
 const readRequest = new Query(['AccountId', 'Name'])
   .from('Account')
   .join('Account.AccountId', 'Contact.AccountId', 'c', ['*'])
+  .denormalize()
   .toReadRequest()
 ```
 

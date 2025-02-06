@@ -11,9 +11,4 @@ dotnet ef database update --connection $1
 # ./dbupdate.sh "Host=localhost:6002;Database=example;Username=pgadmin;Password=pgpass;ApplicationName=example" migration
 
 # Dev, Update
-# dotnet ef database update --connection 'Host=localhost:6002;Database=example;Username=pgadmin;Password=pgpass;ApplicationName=example'
-
-
-# Production
-# docker run --name example -p 6002:5432 -e POSTGRES_PASSWORD=RZdP_XV9E -e POSTGRES_USER=pgadmin -d --restart always --network my_network postgres
-# dotnet ef database update --connection 'Host=104.248.6.25:6002;Database=example;Username=pgadmin;Password=RZdP_XV9E;ApplicationName=example'
+# dotnet ef database update --connection "Host=localhost:6002;Database=example;Username=pgadmin;Password=pgpass;ApplicationName=example"
