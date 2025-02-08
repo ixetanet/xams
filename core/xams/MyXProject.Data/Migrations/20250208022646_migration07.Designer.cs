@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyXProject.Data;
 
@@ -10,9 +11,11 @@ using MyXProject.Data;
 namespace MyXProject.Data.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250208022646_migration07")]
+    partial class migration07
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.6");
@@ -179,8 +182,15 @@ namespace MyXProject.Data.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("Ping")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Queue")
                         .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Tag")
@@ -208,34 +218,20 @@ namespace MyXProject.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(4000)
+                        .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("Ping")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ServerName")
-                        .IsRequired()
-                        .HasMaxLength(100)
+                        .HasMaxLength(250)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
+                        .HasMaxLength(250)
                         .HasColumnType("TEXT");
 
                     b.HasKey("JobHistoryId");
 
                     b.HasIndex("JobId");
-
-                    b.HasIndex(new[] { "ServerName", "Ping" }, "IX_JobHistory_ServerName_Ping")
-                        .IsDescending(false, true);
 
                     b.ToTable("JobHistory");
                 });
@@ -323,24 +319,6 @@ namespace MyXProject.Data.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("RolePermission");
-                });
-
-            modelBuilder.Entity("MyXProject.Common.Entities.Server", b =>
-                {
-                    b.Property<Guid>("ServerId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("LastPing")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("ServerId");
-
-                    b.ToTable("Server");
                 });
 
             modelBuilder.Entity("MyXProject.Common.Entities.Setting", b =>

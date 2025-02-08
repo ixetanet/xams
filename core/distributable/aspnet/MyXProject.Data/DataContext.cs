@@ -17,6 +17,7 @@ public class DataContext : BaseDbContext
     public DbSet<Option> Options { get; set; }
     public DbSet<Setting> Settings { get; set; }
     public DbSet<MyXProject.Common.Entities.System> Systems { get; set; }
+    public DbSet<Server> Servers { get; set; }
     public DbSet<Job> Jobs { get; set; }
     public DbSet<JobHistory> JobHistories { get; set; }
     public DbSet<Audit> Audits { get; set; }
