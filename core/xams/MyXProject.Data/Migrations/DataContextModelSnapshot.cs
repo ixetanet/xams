@@ -179,15 +179,8 @@ namespace MyXProject.Data.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("Ping")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Queue")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Status")
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Tag")
@@ -215,20 +208,34 @@ namespace MyXProject.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Message")
-                        .HasMaxLength(2000)
+                        .IsRequired()
+                        .HasMaxLength(4000)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
-                        .HasMaxLength(250)
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Ping")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ServerName")
+                        .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
-                        .HasMaxLength(250)
+                        .IsRequired()
+                        .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.HasKey("JobHistoryId");
 
                     b.HasIndex("JobId");
+
+                    b.HasIndex(new[] { "ServerName", "Ping" }, "IX_JobHistory_ServerName_Ping")
+                        .IsDescending(false, true);
 
                     b.ToTable("JobHistory");
                 });
@@ -316,6 +323,24 @@ namespace MyXProject.Data.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("RolePermission");
+                });
+
+            modelBuilder.Entity("MyXProject.Common.Entities.Server", b =>
+                {
+                    b.Property<Guid>("ServerId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LastPing")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ServerId");
+
+                    b.ToTable("Server");
                 });
 
             modelBuilder.Entity("MyXProject.Common.Entities.Setting", b =>

@@ -24,6 +24,8 @@ export interface ReadJoin {
 }
 
 export interface ReadFilter {
+  logicalOperator?: string;
+  filters?: ReadFilter[];
   field?: string;
   value?: string | null;
   operator?: string;

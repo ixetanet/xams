@@ -8,6 +8,7 @@ using Xams.Core.Utils;
 
 namespace Xams.Core.Services.Permission;
 
+[JobServer(ExecuteJobOn.All)]
 [ServiceJob(nameof(PermissionCacheJob), "System-PermissionCache", "00:00:05", JobSchedule.Interval, DaysOfWeek.All, "System")]
 public class PermissionCacheJob : IServiceJob
 {

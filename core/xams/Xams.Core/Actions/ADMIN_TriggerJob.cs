@@ -2,7 +2,7 @@ using Xams.Core.Attributes;
 using Xams.Core.Contexts;
 using Xams.Core.Dtos;
 using Xams.Core.Interfaces;
-using Xams.Core.Services.Jobs;
+using Xams.Core.Jobs;
 using Xams.Core.Utils;
 
 namespace Xams.Core.Actions;

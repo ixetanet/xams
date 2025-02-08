@@ -7,6 +7,7 @@ using Xams.Core.Utils;
 
 namespace Xams.Core.Services.Auditing;
 
+[JobServer(ExecuteJobOn.One)]
 [ServiceJob(nameof(AuditCacheRefreshJob), "System", "00:05:00", JobSchedule.Interval, DaysOfWeek.All, "System")]
 public class AuditCacheRefreshJob : IServiceJob
 {

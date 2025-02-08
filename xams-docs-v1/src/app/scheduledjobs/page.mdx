@@ -39,7 +39,7 @@ The `ServiceJob` attribute takes the following parameters.
 - <b>Days of Week</b>: Flags that specify which days of the week the job should
   execute.
 
-## Time of Day Example
+## Time of day example
 
 Below is an example of a job that executes on Monday and Wednesday at 3:00 AM UTC:
 
@@ -55,3 +55,40 @@ public class MyJob : IServiceJob
     }
 }
 ```
+
+## Execute on one server only
+
+In a multi-server environment, jobs execute on all servers by default. To ensure a job runs on only a single server, use the `JobServer` attribute with `ExecuteJobOn.One`.
+
+```c# {{ title: 'Project.Services / Jobs / MyJob.cs' }}
+[JobServer(ExecuteJobOn.One)] // <-- add this
+[ServiceJob("MyJobName", "Primary-Queue", "03:00:00", JobSchedule.TimeOfDay, DaysOfWeek.Monday | DaysOfWeek.Wednesday)]
+public class MyJob : IServiceJob
+{
+    public async Task<Response<object?>> Execute(JobServiceContext context)
+    {
+        var db = context.GetDbContext<DataContext>();
+        return ServiceResult.Success();
+    }
+}
+```
+<Note>When JobServer is set to ExecuteJobOn.One and no specific server is specified, the job will always execute on the server whose name comes first alphabetically. For example, if there are two servers named Alpha and Beta, the job will always run on Alpha because its name appears first in alphabetical order.</Note>
+
+## Execute on specific server only
+
+In a multi-server environment, to ensure a job runs only on a specific server, provide the server name as the second parameter in the `JobServer` attribute.
+```c# {{ title: 'Project.Services / Jobs / MyJob.cs' }}
+[JobServer(ExecuteJobOn.One, "Beta")] // <-- only run on server Beta
+[ServiceJob("MyJobName", "Primary-Queue", "03:00:00", JobSchedule.TimeOfDay, DaysOfWeek.Monday | DaysOfWeek.Wednesday)]
+public class MyJob : IServiceJob
+{
+    public async Task<Response<object?>> Execute(JobServiceContext context)
+    {
+        var db = context.GetDbContext<DataContext>();
+        // Do something
+        return ServiceResult.Success();
+    }
+}
+```
+
+<Note>To set the name of the server, use the SERVER_NAME environment variable.</Note>

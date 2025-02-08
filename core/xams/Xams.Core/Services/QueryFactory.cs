@@ -379,7 +379,7 @@ public class QueryFactory
                 continue;
             }
 
-            if (string.IsNullOrEmpty(filter.field) || string.IsNullOrEmpty(filter.value))
+            if (string.IsNullOrEmpty(filter.field))
             {
                 continue;
             }
@@ -456,7 +456,7 @@ public class QueryFactory
             if (fieldType == typeof(Guid))
             {
                 filter.@operator = string.IsNullOrEmpty(filter.@operator) ? "==" : filter.@operator;
-                bool useNull = filter.value.Trim().ToLower() == "null";
+                bool useNull = filter.value == null || filter.value.Trim().ToLower() == "null";
                 if (Guid.TryParse(filter.value, out Guid id))
                 {
                     if (string.IsNullOrEmpty(filter.@operator))
@@ -569,8 +569,8 @@ public class QueryFactory
             {
                 filter.@operator = string.IsNullOrEmpty(filter.@operator) ? "==" : filter.@operator;
                 Regex regUtcOffset = new Regex("~[-+]+[0-9][0-9]?");
-                var match = regUtcOffset.Match(filter.value);
-                filter.value = filter.value.Replace(match.Value, "");
+                var match = regUtcOffset.Match(filter.value ?? "");
+                filter.value = filter.value?.Replace(match.Value, "") ?? "";
                 var conditionField = $"{table}{field}{(isNullable ? ".Value" : "")}";
 
                 // The query can send the user's local date time offset in the format of "~-12" or "~+12"
@@ -684,12 +684,12 @@ public class QueryFactory
                 if (filter.@operator == null || filter.@operator.ToLower() == "contains")
                 {
                     conditions.Add($"{table}{field}.Contains(@{index})");
-                    values.Add(filter.value);
+                    values.Add(filter.value ?? "null");
                 }
                 else if (IsValidOperator(filter.@operator))
                 {
                     conditions.Add($"{table}{field} {filter.@operator} @{index}");
-                    values.Add(filter.value);
+                    values.Add(filter.value ?? "null");
                 }
             }
             // TODO: I'm not sure if we need to handle other types outside of the ones above,
