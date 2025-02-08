@@ -1,5 +1,11 @@
 # Release Notes
 
+## v1.0.4
+
+- Added multi-server capabilities
+- Added "Server" to admin dashboard
+- Added JobServer attribute for specifying which server a job should execute on
+
 ## v1.0.3
 
 - Fixed unable to create Role's with SQLite
