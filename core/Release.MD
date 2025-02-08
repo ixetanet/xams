@@ -8,7 +8,7 @@
 
 ## v1.0.3
 
-- Fixed unable to create Role's with SQLite
+- Fixed unable to create Roles with SQLite
 
 ## v1.0.2
 
