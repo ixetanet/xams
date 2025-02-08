@@ -7,7 +7,7 @@ using Xams.Core.Dtos;
 using Xams.Core.Interfaces;
 using Xams.Core.Utils;
 
-namespace Xams.Core.Services.Jobs;
+namespace Xams.Core.Jobs;
 
 // Set order to 100 to ensure startup services that jobs are dependent on are executed first
 [ServiceStartup(StartupOperation.Post, 100)]
@@ -47,10 +47,41 @@ public class JobStartupService : IServiceStartup
 
         // Get all jobs
         var jobs = await query.ToDynamicListAsync();
+        
+        // Delete any jobs that no longer exist
+        List<dynamic> removedJobs = new List<dynamic>();
+        foreach (var job in jobs)
+        {
+            var jobName = (string)job.Name;
+            var actualJobExists = Cache.Instance.ServiceJobs.Any(m => m.Value.ServiceJobAttribute.Name == jobName);
+            if (actualJobExists == false)
+            {
+                baseDbContext.Remove(job);
+                removedJobs.Add(job);
+            }
+        }
+        
+        foreach (var job in removedJobs)
+        {
+            jobs.Remove(job);
+        }
+
+        try
+        {
+            await baseDbContext.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error creating jobs: {e.Message}");
+        }
+        finally
+        {
+            baseDbContext.ChangeTracker.Clear();
+        }
 
         // Get all job ids
         var jobIds = jobs.Select(j => (Guid)j.JobId).ToList();
-
+        
         foreach (var jobInfo in Cache.Instance.ServiceJobs)
         {
             Guid jobId = GuidUtil.FromString(jobInfo.Value.ServiceJobAttribute.Name);
@@ -75,26 +106,10 @@ public class JobStartupService : IServiceStartup
                 baseDbContext.Update(job);
             }
         }
+        
+        await baseDbContext.SaveChangesAsync();
 
-        // Delete any jobs that no longer exist
-        foreach (var job in jobs)
-        {
-            var jobName = (string)job.Name;
-            var actualJobExists = Cache.Instance.ServiceJobs.Any(m => m.Value.ServiceJobAttribute.Name == jobName);
-            if (actualJobExists == false)
-            {
-                baseDbContext.Remove(job);
-            }
-        }
-
-        try
-        {
-            await baseDbContext.SaveChangesAsync();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine($"Error creating jobs: {e.Message}");
-        }
+        
     }
 
     public async Task GetJobRetentionSettings(StartupContext context)

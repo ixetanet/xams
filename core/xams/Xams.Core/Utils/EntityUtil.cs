@@ -462,7 +462,7 @@ namespace Xams.Core.Utils
                 {
                     "Option", "Permission", "Role", "RolePermission", "Team", 
                     "TeamRole", "TeamUser", "User", "UserRole", "Setting", "Job", "JobHistory", "Audit", "AuditField",
-                    "AuditHistory", "AuditHistoryDetail", "System"
+                    "AuditHistory", "AuditHistoryDetail", "System", "Server"
                 }.Contains(tableName))
             {
                 return true;

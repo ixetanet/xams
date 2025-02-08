@@ -1,10 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
-using Xams.Core.Attributes;
-using Xams.Core.Base;
-using Xams.Core.Interfaces;
 
 // ReSharper disable ConvertToPrimaryConstructor
-namespace Xams.Core.Services.Jobs;
+namespace Xams.Core.Jobs;
 
 public class JobQueue
 {

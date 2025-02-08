@@ -6,9 +6,10 @@ using Xams.Core.Dtos;
 using Xams.Core.Interfaces;
 using Xams.Core.Utils;
 
-namespace Xams.Core.Services.Jobs;
+namespace Xams.Core.Jobs;
 
 // Run every 30 minutes and clear the audit history
+[JobServer(ExecuteJobOn.One)]
 [ServiceJob(nameof(JobHistoryRetentionJob), "System-JobHistory", "00:30:00", JobSchedule.Interval, DaysOfWeek.All, "System")]
 public class JobHistoryRetentionJob : IServiceJob
 {

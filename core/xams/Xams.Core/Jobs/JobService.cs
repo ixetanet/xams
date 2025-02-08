@@ -6,7 +6,7 @@ using Xams.Core.Interfaces;
 using Xams.Core.Utils;
 using Timer = System.Timers.Timer;
 
-namespace Xams.Core.Services.Jobs;
+namespace Xams.Core.Jobs;
 
 public class JobService
 {
@@ -14,6 +14,7 @@ public class JobService
 
     public int PingInterval { get; set; } =
         5; // Seconds, while a job is running, the job record is updated with the current time
+    public string? DefaultServerName { get; set; }
 
     private readonly IServiceProvider _serviceProvider;
     private readonly List<JobQueue> _jobQueues = new();
@@ -104,14 +105,23 @@ public class JobService
                 var dataService = scope.ServiceProvider.GetRequiredService<IDataService>();
                 // Get all jobs
                 BaseDbContext baseDbContext = dataService.GetDataRepository().CreateNewDbContext();
-                var baseDbContextType = Cache.Instance.GetTableMetadata("Job");
-
+                var jobMetadata = Cache.Instance.GetTableMetadata("Job");
                 DynamicLinq<BaseDbContext> dynamicLinq =
-                    new DynamicLinq<BaseDbContext>(baseDbContext, baseDbContextType.Type);
+                    new DynamicLinq<BaseDbContext>(baseDbContext, jobMetadata.Type);
                 IQueryable query = dynamicLinq.Query;
                 // Get all jobs every execution because the job might have been updated
                 var dynamicJobs = query.ToDynamicList();
                 var jobs = dynamicJobs.Select(x => new Job(x)).ToList();
+                
+                // Get the default server to execute jobs that should only run on 1 server, where a specific
+                // server hasn't been specified
+                DynamicLinq<BaseDbContext> dlinqServer =
+                    new DynamicLinq<BaseDbContext>(baseDbContext, Cache.Instance.GetTableMetadata("Server").Type);
+                IQueryable serverQuery = dlinqServer.Query;
+                serverQuery = serverQuery.OrderBy("Name asc, LastPing desc");
+                // Get all jobs every execution because the job might have been updated
+                var defaultServer = serverQuery.Take(1).ToDynamicList().FirstOrDefault();
+                DefaultServerName = defaultServer?.Name;
 
                 await Parallel.ForEachAsync(_jobQueues, async (jobQueue, _) =>
                 {

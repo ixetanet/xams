@@ -29,13 +29,7 @@ const AdminDashJobs = () => {
                         order: "asc",
                       },
                     ]}
-                    fields={[
-                      "Name",
-                      "Status",
-                      "Queue",
-                      "IsActive",
-                      "LastExecution",
-                    ]}
+                    fields={["Name", "Queue", "IsActive", "LastExecution"]}
                     filters={[
                       {
                         field: "Tag",
@@ -64,16 +58,41 @@ const AdminDashJobs = () => {
                         </>
                       );
                     }}
+                    customForm={(formbuilder) => {
+                      return (
+                        <>
+                          <Grid>
+                            <Grid.Col span={4}>
+                              <Field name={"Name"}></Field>
+                            </Grid.Col>
+                            <Grid.Col span={4}>
+                              <Field name={"Queue"}></Field>
+                            </Grid.Col>
+                            <Grid.Col span={4}>
+                              <Field name={"LastExecution"}></Field>
+                            </Grid.Col>
+                          </Grid>
+                          <Grid>
+                            <Grid.Col span={4}>
+                              <Field name={"IsActive"}></Field>
+                            </Grid.Col>
+                            <Grid.Col span={4}></Grid.Col>
+                            <Grid.Col span={4}></Grid.Col>
+                          </Grid>
+                        </>
+                      );
+                    }}
                     appendCustomForm={(formbuilder) => {
                       if (formbuilder.operation === "CREATE") {
                         <></>;
                       }
                       return (
-                        <div className="w-full h-96">
+                        <div className="w-full h-96 mt-4">
                           <DataTable
                             title="History"
                             tableName={"JobHistory"}
                             fields={[
+                              "ServerName",
                               "Status",
                               "Message",
                               "CreatedDate",

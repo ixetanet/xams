@@ -221,15 +221,7 @@ public class SystemEntities
         ""Type"": ""String""
       },
       {
-        ""Name"": ""Status"",
-        ""Type"": ""String""
-      },
-      {
         ""Name"": ""LastExecution"",
-        ""Type"": ""DateTime""
-      },
-      {
-        ""Name"": ""Ping"",
         ""Type"": ""DateTime""
       }
     ]

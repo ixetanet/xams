@@ -11,7 +11,7 @@ using Xams.Core.Pipeline;
 using Xams.Core.Startup;
 using Xams.Core.Utils;
 
-namespace Xams.Core.Services.Jobs;
+namespace Xams.Core.Jobs;
 
 public class Job
 {
@@ -20,10 +20,10 @@ public class Job
         get => Entity.JobId;
         set => Entity.JobId = value;
     }
-    public string? Name
+    public string Name
     {
         get => Entity.Name;
-        set => Entity.Name = value!;
+        set => Entity.Name = value;
     }
 
     public bool IsActive 
@@ -35,21 +35,6 @@ public class Job
     {
         get => Entity.Queue;
         set => Entity.Queue = value!;
-    }
-    public string? Status 
-    {
-        get => Entity.Status;
-        set => Entity.Status = value!;
-    }
-    public DateTime LastExecution 
-    {
-        get => Entity.LastExecution;
-        set => Entity.LastExecution = value;
-    }
-    public DateTime Ping 
-    {
-        get => Entity.Ping;
-        set => Entity.Ping = value;
     }
     public string? Tag 
     {
@@ -74,6 +59,24 @@ public class Job
             throw new Exception($"Service Scope is null");
         }
         
+        // If this job is only supposed to execute on 1 server
+        // but a specific server hasn't been specified, execute on the default server only
+        if (Cache.Instance.ServiceJobs[Name].ExecuteJobOn == ExecuteJobOn.One &&
+            string.IsNullOrEmpty(Cache.Instance.ServiceJobs[Name].ServerName) &&
+            JobService.Singleton?.DefaultServerName != Cache.Instance.ServerName)
+        {
+            return ServiceResult.Success();
+        }
+        
+        // If this job is only supposed to execute on 1 server
+        // and a specific server was specified, only execute the job on that server
+        if (Cache.Instance.ServiceJobs[Name].ExecuteJobOn == ExecuteJobOn.One &&
+            !string.IsNullOrEmpty(Cache.Instance.ServiceJobs[Name].ServerName) &&
+            Cache.Instance.ServiceJobs[Name].ServerName != Cache.Instance.ServerName)
+        {
+            return ServiceResult.Success();
+        }
+        
         var serviceJob = ServiceJobInfo.Type;
 
         if (serviceJob == null)
@@ -90,31 +93,30 @@ public class Job
         }
         
         var dataService = scope.ServiceProvider.GetRequiredService<IDataService>();
-
-        // Get all jobs
+        
         BaseDbContext baseDbContext = dataService.GetDataRepository().CreateNewDbContext();
         
         Guid jobHistoryId = Guid.NewGuid();
         Type jobHistoryType = Cache.Instance.GetTableMetadata("JobHistory").Type;
-        JobPing jobPing = new(dataService.GetDataRepository().CreateNewDbContext(), Entity);
+        JobPing? jobPing = null;
         try
         {
+            // Get the last Job history record for this server
+            DynamicLinq<BaseDbContext> dlinqJobHistory = new DynamicLinq<BaseDbContext>(baseDbContext, jobHistoryType);
+            IQueryable jobHistoryQuery = dlinqJobHistory.Query;
+            jobHistoryQuery = jobHistoryQuery
+                .Where("JobId == @0", JobId)
+                .Where("ServerName == @0", Cache.Instance.ServerName).OrderBy("Ping DESC").Take(1);
+            dynamic? jobHistory = (await jobHistoryQuery.ToDynamicListAsync()).FirstOrDefault();
+            
             // If the job is running, but the last ping was three times the ping interval, then assume the job failed
-            if (Status == "Running" && DateTime.UtcNow - Ping >
+            if (jobHistory != null && jobHistory?.Status == "Running" && DateTime.UtcNow - jobHistory?.Ping >
                 TimeSpan.FromSeconds(JobService.Singleton!.PingInterval * 3))
             {
                 baseDbContext.ChangeTracker.Clear();
-                string jobStatus = "Failed";
-                dynamic? uJob = await baseDbContext.FindAsync(Entity.GetType(), JobId);
-                if (uJob == null)
-                {
-                    throw new Exception($"Couldn't find Job with Id {JobId}");
-                }
-                uJob.Status = jobStatus;
-                baseDbContext.Update(uJob);
-                await baseDbContext.SaveChangesAsync();
-                    
+                
                 // Update Job History Records
+                string jobStatus = "Failed";
                 baseDbContext.ChangeTracker.Clear();
                 DynamicLinq<BaseDbContext> dynamicLinq =
                     new DynamicLinq<BaseDbContext>(baseDbContext, jobHistoryType);
@@ -140,7 +142,7 @@ public class Job
             }
 
             // If the job is running, potentially on another server, skip
-            if (Status == "Running")
+            if (jobHistory?.Status == "Running")
             {
                 return ServiceResult.Success();
             }
@@ -151,7 +153,8 @@ public class Job
                 return ServiceResult.Success();
             }
 
-            DateTime jobLastExecution = LastExecution;
+            DateTime jobLastExecution =  jobHistory?.CreatedDate ?? DateTime.MinValue; 
+            
             var jobInfo = Cache.Instance.ServiceJobs[jobName].ServiceJobAttribute;
 
             bool isDayOfWeek =
@@ -173,6 +176,7 @@ public class Job
             // And the last execution is more than a minute ago, then execute
             if (!force && jobInfo.JobSchedule == JobSchedule.TimeOfDay)
             {
+                // If this job has no job history
                 var executeTime = DateTime.UtcNow.Date.Add(jobInfo.TimeSpan);
                 if (!(DateTime.UtcNow >= executeTime &&
                       DateTime.UtcNow - executeTime < TimeSpan.FromMinutes(1) &&
@@ -185,31 +189,41 @@ public class Job
             // Create Job History Record
             string status = "Running";
             baseDbContext.ChangeTracker.Clear();
-            dynamic jobHistory = Activator.CreateInstance(jobHistoryType)!;
+            jobHistory = Activator.CreateInstance(jobHistoryType)!;
             jobHistory.JobHistoryId = jobHistoryId;
             jobHistory.Status = status;
             jobHistory.CreatedDate = DateTime.UtcNow;
             jobHistory.JobId = JobId;
             jobHistory.Name = Name;
             jobHistory.Message = string.Empty;
+            jobHistory.ServerName = Cache.Instance.ServerName;
             baseDbContext.Add(jobHistory);
             await baseDbContext.SaveChangesAsync();
                 
                 
             // Update job to running
-            baseDbContext.ChangeTracker.Clear();
             dynamic? updateJob = await baseDbContext.FindAsync(Entity.GetType(), JobId);
-            if (updateJob == null)
+            baseDbContext.ChangeTracker.Clear();
+            try
             {
-                throw new Exception($"Couldn't find Job to update with Id {JobId}");
+                // It's possible multiple servers try to update the LastExecution at the same time
+                // and create a contention issue. In that case, ignore and move on.
+                if (updateJob == null)
+                {
+                    throw new Exception($"Couldn't find Job to update with Id {JobId}");
+                }
+                updateJob.LastExecution = DateTime.UtcNow;
+                baseDbContext.Update(updateJob);
+                await baseDbContext.SaveChangesAsync();
             }
-            updateJob.Status = status;
-            updateJob.LastExecution = DateTime.UtcNow;
-            baseDbContext.Update(updateJob);
-            await baseDbContext.SaveChangesAsync();
-                
+            catch (Exception)
+            {
+                // ignored
+            }
+
 
             // Start updating the Ping field on the job on a set interval to show this job is running
+            jobPing = new(dataService.GetDataRepository().CreateNewDbContext(), jobHistory);
             jobPing.Start();
 
             // Execute job
@@ -251,15 +265,25 @@ public class Job
 
             // Update job last execution
             baseDbContext.ChangeTracker.Clear();
-            updateJob = await baseDbContext.FindAsync(Entity.GetType(), JobId);
-            if (updateJob == null)
+            try
             {
-                throw new Exception($"Couldn't find Job to update last execution with Id {JobId}");
+                // It's possible multiple servers try to update the LastExecution at the same time
+                // and create a contention issue. In that case, ignore and move on.
+                updateJob = await baseDbContext.FindAsync(Entity.GetType(), JobId);
+                if (updateJob == null)
+                {
+                    throw new Exception($"Couldn't find Job to update last execution with Id {JobId}");
+                }
+                // updateJob.Status = status;
+                updateJob.LastExecution = DateTime.UtcNow;
+                baseDbContext.Update(updateJob);
+                await baseDbContext.SaveChangesAsync();
             }
-            updateJob.Status = status;
-            updateJob.LastExecution = DateTime.UtcNow;
-            baseDbContext.Update(updateJob);
-            await baseDbContext.SaveChangesAsync();
+            catch (Exception)
+            {
+                // ignored
+            }
+
 
             return jobResponse;
         }
@@ -269,7 +293,11 @@ public class Job
             try
             {
                 // Stop pinging the server since the job failed
-                await jobPing.End();
+                if (jobPing != null)
+                {
+                    await jobPing.End();    
+                }
+                
                 // Update job history
                 baseDbContext.ChangeTracker.Clear();
                 string status = "Failed";
@@ -293,7 +321,7 @@ public class Job
                 }
                 if (updateJob != null)
                 {
-                    updateJob.Status = status;
+                    // updateJob.Status = status;
                     updateJob.LastExecution = DateTime.UtcNow;
                     baseDbContext.Update(updateJob);
                     await baseDbContext.SaveChangesAsync();    

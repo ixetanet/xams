@@ -4,7 +4,9 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.Json;
 using Xams.Core.Attributes;
+using Xams.Core.Base;
 using Xams.Core.Dtos.Data;
+using Xams.Core.Interfaces;
 using Xams.Core.Startup;
 using Xams.Core.Utils;
 
@@ -14,6 +16,8 @@ namespace Xams.Core
     {
         public static Cache Instance { get; private set; } = new();
 
+        public string? ServerName { get; set; }
+        public Guid ServerId { get; set; }
         public readonly Dictionary<string, List<ServiceLogicInfo>> ServiceLogics = new();
         public readonly Dictionary<string, ServiceActionInfo> ServiceActions = new();
         public List<ServiceBulkInfo> BulkServiceLogics { get; private set; } = new();
@@ -29,9 +33,11 @@ namespace Xams.Core
         public int JobHistoryRetentionDays { get; set; } = 30;
         public int AuditHistoryRetentionDays { get; set; } = 30;
 
-        internal static void Initialize(Type dbContext)
+        internal static void Initialize(Type dbContext, IDataService dataService)
         {
-            Console.WriteLine("Initializing Cache");
+            Random rnd = new Random(DateTime.Now.Millisecond);
+            var serverName = Environment.GetEnvironmentVariable("SERVER_NAME") ?? ServerNames[rnd.Next(0, ServerNames.Length)] + rnd.Next(0, 9999);
+            Console.WriteLine($"Initializing Cache for server {serverName}");
             Cache cache = new Cache();
             Instance = cache;
             
@@ -160,8 +166,8 @@ namespace Xams.Core
                         UIRecommendedAttribute? recommendedAttribute =
                             Attribute.GetCustomAttribute(property, typeof(UIRecommendedAttribute)) as
                                 UIRecommendedAttribute;
-                        
-                        UINumberRangeAttribute? numberRangeAttribute = 
+
+                        UINumberRangeAttribute? numberRangeAttribute =
                             Attribute.GetCustomAttribute(property, typeof(UINumberRangeAttribute)) as
                                 UINumberRangeAttribute;
 
@@ -190,7 +196,7 @@ namespace Xams.Core
                             var info = nullabilityInfoContext.Create(property);
                             isNullable = info.WriteState == NullabilityState.Nullable;
                         }
-                        
+
                         fields.Add(new MetadataField()
                         {
                             name = property.Name,
@@ -208,7 +214,9 @@ namespace Xams.Core
                             isRecommended = recommendedAttribute != null,
                             isReadOnly = readOnlyAttribute != null,
                             option = optionAttribute?.Name ?? "",
-                            numberRange = numberRangeAttribute != null ? $"{numberRangeAttribute.Min}-{numberRangeAttribute.Max}" : null
+                            numberRange = numberRangeAttribute != null
+                                ? $"{numberRangeAttribute.Min}-{numberRangeAttribute.Max}"
+                                : null
                         });
                     }
 
@@ -452,11 +460,15 @@ namespace Xams.Core
                     {
                         continue;
                     }
+                    
+                    JobServerAttribute? jobServerAttribute = type.GetCustomAttribute<JobServerAttribute>();
 
                     ServiceJobInfo serviceJobInfo = new()
                     {
                         ServiceJobAttribute = serviceJobAttribute,
-                        Type = type
+                        Type = type,
+                        ExecuteJobOn = jobServerAttribute?.ExecuteJobOn ?? ExecuteJobOn.All,
+                        ServerName = jobServerAttribute?.ServerName ?? string.Empty
                     };
 
                     if (cache.ServiceJobs.ContainsKey(serviceJobAttribute.Name))
@@ -466,6 +478,22 @@ namespace Xams.Core
 
                     cache.ServiceJobs.Add(serviceJobAttribute.Name, serviceJobInfo);
                 }
+            }
+            
+            // Get Server Nam
+            cache.ServerName = serverName;
+            cache.ServerId = Guid.NewGuid();
+            
+            // Create new server record
+            var serverRecord = new Dictionary<string, dynamic>();
+            serverRecord["Name"] = cache.ServerName;
+            serverRecord["ServerId"] = cache.ServerId;
+            serverRecord["LastPing"] = DateTime.UtcNow;
+            var serverEntity = EntityUtil.DictionaryToEntity(cache.GetTableMetadata("Server").Type, serverRecord);
+            using (var db = dataService.GetDataRepository().CreateNewDbContext<BaseDbContext>())
+            {
+                db.Add(serverEntity);
+                db.SaveChanges();
             }
         }
 
@@ -604,7 +632,7 @@ namespace Xams.Core
                 Console.ResetColor();
             }
         }
-        
+
         private static string GetFieldType(bool isLookup, PropertyInfo property)
         {
             if (isLookup)
@@ -637,7 +665,6 @@ namespace Xams.Core
             public bool IsProxy { get; set; }
 
             public MetadataOutput MetadataOutput { get; set; } = null!;
-            
         }
 
         public class ServiceLogicInfo
@@ -691,6 +718,8 @@ namespace Xams.Core
         {
             public ServiceJobAttribute ServiceJobAttribute { get; internal set; } = null!;
             public Type? Type { get; internal set; }
+            public ExecuteJobOn ExecuteJobOn { get; internal set; } = ExecuteJobOn.All;
+            public string? ServerName { get; internal set; }
         }
 
         public class AuditInfo
@@ -708,5 +737,51 @@ namespace Xams.Core
             public bool IsUpdateAuditEnabled { get; internal set; }
             public bool IsDeleteAuditEnabled { get; internal set; }
         }
+
+        public static string[] ServerNames =
+        [
+            "AlphaCore", "BetaNexus", "GammaVault", "DeltaHorizon", "EpsilonGrid",
+            "ZetaSphere", "EtaMatrix", "ThetaPulse", "IotaLink", "KappaBridge",
+            "LambdaNode", "MuCloud", "NuStream", "XiForge", "OmicronVault",
+            "PiBeacon", "RhoSignal", "SigmaWave", "TauPulse", "UpsilonSync",
+            "PhiCore", "ChiFrame", "PsiChannel", "OmegaNet", "NebulaHost",
+            "QuantumGate", "HyperionLink", "OrionSphere", "AetherGrid", "CelestialNode",
+            "EchoRelay", "PhoenixLayer", "ZenithStream", "ParagonNet", "SolsticeBeacon",
+            "TitaniumMesh", "VelocityCore", "AuroraHost", "HorizonSync", "GenesisCloud",
+            "EchelonBridge", "CipherVault", "NexusFlow", "ZenGrid", "NovaLink",
+            "PinnacleStream", "MiragePulse", "EclipseRelay", "StratosphereMesh", "ChronosSync",
+            "PulsarNode", "NebulaCore", "SentinelHost", "VelocitySync", "OdysseyVault",
+            "StellarFrame", "InfinityGate", "TerraSphere", "CosmosNet", "HyperDriveRelay",
+            "PrimeBeacon", "VertexGrid", "SummitSync", "EmpyreanHost", "CyberBridge",
+            "MomentumNode", "EnclaveCore", "ElevateStream", "SingularityNet", "FusionWave",
+            "EpochLayer", "VanguardMesh", "UtopiaRelay", "RadianceSync", "SpectralVault",
+            "EquinoxNode", "PioneerGrid", "AstralBeacon", "BeaconSync", "EonLink",
+            "HorizonCore", "LegacyFlow", "SynergyWave", "AscendNet", "SovereignCloud",
+            "PrimeSphere", "EtherealBridge", "CatalystMesh", "GlacialNode", "SummitPulse",
+            "ExodusVault", "MomentumFlow", "CelestialPulse", "ApexSync", "PulseGrid",
+            "PinnacleHost", "SolaceRelay", "LuminousCore", "VertexMesh", "MetropolisNet",
+            "CosmicVault", "InfinityNode", "EclipticSync", "SentientGrid", "StrataRelay",
+            "DynastyCore", "ChronicleStream", "HorizonBeacon", "GenesisRelay", "TranquilNet",
+            "HarmonicSync", "EchelonVault", "QuantumPulse", "VelocityBridge", "VerdantNode",
+            "NebularMesh", "UpliftGrid", "TranscendHost", "ProphetCore", "OracleRelay",
+            "PanoramaSync", "MajesticVault", "AllegiantNode", "MirageNet", "NimbusBridge",
+            "TitanGrid", "TerraRelay", "SentinelSync", "PinnacleMesh", "EmpyreanVault",
+            "OdysseyBeacon", "EpochNode", "VanguardGrid", "AuroraRelay", "CelestialFlow",
+            "SummitHost", "EtherealSync", "EquinoxPulse", "MomentumRelay", "HorizonVault",
+            "ParadoxCore", "GenesisSync", "SovereignBeacon", "PrimeRelay", "QuantumNode",
+            "FusionSync", "SynergyCore", "GlacialVault", "SpectralGrid", "AscendRelay",
+            "ElevateNode", "NovaBeacon", "StellarSync", "ZenithCore", "ApexHost",
+            "TerraVault", "OdysseyGrid", "InfinityBeacon", "HyperionRelay", "MomentumPulse",
+            "OrionNet", "SingularitySync", "EclipticVault", "StratosphereRelay", "TitaniumNode",
+            "VelocityPulse", "CyberSync", "EnclaveVault", "HyperDriveGrid", "UtopiaBeacon",
+            "ExodusSync", "LuminousVault", "EmpyreanRelay", "PanoramaGrid", "CatalystCore",
+            "SolsticeSync", "ChronicleVault", "EchoRelay", "VerdantPulse", "AetherSync",
+            "NebulaBridge", "CelestialVault", "EpochSync", "ProphetGrid", "QuantumSync",
+            "DynastyPulse", "EtherealRelay", "ElevateBeacon", "NovaSync", "NimbusVault",
+            "AllegiantCore", "TranscendGrid", "ParagonSync", "PioneerRelay", "MajesticHost",
+            "HorizonNode", "SolaceGrid", "MomentumBeacon", "ZenithRelay", "GlacialSync",
+            "LegacyVault", "VanguardCore", "PinnaclePulse", "OracleGrid", "EquinoxSync",
+            "TranquilVault", "SpectralRelay", "HyperionSync", "CosmicPulse", "NebularVault"
+        ];
     }
 }

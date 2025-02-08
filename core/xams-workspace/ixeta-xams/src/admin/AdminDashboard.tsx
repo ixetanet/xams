@@ -14,6 +14,7 @@ import AdminDashOptions from "./nav/AdminDashOptions";
 import AdminDashJobs from "./nav/AdminDashJobs";
 import AdminDashSettings from "./nav/AdminDashSettings";
 import AdminDashAudit from "./nav/AdminDashAudit";
+import AdminDashServers from "./nav/AdminDashServers";
 
 const EmptyTableInfo = {
   tableName: "",
@@ -186,6 +187,10 @@ const AdminDashboard = (props: AdminDashboardProps) => {
     {
       order: 600,
       navLink: <AdminDashSettings />,
+    },
+    {
+      order: 700,
+      navLink: <AdminDashServers />,
     },
   ] as NavItem[];
 
