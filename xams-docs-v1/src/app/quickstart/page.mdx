@@ -36,7 +36,7 @@ dotnet tool install --global dotnet-ef
 Install the Xams CLI if you haven't installed it yet.
 
 ```cmd {{ title: 'Terminal' }}
-dotnet tool install --global Xams.Cli --version 1.0.3
+dotnet tool install --global Xams.Cli --version 1.0.4
 ```
 
 ## Create Api Project
@@ -55,10 +55,8 @@ dotnet tool install --global Xams.Cli --version 1.0.3
             ```
 
 </CodeGroup>
-4. Enter your email address. A project key will be sent.
-5. Enter the project key.
-6. Enter the name of your project. All of the c# project will be prefixed with this name.
-7. Open the solution in your IDE of choice. The projects contained in this solution are:
+4. Enter the name of your project. All of the c# project will be prefixed with this name.
+5. Open the solution in your IDE of choice. The projects contained in this solution are:
 
 - <b>Project.Common</b>: Classes shared across projects including Entities
 - <b>Project.Data</b>: Entity Framework migrations as well as the DbContext
@@ -90,11 +88,9 @@ dotnet ef database update
 
 </CodeGroup>
 
-3. Enter your email address. A project key will be sent.
-4. Enter the project key.
-5. Enter the name of your web app. A folder with the name of your web app will be created and includes all of the web app files.
-6. Open the folder in your code editor of choice.
-7. In the directory of the web app execute the following code.
+3. Enter the name of your web app. A folder with the name of your web app will be created and includes all of the web app files.
+4. Open the folder in your code editor of choice.
+5. In the directory of the web app execute the following code.
 
 ```cmd {{ title: 'Terminal' }}
 npm install && npm run dev
