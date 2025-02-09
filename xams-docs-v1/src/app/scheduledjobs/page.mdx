@@ -91,3 +91,20 @@ public class MyJob : IServiceJob
 ```
 
 <Note>To set the name of the server, use the SERVER_NAME environment variable.</Note>
+
+## Daylight Savings
+
+To ensure that job execution times remain consistent despite daylight savings changes, use the `JobDaylightSavings` attribute to specify the appropriate time zone.
+
+```c# {{ title: 'Project.Services / Jobs / MyJob.cs' }}
+[JobDaylightSavings("Eastern Standard Time")] // <-- always run at 3am EST
+[ServiceJob("MyJobName", "Primary-Queue", "03:00:00", JobSchedule.TimeOfDay, DaysOfWeek.Monday | DaysOfWeek.Wednesday)]
+public class MyJob : IServiceJob
+{
+    public async Task<Response<object?>> Execute(JobServiceContext context)
+    {
+        var db = context.GetDbContext<DataContext>();
+        return ServiceResult.Success();
+    }
+}
+```

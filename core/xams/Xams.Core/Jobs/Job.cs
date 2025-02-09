@@ -178,6 +178,17 @@ public class Job
             {
                 // If this job has no job history
                 var executeTime = DateTime.UtcNow.Date.Add(jobInfo.TimeSpan);
+                var daylightSavingsTimeZone = Cache.Instance.ServiceJobs[jobName].DaylightSavingsTimeZone;
+                if (!string.IsNullOrEmpty(daylightSavingsTimeZone))
+                {
+                    var timeZone = TimeZoneInfo.FindSystemTimeZoneById(daylightSavingsTimeZone);
+                    var localTime = TimeZoneInfo.ConvertTimeFromUtc(executeTime, timeZone);
+                    var offset = timeZone.GetUtcOffset(localTime);
+        
+                    // Adjust the execution time by the offset
+                    executeTime = executeTime.Add(offset);
+                }
+                
                 if (!(DateTime.UtcNow >= executeTime &&
                       DateTime.UtcNow - executeTime < TimeSpan.FromMinutes(1) &&
                       DateTime.UtcNow - jobLastExecution > TimeSpan.FromMinutes(1)))
