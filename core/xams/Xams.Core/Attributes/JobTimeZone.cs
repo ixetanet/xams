@@ -1,9 +1,9 @@
 namespace Xams.Core.Attributes;
 
-public class JobDaylightSavingsAttribute : Attribute
+public class JobTimeZone : Attribute
 {
     public string TimeZone { get; private set; }
-    public JobDaylightSavingsAttribute(string timeZone)
+    public JobTimeZone(string timeZone)
     {
         TimeZone = timeZone;
     }

@@ -182,11 +182,9 @@ public class Job
                 if (!string.IsNullOrEmpty(daylightSavingsTimeZone))
                 {
                     var timeZone = TimeZoneInfo.FindSystemTimeZoneById(daylightSavingsTimeZone);
-                    var localTime = TimeZoneInfo.ConvertTimeFromUtc(executeTime, timeZone);
-                    var offset = timeZone.GetUtcOffset(localTime);
-        
-                    // Adjust the execution time by the offset
-                    executeTime = executeTime.Add(offset);
+                    var todayInTargetTimezone = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone).Date;
+                    var localDateTime = todayInTargetTimezone.Add(jobInfo.TimeSpan);
+                    executeTime = localDateTime.ToUniversalTime(); 
                 }
                 
                 if (!(DateTime.UtcNow >= executeTime &&

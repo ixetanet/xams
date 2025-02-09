@@ -462,7 +462,7 @@ namespace Xams.Core
                     }
                     
                     JobServerAttribute? jobServerAttribute = type.GetCustomAttribute<JobServerAttribute>();
-                    JobDaylightSavingsAttribute? jobDaylightSavingsAttribute = type.GetCustomAttribute<JobDaylightSavingsAttribute>();
+                    JobTimeZone? jobDaylightSavingsAttribute = type.GetCustomAttribute<JobTimeZone>();
 
                     if (jobDaylightSavingsAttribute != null && !IsValidTimeZone(jobDaylightSavingsAttribute.TimeZone))
                     {
