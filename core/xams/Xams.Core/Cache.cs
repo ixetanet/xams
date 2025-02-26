@@ -462,13 +462,20 @@ namespace Xams.Core
                     }
                     
                     JobServerAttribute? jobServerAttribute = type.GetCustomAttribute<JobServerAttribute>();
+                    JobTimeZone? jobDaylightSavingsAttribute = type.GetCustomAttribute<JobTimeZone>();
+
+                    if (jobDaylightSavingsAttribute != null && !IsValidTimeZone(jobDaylightSavingsAttribute.TimeZone))
+                    {
+                        throw new Exception($"Invalid TimeZone '{jobDaylightSavingsAttribute.TimeZone}' for job {serviceJobAttribute.Name}");
+                    }
 
                     ServiceJobInfo serviceJobInfo = new()
                     {
                         ServiceJobAttribute = serviceJobAttribute,
                         Type = type,
                         ExecuteJobOn = jobServerAttribute?.ExecuteJobOn ?? ExecuteJobOn.All,
-                        ServerName = jobServerAttribute?.ServerName ?? string.Empty
+                        ServerName = jobServerAttribute?.ServerName ?? string.Empty,
+                        TimeZone = jobDaylightSavingsAttribute?.TimeZone ?? string.Empty,
                     };
 
                     if (cache.ServiceJobs.ContainsKey(serviceJobAttribute.Name))
@@ -648,6 +655,27 @@ namespace Xams.Core
 
             return property.PropertyType.Name;
         }
+        
+        private static bool IsValidTimeZone(string timeZoneId)
+        {
+            if (string.IsNullOrEmpty(timeZoneId))
+                return false;
+
+            try
+            {
+                TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+                return true;
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                return false;
+            }
+            catch (InvalidTimeZoneException)
+            {
+                return false;
+            }
+        }
+
 
 
         public class MetadataInfo
@@ -720,6 +748,8 @@ namespace Xams.Core
             public Type? Type { get; internal set; }
             public ExecuteJobOn ExecuteJobOn { get; internal set; } = ExecuteJobOn.All;
             public string? ServerName { get; internal set; }
+            
+            public string? TimeZone { get; internal set; }
         }
 
         public class AuditInfo

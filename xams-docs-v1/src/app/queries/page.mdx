@@ -126,6 +126,21 @@ The parameters for a join are -
 - Alias
 - Fields to include (Can be '\*' for all fields)
 
+
+## Left Join
+
+Left joins can be performed using the `leftjoin` method.
+
+```tsx {{ title: 'Query' }}
+const readRequest = new Query(['*'])
+  .from('Account')
+  .leftJoin('Account.AccountId', 'Contact.AccountId', 'c', [
+    'FirstName',
+    'LastName',
+  ])
+  .toReadRequest()
+```
+
 ## Filter on Join Fields
 
 Queries can be filtered on their joined tables by referencing their alias in the filters.
@@ -141,16 +156,25 @@ const readRequest = new Query(['*'])
   .toReadRequest()
 ```
 
-## Left Join
+## Cascading Join
 
-Left joins can be performed using the `leftjoin` method.
+When joining multiple tables, you can reference previously joined tables using their aliases to establish further joins.
 
 ```tsx {{ title: 'Query' }}
 const readRequest = new Query(['*'])
   .from('Account')
-  .leftJoin('Account.AccountId', 'Contact.AccountId', 'c', [
+  .join('Account.AccountId', 'Contact.AccountId', 'c', [
     'FirstName',
     'LastName',
+  ])
+  // Join on contact using the alias 'c'
+  .join('c.AddressId', 'Address.AddressId', 'a', [
+    'AddressLine1',
+    'AddressLine2',
+    'PostalCode',
+    'City',
+    'State',
+    'Country'
   ])
   .toReadRequest()
 ```

@@ -1,5 +1,13 @@
 # Release Notes
 
+## 1.0.5
+
+- Added JobTimeZone attribute to adjust job scheduled time for a specific timezone
+- Improved console logging for Scheduled Jobs
+- Fixed manual triggering of jobs from admin dashboard
+- Fixed DataTable refreshInterval
+- Fixed DataGrid column sizes not maintaining on change of snap columns\rows
+
 ## v1.0.4
 
 - Added multi-server capabilities

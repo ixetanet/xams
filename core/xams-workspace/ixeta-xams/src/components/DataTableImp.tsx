@@ -59,6 +59,7 @@ const DataTable = forwardRef(
       ...dataTableInitState,
       id: id,
     });
+    const refreshingRef = useRef(false);
 
     const stateRef = useRef(state);
 
@@ -483,14 +484,21 @@ const DataTable = forwardRef(
     }, [props.tableName, props.disabledMessage]);
 
     useEffect(() => {
-      if (state.isFormOpen && props.refreshInterval != null) {
+      if (props.refreshInterval != null) {
         const interval = setInterval(async () => {
-          await refresh(false);
+          if (refreshingRef.current === false) {
+            refreshingRef.current = true;
+            await refresh(false);
+            refreshingRef.current = false;
+          }
         }, props.refreshInterval);
 
-        return () => clearInterval(interval);
+        return () => {
+          refreshingRef.current = false;
+          clearInterval(interval);
+        };
       }
-    }, [props.refreshInterval, state.type]);
+    }, [props.refreshInterval]);
 
     const refObject = {
       refresh: refresh,
