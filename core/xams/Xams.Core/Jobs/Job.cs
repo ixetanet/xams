@@ -2,6 +2,7 @@ using System.Linq.Dynamic.Core;
 using System.Reflection;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
 using Xams.Core.Contexts;
@@ -178,7 +179,7 @@ public class Job
             {
                 // If this job has no job history
                 var executeTime = DateTime.UtcNow.Date.Add(jobInfo.TimeSpan);
-                var daylightSavingsTimeZone = Cache.Instance.ServiceJobs[jobName].DaylightSavingsTimeZone;
+                var daylightSavingsTimeZone = Cache.Instance.ServiceJobs[jobName].TimeZone;
                 if (!string.IsNullOrEmpty(daylightSavingsTimeZone))
                 {
                     var timeZone = TimeZoneInfo.FindSystemTimeZoneById(daylightSavingsTimeZone);
@@ -298,7 +299,8 @@ public class Job
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Error executing job {Name}: {e.Message}");
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<object>>();
+            logger.LogError(e, e.Message);
             try
             {
                 // Stop pinging the server since the job failed

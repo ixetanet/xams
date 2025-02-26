@@ -25,62 +25,62 @@ const JobForm = (props: JobFormProps) => {
     setIsLoading(false);
   };
 
-  useEffect(() => {
-    const refresh = async () => {
-      if (dataRef.current == null) {
-        return;
-      }
-      if (isRefreshing) {
-        return;
-      }
-      setIsRefreshing(true);
-      try {
-        const resp = await authRequest.read<any>({
-          tableName: props.formBuilder.tableName,
-          id: props.formBuilder.snapshot?.JobId,
-          fields: ["*"],
-        });
-        if (resp != null && resp.data.results.length > 0) {
-          const job = resp.data.results[0];
-          if (job.Status != "Running") {
-            setIsLoading(false);
-          } else {
-            setIsLoading(true);
-          }
+  // useEffect(() => {
+  //   const refresh = async () => {
+  //     if (dataRef.current == null) {
+  //       return;
+  //     }
+  //     if (isRefreshing) {
+  //       return;
+  //     }
+  //     setIsRefreshing(true);
+  //     try {
+  //       const resp = await authRequest.read<any>({
+  //         tableName: props.formBuilder.tableName,
+  //         id: props.formBuilder.snapshot?.JobId,
+  //         fields: ["*"],
+  //       });
+  //       if (resp != null && resp.data.results.length > 0) {
+  //         const job = resp.data.results[0];
+  //         if (job.Status != "Running") {
+  //           setIsLoading(false);
+  //         } else {
+  //           setIsLoading(true);
+  //         }
 
-          // If the status has changed, reload the history table
-          props.formBuilder.dispatch({
-            type: "SET_FIELD_VALUE",
-            payload: { field: "Status", value: job.Status },
-          });
-          props.formBuilder.dispatch({
-            type: "SET_FIELD_VALUE",
-            payload: { field: "LastExecution", value: job.LastExecution },
-          });
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsRefreshing(false);
-      }
-    };
-    const interval = setInterval(refresh, 2500);
+  //         // If the status has changed, reload the history table
+  //         props.formBuilder.dispatch({
+  //           type: "SET_FIELD_VALUE",
+  //           payload: { field: "Status", value: job.Status },
+  //         });
+  //         props.formBuilder.dispatch({
+  //           type: "SET_FIELD_VALUE",
+  //           payload: { field: "LastExecution", value: job.LastExecution },
+  //         });
+  //       }
+  //     } catch (e) {
+  //       console.error(e);
+  //     } finally {
+  //       setIsRefreshing(false);
+  //     }
+  //   };
+  //   const interval = setInterval(refresh, 2500);
 
-    return () => clearInterval(interval);
-  }, []);
+  //   return () => clearInterval(interval);
+  // }, []);
 
-  useEffect(() => {
-    if (
-      props.formBuilder.snapshot != null &&
-      props.formBuilder.snapshot?.Status === "Running"
-    ) {
-      setIsLoading(true);
-    }
+  // useEffect(() => {
+  //   if (
+  //     props.formBuilder.snapshot != null &&
+  //     props.formBuilder.snapshot?.Status === "Running"
+  //   ) {
+  //     setIsLoading(true);
+  //   }
 
-    if (props.formBuilder.snapshot != null) {
-      dataRef.current = props.formBuilder.snapshot;
-    }
-  }, [props.formBuilder.snapshot]);
+  //   if (props.formBuilder.snapshot != null) {
+  //     dataRef.current = props.formBuilder.snapshot;
+  //   }
+  // }, [props.formBuilder.snapshot]);
 
   if (props.formBuilder.snapshot == null) {
     return <></>;

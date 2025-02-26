@@ -254,8 +254,19 @@ const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
     };
   }, []);
 
+  let colWidthsKey = "";
+  if (props.columnWidths != null && typeof props.columnWidths === "object") {
+    for (let i = 0; i < gridCellSize.columnWidths.length; i++) {
+      colWidthsKey += gridCellSize.columnWidths[i];
+    }
+  } else {
+    colWidthsKey = props.columnWidths.toString();
+  }
+
   return (
     <div
+      // make this a key so that the component is re-rendered when any of these props change
+      key={`${props.snapColumns}-${props.snapRows}-${colWidthsKey}`}
       ref={divRef}
       className="w-full h-full relative"
       onMouseMove={(e) => gridCellSize.onMouseMove(e)}
@@ -413,11 +424,12 @@ const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
                       onScroll={onScroll}
                       columnCount={columnCount - (props.snapColumns ?? 0)}
                       rowCount={props.rows.length - (props.snapRows ?? 0)}
-                      columnWidth={(index) =>
-                        gridCellSize.columnWidths[
+                      columnWidth={(index) => {
+                        console.log(props.snapColumns);
+                        return gridCellSize.columnWidths[
                           index + (props.snapColumns ?? 0)
-                        ]
-                      }
+                        ];
+                      }}
                       rowHeight={(index) => 30}
                       height={
                         props.snapRows != null && props.snapRows > 0

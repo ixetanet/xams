@@ -475,7 +475,7 @@ namespace Xams.Core
                         Type = type,
                         ExecuteJobOn = jobServerAttribute?.ExecuteJobOn ?? ExecuteJobOn.All,
                         ServerName = jobServerAttribute?.ServerName ?? string.Empty,
-                        DaylightSavingsTimeZone = jobDaylightSavingsAttribute?.TimeZone ?? string.Empty,
+                        TimeZone = jobDaylightSavingsAttribute?.TimeZone ?? string.Empty,
                     };
 
                     if (cache.ServiceJobs.ContainsKey(serviceJobAttribute.Name))
@@ -749,7 +749,7 @@ namespace Xams.Core
             public ExecuteJobOn ExecuteJobOn { get; internal set; } = ExecuteJobOn.All;
             public string? ServerName { get; internal set; }
             
-            public string? DaylightSavingsTimeZone { get; internal set; }
+            public string? TimeZone { get; internal set; }
         }
 
         public class AuditInfo

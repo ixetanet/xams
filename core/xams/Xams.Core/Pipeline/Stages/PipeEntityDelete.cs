@@ -23,6 +23,14 @@ public class PipeEntityDelete : BasePipelineStage
             }
         }
 
+        if (context.Entity == null)
+        {
+            return new Response<object?>()
+            {
+                Succeeded = true
+            };
+        }
+
         // If already being tracked, then remove and re-add to the change tracker
         // TODO: This should be optimized either by keeping track of entities in a Dictionary on the DbContext
         // TODO: Or another method (potentially disabling tracking and re-enabling https://learn.microsoft.com/en-us/ef/core/querying/tracking)

@@ -9,23 +9,22 @@
         <PackageOutputPath>./nupkg</PackageOutputPath>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-        <AssemblyVersion>1.0.5</AssemblyVersion>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="ClosedXML" Version="0.97.0"/>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.6"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.6"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.6"/>
-        <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.0.1" />
+      <PackageReference Include="ClosedXML" Version="0.97.0" />
+      <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.6" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.6" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.6" />
+      <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.0.1" />
     </ItemGroup>
 
     <ItemGroup>
         <None Include="LICENSE.txt" Pack="true" PackagePath="">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Include="README.md" Pack="true" PackagePath="">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>
 

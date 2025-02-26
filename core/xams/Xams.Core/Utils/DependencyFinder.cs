@@ -81,41 +81,34 @@ public class DependencyFinder
         }
         foreach (var dependency in dependencies)
         {
-            // Process in batches of 10000
-            int queryCount = 10000;
-            while (queryCount == 10000)
+            DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(dbContext, dependency.Type);
+            IQueryable query = dynamicLinq.Query
+                .Where($"{dependency.PropertyName} == @0", id)
+                .Select($"new({dependency.Type.Name}Id)");
+            List<dynamic> queryResults = await query.ToDynamicListAsync();
+        
+            foreach (dynamic queryResult in queryResults)
             {
-                DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(dbContext, dependency.Type);
-                IQueryable query = dynamicLinq.Query
-                    .Where($"{dependency.PropertyName} == @0", id)
-                    .Select($"new({dependency.Type.Name}Id)")
-                    .Take(10000);
-                List<dynamic> queryResults = await query.ToDynamicListAsync();
-                queryCount = queryResults.Count;
-            
-                foreach (dynamic queryResult in queryResults)
-                {
-                    Type resultType = queryResult.GetType();
-                    Guid resultId = (Guid)resultType.GetProperty($"{dependency.Type.Name}Id")!.GetValue(queryResult);
+                Type resultType = queryResult.GetType();
+                Guid resultId = (Guid)resultType.GetProperty($"{dependency.Type.Name}Id")!.GetValue(queryResult);
 
-                    if (!recordInfoDict.ContainsKey(resultId))
+                if (!recordInfoDict.ContainsKey(resultId))
+                {
+                    recordInfoDict[resultId] = new RecordInfo()
                     {
-                        recordInfoDict[resultId] = new RecordInfo()
-                        {
-                            Dependency = dependency,
-                            Count = 1,
-                            Depth = depth,
-                        };
-                    }
-                    else
-                    {
-                        recordInfoDict[resultId].Count++;
-                    }
-                    
-                    if (dependency.Dependencies != null && dependency.Dependencies.Any())
-                    {
-                        await GetPostOrderTraversal(dependency.Dependencies, resultId, dbContext, depth + 1, recordInfoDict);    
-                    }
+                        Dependency = dependency,
+                        Count = 1,
+                        Depth = depth,
+                    };
+                }
+                else
+                {
+                    recordInfoDict[resultId].Count++;
+                }
+                
+                if (dependency.Dependencies != null && dependency.Dependencies.Any())
+                {
+                    await GetPostOrderTraversal(dependency.Dependencies, resultId, dbContext, depth + 1, recordInfoDict);    
                 }
             }
         }
@@ -139,7 +132,7 @@ public class DependencyFinder
 
     public class RecordInfo
     {
-        public Dependency Dependency { get; set; }
+        public Dependency Dependency { get; set; } = null!;
         public int Depth { get; set; }
         public int Count { get; set; }
     }
@@ -148,8 +141,8 @@ public class DependencyFinder
 public class Dependency
 {
     public int Depth { get; set; }
-    public Type Type { get; set; }
-    public string PropertyName { get; set; }
+    public Type Type { get; set; } = null!;
+    public string PropertyName { get; set; } = null!;
     public bool IsNullable { get; set; }
     public Dependency? Parent { get; set; }
     public List<Dependency>? Dependencies { get; set; }
