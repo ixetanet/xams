@@ -43,12 +43,12 @@ namespace Xams.Core.Interfaces
         public T GetDbContext<T>() where T : BaseDbContext;
         internal Task<Response<object?>> TryExecuteBulkServiceLogic(BulkStage bulkStage, Guid userId);
 
-        internal Task<Response<object?>> BatchPreEntitySecurity(List<PipelineContext> pipelineContexts,
+        internal Task<Response<object?>> BatchPreEntity(List<PipelineContext> pipelineContexts,
             bool checkSecurity);
 
-        internal bool TrackDelete(string entity, Guid id);
+        internal bool TrackDelete(string entity, object id);
         
-        internal bool TrackingDelete(string entity, Guid id);
+        internal bool TrackingDelete(string entity, object id);
         
         internal ILogger GetLogger();
     }

@@ -295,7 +295,9 @@ const RolePermissions = (props: RolePermissionsProps) => {
             </div>
           )}
         </div>
-        <SaveButton onPreSave={onSave}></SaveButton>
+        <div>
+          <SaveButton onPreSave={onSave}></SaveButton>
+        </div>
       </div>
     </div>
   );

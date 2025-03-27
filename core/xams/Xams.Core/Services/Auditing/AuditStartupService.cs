@@ -226,8 +226,15 @@ public class AuditStartupService : IServiceStartup
         {
             var tableName = audit.GetValue<string>("Name");
             var id = audit.GetIdValue(auditType);
+            // Check if the ID is a Guid
+            if (!(id is Guid guidId))
+            {
+                // If not a Guid, we need to handle this case
+                // For now, we'll skip this audit record
+                continue;
+            }
             var auditFieldsForAudit = auditFields
-                .Where(x => x.GetValue<Guid>("AuditId") == id).ToList();
+                .Where(x => x.GetValue<Guid>("AuditId") == (Guid)id).ToList();
 
             var auditInfo = new Cache.AuditInfo()
             {

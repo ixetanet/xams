@@ -184,16 +184,6 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
           blur: 3,
         }}
         styles={{
-          overlay: {
-            ...(ctx.props.formZIndex !== undefined && {
-              zIndex: ctx.props.formZIndex,
-            }),
-          },
-          inner: {
-            ...(ctx.props.formZIndex !== undefined && {
-              zIndex: ctx.props.formZIndex + 1,
-            }),
-          },
           content: {
             display: "none",
           },
@@ -227,16 +217,16 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
               paddingRight: 0,
             }),
           },
-          overlay: {
-            ...(ctx.props.formZIndex !== undefined && {
-              zIndex: ctx.props.formZIndex,
-            }),
-          },
-          inner: {
-            ...(ctx.props.formZIndex !== undefined && {
-              zIndex: ctx.props.formZIndex + 1,
-            }),
-          },
+          // overlay: {
+          //   ...(ctx.props.formZIndex !== undefined && {
+          //     zIndex: ctx.props.formZIndex,
+          //   }),
+          // },
+          // inner: {
+          //   ...(ctx.props.formZIndex !== undefined && {
+          //     zIndex: ctx.props.formZIndex + 1,
+          //   }),
+          // },
         }}
         centered
       >

@@ -29,7 +29,6 @@ public class PipelineContext
     public DataRepository DataRepository { get; internal set; } = null!;
     public MetadataRepository MetadataRepository { get; internal set; } = null!;
     public SecurityRepository SecurityRepository { get; internal set; } = null!;
-    public List<TablePermission> TablePermissions { get; set; } = null!;
     public ServiceContext ServiceContext { get; private set; } = null!;
     public int Depth { get; internal set; }
     public PipelineContext()

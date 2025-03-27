@@ -18,8 +18,6 @@ namespace Xams.Core.Startup
         public static readonly Guid SystemUserRoleId = new("58e1362d-b7cb-4e32-96e5-ccf86b67d28d");
         public static readonly Guid SystemAdministratorsTeamRoleId = new("fd74cc60-ac25-41b4-862c-1621cf03282d");
         public static readonly Guid SystemTeamUserId = new("6c952b65-6530-4248-b6f6-d0f9a2305c6f");
-        public static readonly string CachePermissionsSetting = "CACHE_PERMISSIONS";
-        public static readonly string CachePermissionsLastUpdateSystem = "CACHE_PERMISSIONS_LAST_UPDATE";
     
         public SystemRecords(IDataService dataService)
         {
@@ -137,15 +135,11 @@ namespace Xams.Core.Startup
             
             foreach (var metadata in tableMetadata)
             {
-                if (metadata.TableAttribute == null)
-                {
-                    throw new Exception($"{metadata.Type.Name} is missing a TableAttribute. This should match the name of the class.");
-                }
                 foreach (var permissionOperation in permissionOperations)
                 {
                     foreach (var permissionLevel in permissionLevels)
                     {
-                        var permissionName = $"TABLE_{metadata.TableAttribute?.Name}_{permissionOperation}_{permissionLevel}";
+                        var permissionName = $"TABLE_{metadata.TableName}_{permissionOperation}_{permissionLevel}";
                         permissionNames.Add(permissionName);
                     }
                 }
@@ -154,8 +148,8 @@ namespace Xams.Core.Startup
             // Create Table Import Permissions
             foreach (var metadata in tableMetadata)
             {
-                permissionNames.Add($"TABLE_{metadata.TableAttribute.Name}_IMPORT");
-                permissionNames.Add($"TABLE_{metadata.TableAttribute.Name}_EXPORT");
+                permissionNames.Add($"TABLE_{metadata.TableName}_IMPORT");
+                permissionNames.Add($"TABLE_{metadata.TableName}_EXPORT");
             }
         
             // Other Permissions
@@ -332,25 +326,13 @@ namespace Xams.Core.Startup
             BaseDbContext baseDbContext = _dataService.GetDataRepository().CreateNewDbContext();
             var settingMetadata = Cache.Instance.GetTableMetadata("Setting");
             var systemMetadata = Cache.Instance.GetTableMetadata("System");
+
+
+            var settings = new List<Item>();
+            if (settings == null) throw new ArgumentNullException(nameof(settings));
             
-
-            var settings = new[]
-            {
-                new
-                {
-                    Name = CachePermissionsSetting,
-                    Value = "false",
-                }
-            };
-
-            var systems = new[]
-            {
-                new
-                {
-                    Name = CachePermissionsLastUpdateSystem,
-                    Value = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture),
-                }
-            };
+            var systems = new List<Item>();
+            if (systems == null) throw new ArgumentNullException(nameof(systems));
 
             foreach (var setting in settings)
             {
@@ -423,6 +405,11 @@ namespace Xams.Core.Startup
 
             return permissionNames;
         }
-        
+
+        public class Item(string name, string value)
+        {
+            public required string Name { get; set; } = name;
+            public required string Value { get; set; } = value;
+        }
     }
 }

@@ -66,24 +66,25 @@ public class PipeProtectSystemRecords : BasePipelineStage
                 string primaryKey = Cache.Instance
                     .GetTableMetadata(context.TableName)!
                     .PrimaryKey;
-                Guid id = Guid.Empty;
+                object id = null;
                 if (context.DataOperation is DataOperation.Update)
                 {
                     var property = context.PreEntity.GetType().GetProperty(primaryKey);
-                    id = (Guid)(property?.GetValue(context.PreEntity) ?? Guid.Empty);    
+                    id = property?.GetValue(context.PreEntity);    
                 } 
                 else if (context.DataOperation is DataOperation.Delete)
                 {
-                    id = (Guid)context.Entity!.GetType().GetProperty(primaryKey)!.GetValue(context.Entity)!;    
+                    id = context.Entity!.GetType().GetProperty(primaryKey)!.GetValue(context.Entity)!;    
                 }
                 
-                if (new[]
+                // Check if the ID is a Guid and matches any of the system record IDs
+                if (id is Guid guidId && new[]
                     {
                         SystemRecords.SystemAdministratorRoleId,
                         SystemRecords.SystemUserRoleId,
                         SystemRecords.SystemAdministratorsTeamRoleId,
                         SystemRecords.SystemTeamUserId
-                    }.Contains(id))
+                    }.Contains(guidId))
                 {
                     return new Response<object?>()
                     {
@@ -96,9 +97,11 @@ public class PipeProtectSystemRecords : BasePipelineStage
             if (context.DataOperation is DataOperation.Delete)
             {
                 var metadata = Cache.Instance.GetTableMetadata(context.TableName);
-                Guid id = context.Entity?.GetIdValue(metadata.Type) ??
+                object idObj = context.Entity?.GetIdValue(metadata.Type) ??
                           throw new Exception($"Missing ID for {context.TableName}");
-                if (new[]
+                
+                // Check if the ID is a Guid and matches any of the system record IDs
+                if (idObj is Guid id && new[]
                     {
                         SystemRecords.SystemUserId,
                         SystemRecords.SystemAdministratorTeamId,

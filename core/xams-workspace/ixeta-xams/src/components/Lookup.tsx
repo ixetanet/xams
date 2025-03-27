@@ -1,5 +1,5 @@
 import { API_DATA_READ } from "../apiurls";
-import { MetadataField } from "../api/MetadataResponse";
+import { MetadataField, MetadataResponse } from "../api/MetadataResponse";
 import useAuthRequest from "../hooks/useAuthRequest";
 import { Avatar, Group, Select, SelectProps, Text } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
@@ -107,10 +107,10 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
   useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
 
   const getData = async () => {
-    let fields = [
-      `${props.metaDataField.lookupTable}Id`,
-      props.metaDataField.lookupTableNameField,
-    ];
+    let fields = [props.metaDataField.lookupPrimaryKeyField];
+    if (props.metaDataField.lookupTableNameField != null) {
+      fields.push(props.metaDataField.lookupTableNameField);
+    }
     if (props.metaDataField.lookupTableDescriptionField != null) {
       fields.push(props.metaDataField.lookupTableDescriptionField);
     }
@@ -129,13 +129,18 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
           ? ([{ field: "Order", order: "asc" }] as ReadOrderBy[])
           : []),
         {
-          field: props.metaDataField.lookupTableNameField,
+          field:
+            props.metaDataField.lookupTableNameField ??
+            props.metaDataField.lookupPrimaryKeyField,
           order: props.query?.order,
         },
       ],
       filters: [
         {
-          field: props.metaDataField.lookupTableNameField,
+          field:
+            props.metaDataField.lookupTableNameField ??
+            props.metaDataField.lookupPrimaryKeyField,
+          operator: "contains",
           value:
             selectedItem != null && selectedItem.label === debouncedSearchValue
               ? ""
@@ -161,8 +166,12 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
 
     if (!readResp || !readResp.succeeded) return;
     let results = readResp.data.results.map((d: any) => ({
-      value: `${d[`${props.metaDataField.lookupTable}Id`]}`,
-      label: d[props.metaDataField.lookupTableNameField],
+      value: `${d[props.metaDataField.lookupPrimaryKeyField]}`,
+      label:
+        d[
+          props.metaDataField.lookupTableNameField ??
+            props.metaDataField.lookupPrimaryKeyField
+        ].toString(),
       // If there's a description field, add it to the label
       ...(props.metaDataField.lookupTableDescriptionField != null
         ? {
@@ -219,6 +228,18 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
       props.defaultLabelValue !== undefined &&
       data.find((x) => x.value === props.defaultLabelValue?.value) === undefined
     ) {
+      // don't add if if'ts ready in the list
+      if (
+        data.find(
+          (x) =>
+            x.value ===
+            (typeof props.defaultLabelValue?.value === "number"
+              ? `${props.defaultLabelValue?.value}`
+              : props.defaultLabelValue?.value)
+        )
+      ) {
+        return;
+      }
       setData([...data, props.defaultLabelValue]);
     }
   }, [props.defaultLabelValue]);
@@ -228,6 +249,12 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
     if (item.label == null) {
       item.label = item.value;
     }
+    // Don't allow value to be number
+    if (typeof item.value === "number") {
+      item.value = `${item.value}`;
+    }
+
+    // Exclude duplicates
   }
 
   return (
@@ -245,7 +272,7 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
           ? props.defaultLabelValue.value
           : undefined
       }
-      value={props.value}
+      value={typeof props.value === "number" ? `${props.value}` : props.value}
       onSearchChange={setSearchValue}
       onChange={(value) => {
         if (props.onChange !== undefined) {

@@ -229,9 +229,12 @@ const DataTable = forwardRef(
         }
       }
 
-      // Always make sure the Id field is included
-      if (fields?.find((f) => f === props.tableName + "Id") === undefined) {
-        fields?.push(props.tableName + "Id");
+      // Always make sure the primary key field is included
+      if (
+        metadata &&
+        fields?.find((f) => f === metadata.primaryKey) === undefined
+      ) {
+        fields?.push(metadata.primaryKey);
       }
 
       // If deactivate instead of delete is enabled, add the IsActive field to the fields
@@ -401,7 +404,9 @@ const DataTable = forwardRef(
         type: "OPEN_FORM",
         payload: {
           editRecordId:
-            recordData != null ? recordData[props.tableName + "Id"] : null,
+            recordData != null && state.metadata
+              ? recordData[state.metadata.primaryKey]
+              : null,
         },
       });
     };

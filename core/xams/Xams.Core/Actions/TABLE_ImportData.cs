@@ -30,8 +30,7 @@ public class TABLE_ImportData : IServiceAction
         string operation = context.Parameters["operation"].GetString()!;
         
         // Verify permissions
-        string[] permissions = await Permissions.GetUserPermissions(db, context.ExecutingUserId, [$"TABLE_{tableName}_IMPORT"
-        ]);
+        string[] permissions = await PermissionCache.GetUserPermissions(context.ExecutingUserId, [$"TABLE_{tableName}_IMPORT"]);
 
         if (permissions.Length == 0)
         {

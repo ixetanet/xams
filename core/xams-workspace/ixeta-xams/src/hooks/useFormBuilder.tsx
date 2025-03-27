@@ -104,14 +104,18 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
     let canUpdate = false;
     let canCreate = false;
     if ((props.snapshot == null && options.id != null) || options.refresh) {
+      // Get metadata to find the primary key
+      const metadata = await authRequest.metadata(props.tableName);
+
       const dataResp = await authRequest.read<T>({
         tableName: props.tableName,
         fields: ["*"],
         maxResults: 1,
         page: 1,
-        id: options.refresh
-          ? (state.snapshot as any)[`${props.tableName}Id`]
-          : options.id,
+        id:
+          options.refresh && state.metadata
+            ? (state.snapshot as any)[state.metadata.primaryKey]
+            : options.id,
       });
       if (dataResp == null || !dataResp.succeeded) {
         return;
@@ -194,7 +198,7 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
             snapshot[key] !== null &&
             (metadata.fields.find((x) => x.name === key) !== undefined ||
               ["_ui_info_"].includes(key) ||
-              key === `${props.tableName}Id`)
+              key === metadata.primaryKey)
           ) {
             object[key] = snapshot[key];
           }
@@ -212,23 +216,30 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
   const getClearedValues = async (metadata: MetadataResponse) => {
     // Set default values for fields of type Single, Int32, Int64, Double, Decimal to 0
     const numericDefaults = metadata.fields
-      .filter(
-        (field) =>
-          field.type === "Single" ||
-          field.type === "Int32" ||
-          field.type === "Int64" ||
-          field.type === "Double" ||
-          field.type === "Decimal"
+      .filter((field) =>
+        [
+          "Single",
+          "Int32",
+          "Int64",
+          "Double",
+          "Decimal",
+          "Byte",
+          "SByte",
+          "UInt32",
+          "UInt64",
+          "Int16",
+          "UInt16",
+        ].includes(field.type)
       )
       .map((field) => ({
         field: field.name,
         value: field.isNullable ? "" : 0,
       }));
     const stringDefaults = metadata?.fields
-      .filter((field) => field.type === "String" || field.type === "Guid")
+      .filter((field) => ["String", "Guid", "Char"].includes(field.type))
       .map((field) => ({
         field: field.name,
-        value: "",
+        value: field.type === "Char" && !field.isNullable ? "A" : "",
       }));
     const booleanDefaults = metadata?.fields
       .filter((field) => field.type === "Boolean")
@@ -456,7 +467,7 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
       if (props.onPostSave !== undefined) {
         await props.onPostSave(
           state.snapshot === undefined ? "CREATE" : "UPDATE",
-          resp.data[`${props.tableName}Id`],
+          state.metadata ? resp.data[state.metadata.primaryKey] : "",
           resp.data
         );
       }
@@ -464,7 +475,7 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
         if (event.eventName === "POST_SAVE") {
           event.callback(
             state.snapshot === undefined ? "CREATE" : "UPDATE",
-            resp.data[`${props.tableName}Id`],
+            state.metadata ? resp.data[state.metadata.primaryKey] : "",
             resp.data
           );
         }
@@ -472,7 +483,7 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
       if (postSaveEvent != null) {
         postSaveEvent(
           state.snapshot === undefined ? "CREATE" : "UPDATE",
-          resp.data[`${props.tableName}Id`],
+          state.metadata ? resp.data[state.metadata.primaryKey] : "",
           resp.data
         );
       }
@@ -674,12 +685,15 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
       : "CREATE") as "UPDATE" | "CREATE",
     stateType: state.type,
     tableName: props.tableName,
-    reload: (reloadDataTables: boolean = true) =>
-      onLoad({
-        id: (state as any).snapshot[`${props.tableName}Id`],
-        refresh: true,
-        refreshDatatables: reloadDataTables,
-      }),
+    reload: (reloadDataTables: boolean = true) => {
+      if (state.metadata && state.snapshot) {
+        onLoad({
+          id: (state as any).snapshot[state.metadata.primaryKey],
+          refresh: true,
+          refreshDatatables: reloadDataTables,
+        });
+      }
+    },
     setField: setField,
     setFieldError: setFieldError,
     isDirty: isDirty,

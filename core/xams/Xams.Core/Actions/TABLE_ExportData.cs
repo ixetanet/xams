@@ -49,7 +49,7 @@ public class TABLE_ExportData : IServiceAction
         }
         
         // Verify permissions
-        string[] permissions = await Permissions.GetUserPermissions(db, context.ExecutingUserId, new []{ $"TABLE_{tableName}_EXPORT" });
+        string[] permissions = await PermissionCache.GetUserPermissions(context.ExecutingUserId, new []{ $"TABLE_{tableName}_EXPORT" });
 
         if (permissions.Length == 0)
         {

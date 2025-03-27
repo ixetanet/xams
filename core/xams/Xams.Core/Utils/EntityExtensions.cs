@@ -45,7 +45,7 @@ internal static class EntityExtensions
         if (!PropertyCache.TryGetValue(key, out var accessor))
         {
             var propertyInfo = obj.GetType().GetProperty(fieldName);
-            if (propertyInfo == null || propertyInfo.PropertyType != typeof(T))
+            if (typeof(T) != typeof(object) && (propertyInfo == null || propertyInfo.PropertyType != typeof(T)))
             {
                 throw new Exception($"Property {fieldName} not found or type mismatch on {obj.GetType().Name}");
             }
@@ -74,37 +74,47 @@ internal static class EntityExtensions
         return obj.GetType().GetProperty(fieldName) != null;
     }
     
-    public static Guid GetIdValue(this object obj, Type type)
+    public static object GetIdValue(this object obj, Type type)
     {
+        // Get the metadata for this type to find the primary key
+        var tableMetadata = Cache.Instance.GetTableMetadata(EntityUtil.GetTableName(type, EntityUtil.DbContext?.GetType() ?? throw new Exception("DbContext not yet initialized")).TableName);
+        var primaryKeyName = tableMetadata.PrimaryKey;
+        
         if (obj is ExpandoObject)
         {
             if (obj is not IDictionary<string, object> dict)
             {
-                throw new Exception($"Property {obj.GetType().Name}Id not found on {obj.GetType().Name}");
+                throw new Exception($"Property {primaryKeyName} not found on {obj.GetType().Name}");
             }
 
-            if (dict[$"{type.Name}Id"] is not Guid expandoValue)
+            if (!dict.ContainsKey(primaryKeyName))
             {
-                throw new Exception($"Property {obj.GetType().Name}Id is null on {obj.GetType().Name}");
+                throw new Exception($"Property {primaryKeyName} not found on {obj.GetType().Name}");
             }
 
-            return expandoValue;
+            var value = dict[primaryKeyName];
+            if (value == null)
+            {
+                throw new Exception($"Property {primaryKeyName} is null on {obj.GetType().Name}");
+            }
+
+            return value;
         }
         
-        PropertyInfo? property = obj.GetType().GetProperty($"{obj.GetType().Name}Id");
+        PropertyInfo? property = obj.GetType().GetProperty(primaryKeyName);
         if (property == null)
         {
-            throw new Exception($"Property {obj.GetType().Name}Id not found on {obj.GetType().Name}");
+            throw new Exception($"Property {primaryKeyName} not found on {obj.GetType().Name}");
         }
 
-        var value = property.GetValue(obj);
+        var propValue = property.GetValue(obj);
 
-        if (value == null)
+        if (propValue == null)
         {
-            throw new Exception($"Property {obj.GetType().Name}Id is null on {obj.GetType().Name}");
+            throw new Exception($"Property {primaryKeyName} is null on {obj.GetType().Name}");
         }
 
-        return (Guid)value;
+        return propValue;
     }
 
     public static void SetValue(this object obj, string fieldName, object? value)
@@ -119,7 +129,7 @@ internal static class EntityExtensions
     
     public static string? GetNameFieldValue(this object obj, Type type)
     {
-        var nameProperty = Cache.Instance.GetTableMetadata(type.Name).NameProperty;
+        var nameProperty = Cache.Instance.GetTableMetadata(EntityUtil.GetTableName(type, EntityUtil.DbContext?.GetType() ?? throw new Exception("DbContext not yet initialized")).TableName).NameProperty;
 
         if (nameProperty == null)
         {
@@ -161,26 +171,22 @@ internal static class EntityExtensions
             return false;
         }
         
-        var idPropertyType = idProperty.PropertyType;
-        idPropertyType = Nullable.GetUnderlyingType(idPropertyType) ?? idPropertyType;
-
-        if (idPropertyType != typeof(Guid))
-        {
-            return false;
-        }
-        
-        if (fieldName.Length <= 2)
+        // Check if the field ends with "Id"
+        if (!fieldName.EndsWith("Id") || fieldName.Length <= 2)
         {
             return false;
         }
 
-        var propertyInfo = type.GetProperty(fieldName.Substring(0, fieldName.Length - 2));
+        // Check if there's a corresponding navigation property
+        var navigationPropertyName = fieldName.Substring(0, fieldName.Length - 2);
+        var propertyInfo = type.GetProperty(navigationPropertyName);
 
         if (propertyInfo == null)
         {
             return false;
         }
 
+        // Check if the navigation property is a complex type (not a primitive)
         Type propertyType = propertyInfo.PropertyType;
         propertyType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
         if (propertyType.IsPrimitive
@@ -225,26 +231,22 @@ internal static class EntityExtensions
             return null;
         }
         
-        var idPropertyType = idProperty.PropertyType;
-        idPropertyType = Nullable.GetUnderlyingType(idPropertyType) ?? idPropertyType;
-
-        if (idPropertyType != typeof(Guid))
-        {
-            return null;
-        }
-        
-        if (fieldName.Length <= 2)
+        // Check if the field ends with "Id"
+        if (!fieldName.EndsWith("Id") || fieldName.Length <= 2)
         {
             return null;
         }
 
-        var propertyInfo = type.GetProperty(fieldName.Substring(0, fieldName.Length - 2));
+        // Get the navigation property name by removing the "Id" suffix
+        var navigationPropertyName = fieldName.Substring(0, fieldName.Length - 2);
+        var propertyInfo = type.GetProperty(navigationPropertyName);
 
         if (propertyInfo == null)
         {
             return null;
         }
 
+        // Check if the navigation property is a complex type (not a primitive)
         Type propertyType = propertyInfo.PropertyType;
         propertyType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
         if (propertyType.IsPrimitive
@@ -258,7 +260,6 @@ internal static class EntityExtensions
 
         return propertyType;
     }
-
     public static bool IsValidEntityProperty(this PropertyInfo propertyInfo)
     {
         Type propertyType = propertyInfo.PropertyType;
@@ -289,6 +290,11 @@ internal static class EntityExtensions
         }
 
         return result;
+    }
+
+    public static Cache.MetadataInfo EntityMetadata(this object obj)
+    {
+        return Cache.Instance.GetTableMetadata(obj.GetType());
     }
 }
 
@@ -321,14 +327,21 @@ internal class ExtensionUtil
                 }
 
                 // If it's not a xxId field, skip
-                if (lookupIdProperty.Name.Length <= 2)
+                if (!lookupIdProperty.Name.EndsWith("Id") || lookupIdProperty.Name.Length <= 2)
                 {
                     continue;
                 }
 
-                Guid? value = (Guid?)lookupIdProperty.GetValue(_obj);
+                // Get the ID value (could be any type, not just Guid)
+                var idValue = lookupIdProperty.GetValue(_obj);
+                if (idValue == null)
+                {
+                    continue;
+                }
 
-                if (value == null)
+                // For backward compatibility, we still use Guid for existing code
+                // In the future, this should be updated to handle any primary key type
+                if (idValue is not Guid guidValue)
                 {
                     continue;
                 }
@@ -356,10 +369,8 @@ internal class ExtensionUtil
                 
                 lookupInfos.Add(new UiSetFieldFromLookupInfo()
                 {
-                    Id = (Guid)value,
-                    // FieldName = property.Name,
+                    Id = guidValue,
                     Property = property,
-                    // LookupNameField = lookupFieldName,
                     LookupType = tableNameUnderlyingType,
                 });
             }
@@ -371,9 +382,7 @@ internal class ExtensionUtil
     public class UiSetFieldFromLookupInfo
     {
         public required Guid Id { get; set; }
-        // public required string FieldName { get; set; }
         public required Type LookupType { get; set; }
-        // public required string LookupNameField { get; set; }
         public required PropertyInfo Property { get; set; }
     }
 }

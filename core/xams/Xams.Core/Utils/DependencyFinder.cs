@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Linq.Dynamic.Core;
 using Microsoft.EntityFrameworkCore;
 using Xams.Core.Base;
@@ -72,49 +73,83 @@ public class DependencyFinder
 
         return maxDepth;
     }
-    
-    public static async Task<Dictionary<Guid, RecordInfo>> GetPostOrderTraversal(List<Dependency> dependencies, Guid id, BaseDbContext dbContext, int depth = 0, Dictionary<Guid, RecordInfo>? recordInfoDict = null)
+
+    public class PostOrderTraversalSettings
     {
-        if (recordInfoDict == null)
+        public required object Id { get; set; } 
+        public required List<Dependency> Dependencies { get; set; }
+        public required Func<BaseDbContext> DbContextFactory { get; set; }
+    }
+
+    public class PostOrderTraversalContext
+    {
+        public required object Id { get; set; }
+        public required int Depth { get; set; }
+        public required ConcurrentDictionary<object, RecordInfo> RecordInfoDict { get; set; }
+        public required List<Dependency> Dependencies { get; set; } 
+    }
+    
+    public static async Task<ConcurrentDictionary<object, RecordInfo>> GetPostOrderTraversal(PostOrderTraversalSettings settings, PostOrderTraversalContext? context = null)
+    {
+        if (context == null)
         {
-            recordInfoDict = new Dictionary<Guid, RecordInfo>();
+            context = new PostOrderTraversalContext()
+            {
+                Id = settings.Id,
+                Depth = 0,
+                Dependencies = settings.Dependencies,
+                RecordInfoDict = new ConcurrentDictionary<object, RecordInfo>(),
+            };
         }
-        foreach (var dependency in dependencies)
+
+        await Parallel.ForEachAsync(context.Dependencies, async (dependency, token) =>
         {
+            string primaryKey = Cache.Instance.GetTableMetadata(dependency.Type.Name).PrimaryKey;
+            var dbContext = settings.DbContextFactory();
             DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(dbContext, dependency.Type);
             IQueryable query = dynamicLinq.Query
-                .Where($"{dependency.PropertyName} == @0", id)
-                .Select($"new({dependency.Type.Name}Id)");
-            List<dynamic> queryResults = await query.ToDynamicListAsync();
+                .Where($"{dependency.PropertyName} == @0", context.Id)
+                .Select($"new({primaryKey})");
+            List<dynamic> queryResults = await query.ToDynamicListAsync(cancellationToken: token);
+            await dbContext.DisposeAsync();
         
             foreach (dynamic queryResult in queryResults)
             {
                 Type resultType = queryResult.GetType();
-                Guid resultId = (Guid)resultType.GetProperty($"{dependency.Type.Name}Id")!.GetValue(queryResult);
+                object resultId = (object)resultType.GetProperty($"{primaryKey}")!.GetValue(queryResult);
 
-                if (!recordInfoDict.ContainsKey(resultId))
+                if (!context.RecordInfoDict.TryGetValue(resultId, out var value))
                 {
-                    recordInfoDict[resultId] = new RecordInfo()
+                    context.RecordInfoDict[resultId] = new RecordInfo()
                     {
                         Dependency = dependency,
                         Count = 1,
-                        Depth = depth,
+                        Depth = context.Depth,
                     };
                 }
                 else
                 {
-                    recordInfoDict[resultId].Count++;
+                    if (context.Depth > value.Depth)
+                    {
+                        value.Depth = context.Depth;
+                    }
+                    value.Count++;
                 }
                 
-                if (dependency.Dependencies != null && dependency.Dependencies.Any())
+                if (dependency is { IsNullable: false, Dependencies: not null } && dependency.Dependencies.Any())
                 {
-                    await GetPostOrderTraversal(dependency.Dependencies, resultId, dbContext, depth + 1, recordInfoDict);    
+                    await GetPostOrderTraversal(settings, new PostOrderTraversalContext()
+                    {
+                        Dependencies = dependency.Dependencies,
+                        Id = resultId,
+                        Depth = context.Depth + 1,
+                        RecordInfoDict = context.RecordInfoDict,
+                    });    
                 }
             }
-        }
+        });
 
-        return recordInfoDict.OrderByDescending(x => x.Value.Depth)
-            .ToDictionary(x => x.Key, x => x.Value);
+        return context.RecordInfoDict;
     }
     
     public static void LogDependencyTree(List<Dependency> dependencies, int depth = 0)

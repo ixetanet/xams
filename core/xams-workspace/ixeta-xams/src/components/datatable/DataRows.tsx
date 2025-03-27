@@ -15,7 +15,9 @@ const DataRows = () => {
             if (ctx.props.customRow !== undefined) {
               return (
                 <Table.Tr
-                  key={r[ctx.props.tableName + "Id"]}
+                  key={
+                    ctx.state.metadata ? r[ctx.state.metadata.primaryKey] : j
+                  }
                   className="w-full"
                 >
                   {ctx.props.customRow(r)}
@@ -24,7 +26,7 @@ const DataRows = () => {
             }
             return (
               <Table.Tr
-                key={r[ctx.props.tableName + "Id"]}
+                key={ctx.state.metadata ? r[ctx.state.metadata.primaryKey] : j}
                 className="flex relative items-start"
                 onClick={() => {
                   ctx.openForm(r);
@@ -34,7 +36,9 @@ const DataRows = () => {
                 }}
               >
                 {ctx.getFields().map((f, i) => {
-                  const key = `${r[ctx.props.tableName + "Id"]}-${i}`;
+                  const key = `${
+                    ctx.state.metadata ? r[ctx.state.metadata.primaryKey] : j
+                  }-${i}`;
                   return (
                     <DataCell key={key} record={r} fieldInfo={f}></DataCell>
                   );

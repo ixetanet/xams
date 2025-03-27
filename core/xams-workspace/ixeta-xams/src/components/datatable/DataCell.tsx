@@ -65,7 +65,7 @@ const DataCell = (props: DataCellProps) => {
   };
 
   const onDelete = async (record: any) => {
-    const id = record[ctx.props.tableName + "Id"];
+    const id = record[ctx.state.metadata?.primaryKey ?? ""];
     if (
       ctx.props.deleteBehavior === "Delete" ||
       ctx.props.deleteBehavior == null

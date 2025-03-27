@@ -2,6 +2,7 @@ using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Xams.Core.Attributes;
+using Xams.Core.Base;
 using Xams.Core.Contexts;
 using Xams.Core.Dtos;
 using Xams.Core.Interfaces;
@@ -17,12 +18,15 @@ namespace Xams.Core
         {
             _serviceProvider = serviceProvider;
         }
-    
+
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            // Create a new service provider to prevent access to garbage collected service provider
+            PermissionCache.ServiceProvider = _serviceProvider.CreateScope().ServiceProvider;
             using (var scope = _serviceProvider.CreateScope())
             {
                 var dataService = scope.ServiceProvider.GetRequiredService<IDataService>();
+                await using var db = dataService.GetDataRepository().CreateNewDbContext<BaseDbContext>();
                 var dataServiceType = dataService.GetType();
                 var dbContextType = dataServiceType.GenericTypeArguments[0];
                 Cache.Initialize(dbContextType, dataService);
@@ -37,6 +41,12 @@ namespace Xams.Core
                 await systemRecords.CreateTeamRoles();
                 await systemRecords.CreateTeamUsers();
                 await systemRecords.CreateSettingAndSystemRecords();
+                await PermissionCache.CacheRolePermissions(db);
+                // Don't cache the below so we're not caching users with no activity
+                // and the server starts quickly in cases where there are many users
+                // await PermissionCache.CacheUserRoles(db);
+                // await PermissionCache.CacheUserTeams(db);
+                await PermissionCache.CacheTeamRoles(db);
                 await ExecuteStartupServices(StartupOperation.Post, scope.ServiceProvider);
             }
         }
@@ -45,7 +55,7 @@ namespace Xams.Core
         {
             return Task.CompletedTask;
         }
-        
+
         public async Task ExecuteStartupServices(StartupOperation startupOperation, IServiceProvider serviceProvider)
         {
             List<Cache.ServiceStartupInfo> startupServices = Cache.Instance.ServiceStartupInfos
@@ -57,24 +67,21 @@ namespace Xams.Core
 
             foreach (var startupService in startupServices)
             {
-                if (startupService.Type != null)
+                object? service = Activator.CreateInstance(startupService.Type);
+                MethodInfo? methodInfo = startupService.Type.GetMethod("Execute");
+                if (methodInfo == null)
                 {
-                    object? service = Activator.CreateInstance(startupService.Type);
-                    MethodInfo? methodInfo = startupService.Type.GetMethod("Execute");
-                    if (methodInfo == null)
-                    {
-                        throw new Exception($"Method Execute not found in {startupService.Type.Name}");
-                    }
-                    
-                    Response<object?> response = await ((Task<Response<object?>>)methodInfo.Invoke(service,
-                    [
-                        startupContext
-                    ])!);
-                        
-                    if (!response.Succeeded)
-                    {
-                        throw new Exception(response.FriendlyMessage);
-                    }
+                    throw new Exception($"Method Execute not found in {startupService.Type.Name}");
+                }
+
+                Response<object?> response = await ((Task<Response<object?>>)methodInfo.Invoke(service,
+                [
+                    startupContext
+                ])!);
+
+                if (!response.Succeeded)
+                {
+                    throw new Exception(response.FriendlyMessage);
                 }
             }
         }

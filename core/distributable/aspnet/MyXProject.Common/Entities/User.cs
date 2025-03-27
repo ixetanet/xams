@@ -7,7 +7,7 @@ namespace MyXProject.Common.Entities;
 public class User
 {
     public Guid UserId { get; set; }
-    [MaxLength(250)]
+    [MaxLength(100)]
     public string? Name { get; set; } = null!;
     public DateTime CreatedDate { get; set; }
     

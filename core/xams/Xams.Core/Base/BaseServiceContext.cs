@@ -201,6 +201,7 @@ public class BaseServiceContext(PipelineContext pipelineContext)
         {
             return [];
         }
-        return await SecurityRepository.UserPermissions(userId, permissions);
+
+        return await PermissionCache.GetUserPermissions(userId, permissions);
     }
 }

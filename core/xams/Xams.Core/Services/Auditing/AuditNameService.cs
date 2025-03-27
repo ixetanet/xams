@@ -19,7 +19,8 @@ public class AuditNameService : IServiceLogic
         // Make sure this entity has a Name property
         var metadata = Cache.Instance.GetTableMetadata(context.TableName);
         var nameProperty = metadata.NameProperty;
-        if (nameProperty == null)
+        // TODO: Add support for numeric id primary key
+        if (nameProperty == null || metadata.PrimaryKeyProperty.PropertyType != typeof(Guid))
         {
             return ServiceResult.Success();
         }
@@ -29,7 +30,7 @@ public class AuditNameService : IServiceLogic
             var db = context.GetDbContext<BaseDbContext>();
             var entity = context.GetEntity<object>();
             string name = entity.GetNameFieldValue(metadata.Type) ?? "";
-            Guid id = entity.GetIdValue(metadata.Type);
+            object id = entity.GetIdValue(metadata.Type);
             // On change of the Name attribute of an entity update it's name on all of the audit history records
             string schema = db.Model.FindEntityType(entity.GetType())?.GetSchema() ?? string.Empty;
             schema = !string.IsNullOrEmpty(schema) ? $"\"{schema}\"." : "";

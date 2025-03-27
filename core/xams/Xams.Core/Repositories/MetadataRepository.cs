@@ -109,8 +109,8 @@ namespace Xams.Core.Repositories
                         .Where(x => x.DisplayNameAttribute.Tag == tag)
                         .Select(x => new TablesOutput()
                         {
-                            tableName = x.TableAttribute.Name,
-                            displayName = x.DisplayNameAttribute?.Name ?? x.TableAttribute.Name,
+                            tableName = x.TableName,
+                            displayName = x.DisplayNameAttribute?.Name ?? x.TableName,
                             tag = x.DisplayNameAttribute?.Tag ?? ""
                         }).ToList();
                 }
@@ -119,14 +119,14 @@ namespace Xams.Core.Repositories
                     tables = Cache.Instance.GetTableMetadata()
                         .Select(x => new TablesOutput()
                         {
-                            tableName = x.TableAttribute.Name,
-                            displayName = x.DisplayNameAttribute?.Name ?? x.TableAttribute.Name,
+                            tableName = x.TableName,
+                            displayName = x.DisplayNameAttribute?.Name ?? x.TableName,
                             tag = x.DisplayNameAttribute?.Tag ?? ""
                         }).ToList();
                 }
 
                 // Only return tables the user has read access to
-                string[] permissions = await Permissions.GetUserPermissions(_dataContext, userId);
+                string[] permissions = await PermissionCache.GetUserPermissions(userId);
                 List<TablesOutput> filteredTables = new List<TablesOutput>();
                 foreach (var table in tables)
                 {

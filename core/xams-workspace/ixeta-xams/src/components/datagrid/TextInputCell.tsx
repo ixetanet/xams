@@ -26,7 +26,7 @@ const TextInputCell = (props: TextInputCellProps) => {
   };
 
   return (
-    <div>
+    <div className="w-full">
       <input
         type="text"
         style={{
