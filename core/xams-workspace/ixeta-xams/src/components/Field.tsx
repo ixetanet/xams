@@ -8,6 +8,11 @@ import { DateInputProps } from "@mantine/dates";
 import { MetadataField } from "../api/MetadataResponse";
 import Lookup from "./Lookup";
 import RichText from "./RichText";
+import {
+  CSNumericType,
+  parseFloatCS,
+  parseIntCS,
+} from "../utils/CsNumberTypes";
 // const RichText = React.lazy(() => import("./RichText"));
 // const Lookup = React.lazy(() => import("./Lookup"));
 // const DateInput = React.lazy(() =>
@@ -61,50 +66,37 @@ const Field = (props: FieldProps) => {
   const setValue = (field: MetadataField, value: string) => {
     let updateValue = false;
     const fieldName = field.name;
-    const fieldType = field.type;
+    const fieldType = field.type as CSNumericType & "String" & "Guid" & "Char";
     const isNullable = field.isNullable;
-    const numberTypes = ["Single", "Int32", "Int64", "Double", "Decimal"];
+    const oldValue = formContext.formBuilder.data[fieldName];
+    const numberTypes = [
+      "Single",
+      "Double",
+      "Decimal",
+      "Byte",
+      "SByte",
+      "Int16",
+      "UInt16",
+      "Int32",
+      "UInt32",
+      "Int64",
+      "UInt64",
+    ];
 
-    if (numberTypes.includes(fieldType)) {
-      // If the user presses "-" when there's already a value, make it negative
-      if (value.endsWith("-") && !value.startsWith("-")) {
-        value = "-" + value.replace("-", "");
-      }
-      // If there's a leading zero, remove it
-      if (value.startsWith("-0") || value.startsWith("0")) {
-        try {
-          if (fieldType.startsWith("Int") && parseInt(value) !== 0) {
-            value = parseInt(value).toString();
-          } else if (!fieldType.startsWith("Int") && parseFloat(value) !== 0) {
-            value = parseFloat(value).toString();
-          }
-        } catch {}
-      }
+    if (numberTypes.includes(fieldType) && value === "") {
+      value = "0";
     }
 
-    if (!isNullable && numberTypes.includes(fieldType)) {
-      if (value === "-") {
-        updateValue = true;
-      }
-      if (value === "0-") {
-        value = "-0";
-      }
-      if (value === "-00") {
-        value = "-0";
-      }
-      if (value === ".") {
-        updateValue = true;
-      }
-      const pattern = /^-0[1-9]$/;
-      if (pattern.test(value)) {
-        value = value.replace("0", "");
-      }
-    } else if (
-      isNullable &&
-      (value === "-" || value === ".") &&
-      numberTypes.includes(fieldType)
+    if (
+      numberTypes.includes(fieldType) &&
+      value === "-" &&
+      oldValue.length > 1
     ) {
-      updateValue = true;
+      value = "0";
+    }
+
+    if (numberTypes.includes(fieldType) && value.includes("-")) {
+      value = "-" + value.replace("-", "");
     }
 
     if (numberTypes.includes(fieldType)) {
@@ -118,10 +110,10 @@ const Field = (props: FieldProps) => {
       // If there's a specific number range for the field, enforce it
       if (field.numberRange != null) {
         const range = field.numberRange.split("-");
-        const min = parseFloat(range[0]);
-        const max = parseFloat(range[1]);
+        const min = parseFloat(parseFloatCS(range[0], fieldType));
+        const max = parseFloat(parseFloatCS(range[1], fieldType));
         try {
-          const num = parseFloat(value);
+          const num = parseFloat(parseFloatCS(value, fieldType));
           if (num <= min) {
             value = min.toString();
           }
@@ -132,6 +124,14 @@ const Field = (props: FieldProps) => {
           console.log(e);
         }
       }
+    }
+
+    if (fieldType == "Char") {
+      value = value.replace(oldValue, "");
+      if (!isNullable && value === "") {
+        value = "A";
+      }
+      updateValue = true;
     }
 
     if (fieldType === "String" || fieldType === "Guid") {
@@ -146,61 +146,39 @@ const Field = (props: FieldProps) => {
         updateValue = true;
       }
     }
-    if (fieldType === "Single") {
-      value = value
-        .replace("Infinity", "")
-        .replace("-Infinity", "")
-        .replace("NaN", "");
-      const floatPattern = /^-?(\d+(\.\d*)?|\.\d+)$/;
-      if (floatPattern.test(value)) {
-        updateValue = true;
-      }
-    }
-    if (fieldType === "Int32") {
-      const intPattern =
-        /^-?(?:[0-9]{1,10}|[1-9][0-9]{0,8}|[12][0-9]{9}|20[0-9]{8}|21[0-4][0-9]{7}|214[0-6][0-9]{6}|2147[0-3][0-9]{5}|214748[0-2][0-9]{4}|2147483[0-5][0-9]{3}|21474836[0-3][0-9]{2}|214748364[0-7])$/;
 
-      if (intPattern.test(value)) {
-        updateValue = true;
-      }
-    }
-    if (fieldType === "Int64") {
-      const intPattern =
-        /^-?(?:[0-9]{1,19}|[1-8][0-9]{0,18}|[9][0-1][0-9]{0,17}|92[0-1][0-9]{0,16}|922[0-2][0-9]{0,15}|9223[0-2][0-9]{0,14}|92233[0-6][0-9]{0,13}|922337[0-1][0-9]{0,12}|92233720[0-2][0-9]{0,10}|922337203[0-5][0-9]{0,9}|9223372036[0-4][0-9]{0,8}|92233720367[0-4][0-9]{0,7}|922337203685[0-3][0-9]{0,6}|9223372036854[0-6][0-9]{0,5}|92233720368547[0-4][0-9]{0,4}|922337203685477[0-4][0-9]{0,3}|9223372036854775[0-7][0-9]{0,2}|922337203685477580[0-7])$/;
-      if (intPattern.test(value)) {
-        updateValue = true;
-      }
-    }
-    if (fieldType === "Double") {
-      value = value
-        .replace("Infinity", "")
-        .replace("-Infinity", "")
-        .replace("NaN", "");
-      const doublePattern = /^-?(\d+(\.\d*)?|\.\d+)$/;
-      if (doublePattern.test(value)) {
-        updateValue = true;
-      }
-    }
-    if (fieldType === "Decimal") {
-      const decimalPattern = /^-?(\d+(\.\d*)?|\.\d+)$/;
-      if (decimalPattern.test(value)) {
-        updateValue = true;
-      }
+    if (["Single", "Double", "Decimal"].includes(fieldType)) {
+      try {
+        const number = parseFloatCS(value, fieldType);
+        if (!Number.isNaN(number) && number !== "NaN") {
+          value = number.toString();
+          updateValue = true;
+        }
+      } catch {}
     }
 
-    if (["Single", "Int32", "Int64", "Double", "Decimal"].includes(fieldType)) {
-      if (isNullable && value === "-") {
-        updateValue = true;
-      }
+    if (
+      [
+        "Byte",
+        "SByte",
+        "Int16",
+        "UInt16",
+        "Int32",
+        "UInt32",
+        "Int64",
+        "UInt64",
+      ].includes(fieldType)
+    ) {
+      try {
+        const number = parseIntCS(value, fieldType);
+        if (!Number.isNaN(number)) {
+          value = number.toString();
+          updateValue = true;
+        }
+      } catch {}
+    }
 
-      if (isNullable === true && value === "") {
-        updateState(fieldName, "");
-      } else if (isNullable === false && value === "") {
-        updateState(fieldName, "0");
-      } else if (updateValue) {
-        updateState(fieldName, value);
-      }
-    } else if (updateValue) {
+    if (updateValue) {
       updateState(fieldName, value);
     }
   };
@@ -440,6 +418,13 @@ const Field = (props: FieldProps) => {
           "Int64",
           "Double",
           "Decimal",
+          "Byte",
+          "SByte",
+          "UInt32",
+          "UInt64",
+          "Int16",
+          "UInt16",
+          "Char",
         ] as string[]
       ).includes(field.type) &&
         props.varient == null &&

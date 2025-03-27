@@ -7,7 +7,7 @@ namespace MyXProject.Common.Entities;
 public class Permission
 {
     public Guid PermissionId { get; set; }
-    [MaxLength(300)]
+    [MaxLength(100)]
     public string? Name { get; set; }
     [MaxLength(250)]
     public string? Tag { get; set; }

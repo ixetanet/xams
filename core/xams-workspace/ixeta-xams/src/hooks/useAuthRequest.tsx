@@ -292,9 +292,8 @@ const useAuthRequest = (props?: useAuthRequestProps) => {
       url: API_DATA_DELETE,
       body: {
         tableName: tableName,
-        fields: {
-          [`${tableName}Id`]: id,
-        },
+        id: id,
+        fields: {},
         parameters: parameters,
       },
     });

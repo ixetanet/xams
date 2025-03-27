@@ -11,7 +11,7 @@ public class PipeEntityRead : BasePipelineStage
     {
         var readResponse = await context.DataRepository.Read(context.UserId, context.ReadInput, new ReadOptions()
         {
-            Permissions = context.TablePermissions.SelectMany(x => x.Permissions).ToArray()
+            Permissions = await Permissions.GetUserTablePermissions(context.UserId,context.TableName,["READ"])
         });
         
         if (readResponse.Succeeded)
@@ -29,7 +29,8 @@ public class PipeEntityRead : BasePipelineStage
             return new Response<object?>()
             {
                 Succeeded = readResponse.Succeeded,
-                FriendlyMessage = readResponse.FriendlyMessage
+                FriendlyMessage = readResponse.FriendlyMessage,
+                LogMessage = readResponse.LogMessage,
             };
         }
         return await base.Execute(context);

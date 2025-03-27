@@ -59,37 +59,6 @@ public class JobService
         Singleton = new JobService(serviceProvider);
     }
 
-    // Force execute job (used in Admin Dashboard)
-    public async Task ExecuteJob(string jobName)
-    {
-        if (!Cache.Instance.ServiceJobs.ContainsKey(jobName))
-        {
-            return;
-        }
-
-        using var scope = _serviceProvider.CreateScope();
-        // Retrieve job
-        var dataService = scope.ServiceProvider.GetRequiredService<IDataService>();
-        BaseDbContext baseDbContext = dataService.GetDataRepository().CreateNewDbContext();
-        var baseDbContextType = Cache.Instance.GetTableMetadata("Job");
-        DynamicLinq<BaseDbContext> dynamicLinq =
-            new DynamicLinq<BaseDbContext>(baseDbContext, baseDbContextType.Type);
-        IQueryable query = dynamicLinq.Query;
-        query = query.Where("Name = @0", jobName);
-        query = query.Where("Status != @0", "Running");
-        List<dynamic> dynamicJobs = await query.ToDynamicListAsync();
-        List<Job> jobs = dynamicJobs.Select(x => new Job(x)).ToList();
-
-        Job? job = jobs.FirstOrDefault();
-
-        if (job == null)
-        {
-            return;
-        }
-
-        await job.Execute(scope, true);
-    }
-
     private async void ExecuteQueues(object? sender, ElapsedEventArgs args)
     {
         if (_isRunning)

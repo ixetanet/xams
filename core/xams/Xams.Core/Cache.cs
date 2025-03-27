@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -27,6 +28,7 @@ namespace Xams.Core
         public readonly Dictionary<string, ServiceJobInfo> ServiceJobs = new();
         public readonly ConcurrentDictionary<string, AuditInfo> TableAuditInfo = new();
         public readonly Dictionary<string, MetadataInfo> TableMetadata = new();
+        public readonly Dictionary<Type, MetadataInfo> TableTypeMetadata = new();
 
         public bool IsAuditEnabled { get; set; }
         public DateTime AuditRefreshTime { get; set; } = DateTime.MinValue;
@@ -36,11 +38,12 @@ namespace Xams.Core
         internal static void Initialize(Type dbContext, IDataService dataService)
         {
             Random rnd = new Random(DateTime.Now.Millisecond);
-            var serverName = Environment.GetEnvironmentVariable("SERVER_NAME") ?? ServerNames[rnd.Next(0, ServerNames.Length)] + rnd.Next(0, 9999);
+            var serverName = Environment.GetEnvironmentVariable("SERVER_NAME") ??
+                             ServerNames[rnd.Next(0, ServerNames.Length)] + rnd.Next(0, 9999);
             Console.WriteLine($"Initializing Cache for server {serverName}");
             Cache cache = new Cache();
             Instance = cache;
-            
+
             // Cache entity metadata
             var props = dbContext.GetProperties();
             var nullabilityInfoContext = new NullabilityInfoContext();
@@ -49,33 +52,43 @@ namespace Xams.Core
                 var propType = prop.PropertyType;
                 if (propType.GenericTypeArguments.Length > 0)
                 {
-                    Instance.ValidateMetadata(propType.GenericTypeArguments[0]);
+                    var entityType = propType.GetGenericArguments()[0];
+                    Instance.ValidateMetadata(entityType);
 
-                    var tableAttribute = propType.GenericTypeArguments[0].GetCustomAttribute<TableAttribute>();
+                    var tableAttribute = entityType.GetCustomAttribute<TableAttribute>();
                     if (tableAttribute == null)
                     {
-                        continue;
+                        tableAttribute = new TableAttribute(EntityUtil.GetTableName(entityType, dbContext).TableName);
                     }
+
+                    // Find the primary key property
+                    var primaryKeyProperty =
+                        FindPrimaryKeyProperty(entityType, tableAttribute.Name);
+                    var primaryKeyType = primaryKeyProperty.PropertyType;
+                    var primaryKeyName = primaryKeyProperty.Name;
 
                     var tableMetadata = new MetadataInfo()
                     {
-                        Type = propType.GenericTypeArguments[0],
+                        Type = entityType,
                         DisplayNameAttribute =
-                            propType.GenericTypeArguments[0].GetCustomAttribute<UIDisplayNameAttribute>()
+                            entityType.GetCustomAttribute<UIDisplayNameAttribute>()
                             ??
                             new UIDisplayNameAttribute(tableAttribute.Name,
                                 EntityUtil.IsSystemEntity(tableAttribute.Name) ? "System" : ""),
-                        TableAttribute = tableAttribute,
-                        PrimaryKey = $"{tableAttribute.Name}Id",
-                        NameProperty = propType.GenericTypeArguments[0]
+                        TableName = tableAttribute.Name,
+                        PrimaryKey = primaryKeyName,
+                        PrimaryKeyProperty = primaryKeyProperty,
+                        PrimaryKeyType = primaryKeyType,
+                        NameProperty = entityType
                                            .GetProperties()
                                            .FirstOrDefault(x => x.GetCustomAttribute<UINameAttribute>() != null)
-                                       ?? propType.GenericTypeArguments[0].GetProperty("Name"),
-                        IsProxy = propType.GenericTypeArguments[0].GetCustomAttribute<UIProxyAttribute>() != null,
-                        HasOwningUserField = propType.GenericTypeArguments[0].GetProperty("OwningUserId") != null,
-                        HasOwningTeamField = propType.GenericTypeArguments[0].GetProperty("OwningTeamId") != null
+                                       ?? entityType.GetProperty("Name"),
+                        IsProxy = entityType.GetCustomAttribute<UIProxyAttribute>() != null,
+                        HasOwningUserField = entityType.GetProperty("OwningUserId") != null,
+                        HasOwningTeamField = entityType.GetProperty("OwningTeamId") != null
                     };
-                    cache.TableMetadata.Add(tableMetadata.TableAttribute.Name, tableMetadata);
+                    cache.TableMetadata.Add(tableMetadata.TableName, tableMetadata);
+                    cache.TableTypeMetadata.Add(entityType, tableMetadata);
 
                     // Get Metadata Output for the metadata endpoint
                     var properties = tableMetadata.Type.GetProperties();
@@ -86,7 +99,7 @@ namespace Xams.Core
                         if (!property.IsValidEntityProperty())
                             continue;
                         // Ignore the Primary Key field
-                        if (property.Name == $"{tableAttribute.Name}Id")
+                        if (property.Name == primaryKeyName)
                             continue;
 
                         // Ignore the hidden fields
@@ -222,15 +235,26 @@ namespace Xams.Core
 
                     fields = fields.OrderBy(x => x.order).ToList();
 
-                    var tableName = tableMetadata.TableAttribute.Name;
+                    var tableName = EntityUtil.GetTableName(entityType, dbContext).TableName;
                     var metadataOutput = new MetadataOutput()
                     {
                         displayName = tableMetadata.DisplayNameAttribute?.Name ?? tableName,
                         tableName = tableName,
-                        primaryKey = tableName + "Id",
+                        primaryKey = primaryKeyName,
                         fields = fields
                     };
                     tableMetadata.MetadataOutput = metadataOutput;
+                }
+            }
+
+            foreach (var metadataInfo in cache.TableMetadata.Values)
+            {
+                foreach (var field in metadataInfo.MetadataOutput.fields)
+                {
+                    if (!string.IsNullOrEmpty(field.lookupTable))
+                    {
+                        field.lookupPrimaryKeyField = cache.GetTableMetadata(field.lookupTable).PrimaryKey;
+                    }
                 }
             }
 
@@ -460,13 +484,14 @@ namespace Xams.Core
                     {
                         continue;
                     }
-                    
+
                     JobServerAttribute? jobServerAttribute = type.GetCustomAttribute<JobServerAttribute>();
                     JobTimeZone? jobDaylightSavingsAttribute = type.GetCustomAttribute<JobTimeZone>();
 
                     if (jobDaylightSavingsAttribute != null && !IsValidTimeZone(jobDaylightSavingsAttribute.TimeZone))
                     {
-                        throw new Exception($"Invalid TimeZone '{jobDaylightSavingsAttribute.TimeZone}' for job {serviceJobAttribute.Name}");
+                        throw new Exception(
+                            $"Invalid TimeZone '{jobDaylightSavingsAttribute.TimeZone}' for job {serviceJobAttribute.Name}");
                     }
 
                     ServiceJobInfo serviceJobInfo = new()
@@ -486,11 +511,11 @@ namespace Xams.Core
                     cache.ServiceJobs.Add(serviceJobAttribute.Name, serviceJobInfo);
                 }
             }
-            
+
             // Get Server Nam
             cache.ServerName = serverName;
             cache.ServerId = Guid.NewGuid();
-            
+
             // Create new server record
             var serverRecord = new Dictionary<string, dynamic>();
             serverRecord["Name"] = cache.ServerName;
@@ -502,6 +527,41 @@ namespace Xams.Core
                 db.Add(serverEntity);
                 db.SaveChanges();
             }
+        }
+
+        /// <summary>
+        /// Finds the primary key property of an entity type.
+        /// </summary>
+        /// <param name="entityType">The entity type to find the primary key for.</param>
+        /// <param name="tableName">The table name from the TableAttribute.</param>
+        /// <returns>The PropertyInfo of the primary key property.</returns>
+        private static PropertyInfo FindPrimaryKeyProperty(Type entityType, string tableName)
+        {
+            // First, look for properties with the [Key] attribute
+            var keyProperties = entityType.GetProperties()
+                .Where(p => p.GetCustomAttribute<KeyAttribute>() != null)
+                .ToList();
+
+            if (keyProperties.Count == 1)
+            {
+                return keyProperties[0];
+            }
+
+            // If no [Key] attribute is found, look for properties named "Id" or "{TableName}Id"
+            var idProperty = entityType.GetProperty("Id");
+            if (idProperty != null)
+            {
+                return idProperty;
+            }
+
+            var tableIdProperty = entityType.GetProperty($"{tableName}Id");
+            if (tableIdProperty != null)
+            {
+                return tableIdProperty;
+            }
+
+            // If no primary key is found, throw an exception
+            throw new Exception($"No primary key found for entity type {entityType.Name}");
         }
 
         internal List<MetadataInfo> GetTableMetadata()
@@ -527,7 +587,17 @@ namespace Xams.Core
                 GetTableMetadata();
             }
 
-            return TableMetadata[tableName] ?? throw new Exception($"Table {tableName} not found in metadata");
+            if (!TableMetadata.ContainsKey(tableName))
+            {
+                throw new Exception($"Table {tableName} not found in metadata");
+            }
+
+            return TableMetadata[tableName];
+        }
+
+        public MetadataInfo GetTableMetadata(Type entityType)
+        {
+            return TableTypeMetadata[entityType];
         }
 
         private void ValidateSystemEntities()
@@ -589,13 +659,15 @@ namespace Xams.Core
                 }
             }
 
-            if (tableType.GetProperty($"{tableType.Name}Id") == null)
+            // Check for primary key
+            try
             {
-                errors.Add($"Primary Key {tableType.Name}Id not found for {tableType.Name}");
+                var primaryKeyProperty = FindPrimaryKeyProperty(tableType, tableAttribute?.Name ?? tableType.Name);
+                // No need to validate the type of the primary key anymore
             }
-            else if (tableType.GetProperty($"{tableType.Name}Id")?.PropertyType != typeof(Guid))
+            catch (Exception ex)
             {
-                errors.Add($"Primary Key {tableType.Name}Id must be of type Guid for {tableType.Name}");
+                errors.Add(ex.Message);
             }
 
             var nameAttrProp = tableType.GetProperties()
@@ -630,7 +702,7 @@ namespace Xams.Core
 
             if (errors.Count > 0)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
+                Console.ForegroundColor = ConsoleColor.Yellow;
                 foreach (var error in errors)
                 {
                     Console.WriteLine(error);
@@ -655,7 +727,7 @@ namespace Xams.Core
 
             return property.PropertyType.Name;
         }
-        
+
         private static bool IsValidTimeZone(string timeZoneId)
         {
             if (string.IsNullOrEmpty(timeZoneId))
@@ -681,10 +753,12 @@ namespace Xams.Core
         public class MetadataInfo
         {
             public Type Type { get; set; } = null!;
-            public TableAttribute TableAttribute { get; set; } = null!;
+            public string TableName { get; set; }
             public UIDisplayNameAttribute? DisplayNameAttribute { get; set; }
             public PropertyInfo? NameProperty { get; set; }
             public string PrimaryKey { get; set; } = null!;
+            public PropertyInfo PrimaryKeyProperty { get; set; } = null!;
+            public Type PrimaryKeyType { get; set; } = null!;
             public bool HasPostOpServiceLogic { get; set; }
             public bool HasPreOpServiceLogic { get; set; }
             public bool HasDeleteServiceLogic { get; set; }
@@ -748,7 +822,7 @@ namespace Xams.Core
             public Type? Type { get; internal set; }
             public ExecuteJobOn ExecuteJobOn { get; internal set; } = ExecuteJobOn.All;
             public string? ServerName { get; internal set; }
-            
+
             public string? TimeZone { get; internal set; }
         }
 

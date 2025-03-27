@@ -7,6 +7,8 @@ using Xams.Core.Base;
 using Xams.Core.Dtos.Data;
 using Xams.Core.Utils;
 
+#pragma warning disable CS0183 // 'is' expression's given expression is always of the provided type
+
 namespace Xams.Core.Services;
 
 public class QueryFactory
@@ -111,7 +113,7 @@ public class QueryFactory
                 query = new Query(_dbContext, readInput.fields, fieldPrefix).From("User");
                 if (readInput.id != null)
                 {
-                    query.Where($"{fieldPrefix}_UserId == @0", readInput.id);
+                    query.Where($"{fieldPrefix}_UserId == @0", readInput.GetId());
                 }
             }
             else if (highestPermission == Permissions.PermissionLevel.Team)
@@ -139,7 +141,7 @@ public class QueryFactory
                 query = new Query(_dbContext, readInput.fields, fieldPrefix).From("Team");
                 if (readInput.id != null)
                 {
-                    query.Where($"{fieldPrefix}_TeamId == @0", readInput.id);
+                    query.Where($"{fieldPrefix}_TeamId == @0", readInput.GetId());
                 }
             }
             else if (highestPermission == Permissions.PermissionLevel.Team)
@@ -178,7 +180,9 @@ public class QueryFactory
                 var subQuery = new Query(_dbContext, readInput.fields, fieldPrefix).From(readInput.tableName);
                 if (readInput.id != null)
                 {
-                    subQuery.Where($"{fieldPrefix}_{readInput.tableName}Id == @0", readInput.id);
+                    subQuery.Where(
+                        $"{fieldPrefix}_{Cache.Instance.GetTableMetadata(readInput.tableName).PrimaryKey} == @0",
+                        readInput.GetId());
                 }
 
                 // Security - Filter by user permissions
@@ -456,8 +460,22 @@ public class QueryFactory
             if (fieldType == typeof(Guid))
             {
                 filter.@operator = string.IsNullOrEmpty(filter.@operator) ? "==" : filter.@operator;
-                bool useNull = filter.value == null || filter.value.Trim().ToLower() == "null";
-                if (Guid.TryParse(filter.value, out Guid id))
+
+
+                if (filter.@operator.ToLower() == "contains")
+                {
+                    if (string.IsNullOrEmpty(filter.value))
+                    {
+                        continue;
+                    }
+
+                    // This isn't working for Guids though ideally this would work
+                    // conditions.Add($"Convert.ToString({table}{field}).Contains(@{index})");
+                    // values.Add($"{filter.value}");
+                    conditions.Add($"{table}{field} == @{index}");
+                    values.Add(filter.value);
+                }
+                else if (Guid.TryParse(filter.value, out Guid id))
                 {
                     if (string.IsNullOrEmpty(filter.@operator))
                     {
@@ -472,6 +490,7 @@ public class QueryFactory
                 }
                 else
                 {
+                    bool useNull = filter.value == null || filter.value.Trim().ToLower() == "null";
                     if (string.IsNullOrEmpty(filter.@operator))
                     {
                         if (useNull)
@@ -500,73 +519,15 @@ public class QueryFactory
                     }
                 }
             }
-            else if (fieldType == typeof(int))
-            {
-                filter.@operator = string.IsNullOrEmpty(filter.@operator) ? "==" : filter.@operator;
-                if (int.TryParse(filter.value, out int value) && IsValidOperator(filter.@operator))
-                {
-                    conditions.Add($"{table}{field} {filter.@operator} @{index}");
-                    values.Add(value);
-                }
-                else
-                {
-                    conditions.Add($"{table}{field} == @{index}");
-                    values.Add(0);
-                }
-            }
-            else if (fieldType == typeof(float))
-            {
-                filter.@operator = string.IsNullOrEmpty(filter.@operator) ? "==" : filter.@operator;
-                if (float.TryParse(filter.value, out float value) && IsValidOperator(filter.@operator))
-                {
-                    conditions.Add($"{table}{field} {filter.@operator} @{index}");
-                    values.Add(value);
-                }
-                else
-                {
-                    conditions.Add($"{table}{field} == @{index}");
-                    values.Add(0.0f);
-                }
-            }
-            else if (fieldType == typeof(long))
-            {
-                filter.@operator = string.IsNullOrEmpty(filter.@operator) ? "==" : filter.@operator;
-                if (long.TryParse(filter.value, out long value) && IsValidOperator(filter.@operator))
-                {
-                    conditions.Add($"{table}{field} {filter.@operator} @{index}");
-                    values.Add(value);
-                }
-                else
-                {
-                    conditions.Add($"{table}{field} == @{index}");
-                    values.Add(0L);
-                }
-            }
-            else if (fieldType == typeof(double))
-            {
-                filter.@operator = string.IsNullOrEmpty(filter.@operator) ? "==" : filter.@operator;
-                if (double.TryParse(filter.value, out double value) && IsValidOperator(filter.@operator))
-                {
-                    conditions.Add($"{table}{field} {filter.@operator} @{index}");
-                    values.Add(value);
-                }
-            }
-            else if (fieldType == typeof(decimal))
-            {
-                filter.@operator = string.IsNullOrEmpty(filter.@operator) ? "==" : filter.@operator;
-                if (decimal.TryParse(filter.value, out decimal value) && IsValidOperator(filter.@operator))
-                {
-                    conditions.Add($"{table}{field} {filter.@operator} @{index}");
-                    values.Add(value);
-                }
-                else
-                {
-                    conditions.Add($"{table}{field} == @{index}");
-                    values.Add(0m);
-                }
-            }
+            else if (ParseNumeric(table, field, index, filter, conditions, values, fieldType))
+            {}
             else if (fieldType == typeof(DateTime))
             {
+                if (string.IsNullOrEmpty(filter.value) || filter.value.Trim().ToLower() == "null")
+                {
+                    continue;
+                }
+
                 filter.@operator = string.IsNullOrEmpty(filter.@operator) ? "==" : filter.@operator;
                 Regex regUtcOffset = new Regex("~[-+]+[0-9][0-9]?");
                 var match = regUtcOffset.Match(filter.value ?? "");
@@ -586,7 +547,7 @@ public class QueryFactory
                 {
                     parts = filter.value.Split("/");
                 }
-                
+
                 int valuesCount = values.Count;
                 for (int j = 0; j < parts.Length; j++)
                 {
@@ -661,8 +622,9 @@ public class QueryFactory
                 // If no parts were able to parse
                 if (valuesCount == values.Count)
                 {
-                    conditions.Add($"{conditionField}.ToString().Contains(@{index})");
-                    values.Add(filter.value);
+                    // If none of the date parts from above match, return 0 results
+                    conditions.Add($"1 == @{index}");
+                    values.Add(2);
                 }
             }
             else if (fieldType == typeof(Boolean))
@@ -679,12 +641,35 @@ public class QueryFactory
                     values.Add(value);
                 }
             }
+            else if (fieldType == typeof(Char))
+            {
+                filter.@operator = string.IsNullOrEmpty(filter.@operator) ? "==" : filter.@operator;
+                
+                if (string.IsNullOrEmpty(filter.value))
+                {
+                    continue;
+                }
+                
+                // If more than 1 character passed ensure no results are returned
+                if (!string.IsNullOrEmpty(filter.value) && (filter.value.Length > 1))
+                {
+                    conditions.Add($"1 == @{index}");
+                    values.Add(2);
+                    continue;
+                }
+
+                if (IsValidOperator(filter.@operator))
+                {
+                    conditions.Add($"{table}{field} {filter.@operator} @{index}");
+                    values.Add(filter.value ?? "null");    
+                }
+            }
             else // if (fieldType == typeof(string)) // Commented for the below TODO notes
             {
                 if (filter.@operator == null || filter.@operator.ToLower() == "contains")
                 {
-                    conditions.Add($"{table}{field}.Contains(@{index})");
-                    values.Add(filter.value ?? "null");
+                    conditions.Add($"{table}{field}.ToLower().Contains(@{index})");
+                    values.Add(filter.value?.ToLower() ?? "null");
                 }
                 else if (IsValidOperator(filter.@operator))
                 {
@@ -744,6 +729,165 @@ public class QueryFactory
 
         return filterData;
     }
+
+    /// <summary>
+    /// Parses a numeric filter and constructs the appropriate query condition.
+    /// </summary>
+    /// <param name="table">The table name</param>
+    /// <param name="field">The field name</param>
+    /// <param name="index">Parameter index</param>
+    /// <param name="filter">Filter criteria</param>
+    /// <param name="conditions">List of query conditions</param>
+    /// <param name="values">List of parameter values</param>
+    /// <param name="type">Type to check and parse against</param>
+    /// <returns>True if the type is numeric and was processed; false otherwise</returns>
+    private bool ParseNumeric(string table, string field, int index, Filter filter, List<string> conditions,
+        List<object> values, Type type)
+    {
+        // Check if the type is a numeric type
+        if (!IsNumericType(type))
+        {
+            return false;
+        }
+
+        filter.@operator = string.IsNullOrEmpty(filter.@operator) ? "==" : filter.@operator;
+
+        bool isValidNumber;
+        object? parsedValue;
+
+        // Handle empty value for contains operator early
+        if (filter.@operator.ToLower() == "contains")
+        {
+            if (string.IsNullOrEmpty(filter.value))
+            {
+                return true; // We've handled this case, even though we didn't add a condition
+            }
+
+            conditions.Add($"Convert.ToString({table}{field}).Contains(@{index})");
+            values.Add(filter.value);
+            return true;
+        }
+
+        // Try to parse the string to the appropriate numeric type
+        try
+        {
+            if (type == typeof(int))
+            {
+                isValidNumber = int.TryParse(filter.value, out int val);
+                parsedValue = isValidNumber ? val : 0;
+            }
+            else if (type == typeof(long) || type == typeof(Int64))
+            {
+                isValidNumber = long.TryParse(filter.value, out long val);
+                parsedValue = isValidNumber ? val : 0L;
+            }
+            else if (type == typeof(float))
+            {
+                isValidNumber = float.TryParse(filter.value, out float val);
+                parsedValue = isValidNumber ? val : 0f;
+            }
+            else if (type == typeof(double))
+            {
+                isValidNumber = double.TryParse(filter.value, out double val);
+                parsedValue = isValidNumber ? val : 0d;
+            }
+            else if (type == typeof(decimal))
+            {
+                isValidNumber = decimal.TryParse(filter.value, out decimal val);
+                parsedValue = isValidNumber ? val : 0m;
+            }
+            else if (type == typeof(short) || type == typeof(Int16))
+            {
+                isValidNumber = short.TryParse(filter.value, out short val);
+                parsedValue = isValidNumber ? val : 0;
+            }
+            else if (type == typeof(byte))
+            {
+                isValidNumber = byte.TryParse(filter.value, out byte val);
+                parsedValue = isValidNumber ? val : 0;
+            }
+            else if (type == typeof(uint))
+            {
+                isValidNumber = uint.TryParse(filter.value, out uint val);
+                parsedValue = isValidNumber ? val : 0U;
+            }
+            else if (type == typeof(ulong) || type == typeof(UInt64))
+            {
+                isValidNumber = ulong.TryParse(filter.value, out ulong val);
+                parsedValue = isValidNumber ? val : 0UL;
+            }
+            else if (type == typeof(ushort) || type == typeof(UInt16))
+            {
+                isValidNumber = ushort.TryParse(filter.value, out ushort val);
+                parsedValue = isValidNumber ? val : 0;
+            }
+            else if (type == typeof(sbyte))
+            {
+                isValidNumber = sbyte.TryParse(filter.value, out sbyte val);
+                parsedValue = isValidNumber ? val : 0;
+            }
+            else
+            {
+                // Fallback for any other numeric type
+                try
+                {
+                    parsedValue = Convert.ChangeType(filter.value, type);
+                    isValidNumber = true;
+                }
+                catch
+                {
+                    parsedValue = Activator.CreateInstance(type); // Default value
+                    isValidNumber = false;
+                }
+            }
+        }
+        catch
+        {
+            isValidNumber = false;
+            parsedValue = Activator.CreateInstance(type); // Default value for the type
+        }
+
+        if (isValidNumber && IsValidOperator(filter.@operator))
+        {
+            conditions.Add($"{table}{field} {filter.@operator} @{index}");
+            values.Add(parsedValue ?? throw new Exception("Failed to convert value"));
+        }
+        else
+        {
+            conditions.Add($"{table}{field} == @{index}");
+            values.Add(parsedValue ?? throw new Exception("Failed to convert value"));
+        }
+
+        return true;
+    }
+    
+    private bool IsNumericType(Type type)
+    {
+        // Handle nullable numeric types
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+        {
+            type = Nullable.GetUnderlyingType(type) ?? type;
+        }
+
+        switch (Type.GetTypeCode(type))
+        {
+            case TypeCode.Byte:
+            case TypeCode.SByte:
+            case TypeCode.Int16:
+            case TypeCode.Int32:
+            case TypeCode.Int64:
+            case TypeCode.UInt16:
+            case TypeCode.UInt32:
+            case TypeCode.UInt64:
+            case TypeCode.Single:
+            case TypeCode.Double:
+            case TypeCode.Decimal:
+                return true;
+            default:
+                return false;
+        }
+    }
+
 
     private void AddOrder(Query query)
     {
@@ -828,7 +972,8 @@ public class QueryFactory
 
         // Ensure primary key is included if denormalize is true
         if (readInput.denormalize == true && (readInput.fields == null
-                                              || !(readInput.fields.Contains($"{readInput.tableName}Id")
+                                              || !(readInput.fields.Contains(Cache.Instance
+                                                       .GetTableMetadata(readInput.tableName).PrimaryKey)
                                                    || readInput.fields.FirstOrDefault(x => x == "*") != null)))
         {
             throw new Exception("Denormalize requires the primary key to be included in the fields");
@@ -839,8 +984,8 @@ public class QueryFactory
         {
             foreach (var join in readInput.joins)
             {
-                if (join.fields == null || !(join.fields.Contains($"{join.toTable}Id") ||
-                                             join.fields.FirstOrDefault(x => x == "*") != null))
+                if (!(join.fields.Contains(Cache.Instance.GetTableMetadata(join.toTable).PrimaryKey) ||
+                      join.fields.FirstOrDefault(x => x == "*") != null))
                 {
                     throw new Exception("Denormalize requires the primary key to be included in all joins");
                 }

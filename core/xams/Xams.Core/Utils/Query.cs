@@ -602,8 +602,8 @@ public class Query
 
         if (string.IsNullOrEmpty(propertyName))
         {
-            throw new Exception(
-                $"{propertyType.Name} lookup could not be resolved. Please add a Name property or UILookupNameAttribute to {propertyType.Name}");
+            // User the PrimaryKey if there's no name field
+            propertyName = Cache.Instance.GetTableMetadata(propertyType.Name).PrimaryKey;
         }
 
         return propertyName;

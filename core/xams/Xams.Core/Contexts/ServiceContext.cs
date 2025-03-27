@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
 using Xams.Core.Dtos.Data;
@@ -62,7 +63,7 @@ namespace Xams.Core.Contexts
             return false;
         }
 
-        public Guid GetId()
+        public object GetId()
         {
             if (Entity == null) throw new Exception("Entity is null. Cannot get Id.");
             return Entity.GetIdValue(Cache.Instance.GetTableMetadata(Entity.GetType().Name).Type);
@@ -75,7 +76,11 @@ namespace Xams.Core.Contexts
 
         public T GetPreEntity<T>() where T : class
         {
-            return PreEntity as T ?? throw new Exception($"PreEntity is null. Cannot cast to type {typeof(T).Name}.");
+            if (PreEntity == null) throw new Exception($"PreEntity is null. Cannot cast to type {typeof(T).Name}.");
+            // Always return a copy to ensure the properties cannot be modified for later service logic
+            var copy = JsonSerializer.Deserialize(JsonSerializer.Serialize(PreEntity), PreEntity.GetType());
+            if (copy == null) throw new Exception($"Failed to create PreEntity {typeof(T).Name}.");
+            return (T)copy;
         }
 
         private int GetDepth(ServiceContext serviceContext, int depth)

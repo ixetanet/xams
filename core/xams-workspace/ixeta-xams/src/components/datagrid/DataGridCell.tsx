@@ -133,6 +133,7 @@ const DataGridCell = (props: DataGridCellProps) => {
         {isActiveCell ? (
           <div
             style={{
+              pointerEvents: "none",
               boxSizing: dgContext.isEditing ? "content-box" : "border-box",
               zIndex: dgContext.props.zIndex ?? 1,
             }}

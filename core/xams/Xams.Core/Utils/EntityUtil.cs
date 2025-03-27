@@ -1,10 +1,13 @@
-using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Xams.Core.Attributes;
 using Xams.Core.Dtos;
+using Xams.Core.Dtos.Data;
 
 namespace Xams.Core.Utils
 {
@@ -46,7 +49,8 @@ namespace Xams.Core.Utils
             AllFields = 4
         }
 
-        public static string GetEntityFields(Type targetType, string[]? fields, string fieldPrefix, FieldModifications mods)
+        public static string GetEntityFields(Type targetType, string[]? fields, string fieldPrefix,
+            FieldModifications mods)
         {
             string prefix = string.IsNullOrEmpty(fieldPrefix) ? "" : $"{fieldPrefix}_";
             StringBuilder sbFields = new StringBuilder();
@@ -133,22 +137,10 @@ namespace Xams.Core.Utils
 
             return entity;
         }
-        
-        public static void OverwriteFields(object entity, object overwriteEntity)
+        public static Response<object?> GetEntity(Input input, DataOperation dataOperation, out string errorMessage)
         {
-            foreach (var property in entity.GetType().GetProperties())
-            {
-                var overwriteProperty = overwriteEntity.GetType().GetProperty(property.Name);
-                if (overwriteProperty != null)
-                {
-                    property.SetValue(entity, overwriteProperty.GetValue(overwriteEntity));
-                }
-            }
-        }
-        
-        public static Response<object?> GetEntity(string tableName, Dictionary<string, dynamic> fields,
-            DataOperation dataOperation, out string errorMessage)
-        {
+            string tableName = input.tableName ?? string.Empty;
+            Dictionary<string, dynamic> fields = input.fields ?? new Dictionary<string, dynamic>();
             var tableMetadata = Cache.Instance.GetTableMetadata(tableName);
 
             // Remove corresponding related fields (only use Id fields)
@@ -167,7 +159,7 @@ namespace Xams.Core.Utils
             if (dataOperation is DataOperation.Delete)
             {
                 // Only map the Id, don't perform any additional validation
-                mapEntityResults = ConvertToEntityId(tableMetadata.Type, fields);
+                mapEntityResults = ConvertToEntityId(tableMetadata.Type, input);
             }
             else
             {
@@ -183,6 +175,7 @@ namespace Xams.Core.Utils
                     FriendlyMessage = mapEntityResults.Message
                 };
             }
+
             errorMessage = string.Empty;
             return new Response<object?>()
             {
@@ -235,13 +228,6 @@ namespace Xams.Core.Utils
                         continue;
                     }
 
-                    //
-                    // if (field.Value is not JsonElement && field.Value == null)
-                    // {
-                    //     continue;
-                    // }
-                    //
-                    // string value = ((JsonElement)field.Value).ToString();
                     Type targetType = property.PropertyType;
                     Type? underlyingType = Nullable.GetUnderlyingType(targetType);
 
@@ -308,7 +294,7 @@ namespace Xams.Core.Utils
                                     if (targetType == typeof(string) && convertedValue != null)
                                     {
                                         convertedValue = ((string)convertedValue).Trim();
-                                    }    
+                                    }
                                 }
                             }
                         }
@@ -341,15 +327,16 @@ namespace Xams.Core.Utils
         }
 
         /// <summary>
-        /// Only convert the Primary Key to a Guid
+        /// Convert the Primary Key to the appropriate type
         /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="fields"></param>
-        /// <returns></returns>
-        public static MapEntityResult ConvertToEntityId(Type type, Dictionary<string, dynamic> fields)
+        /// <param name="type">The entity type</param>
+        /// <param name="fields">The fields dictionary</param>
+        /// <returns>MapEntityResult containing the entity or error information</returns>
+        public static MapEntityResult ConvertToEntityId(Type type, Input input)
         {
             try
             {
+                Dictionary<string, dynamic> fields = input.fields ?? new Dictionary<string, dynamic>();
                 object? entity = Activator.CreateInstance(type);
 
                 if (entity == null)
@@ -361,15 +348,73 @@ namespace Xams.Core.Utils
                     };
                 }
 
-                var value = fields[$"{type.Name}Id"];
-                if (value is JsonElement)
+                // Get the metadata for this type to find the primary key
+                var tableMetadata = Cache.Instance.GetTableMetadata(GetTableName(type,
+                    DbContext?.GetType() ?? throw new Exception("DbContext not yet initialized")).TableName);
+                var primaryKeyName = tableMetadata.PrimaryKey;
+                var primaryKeyProperty = tableMetadata.PrimaryKeyProperty;
+                var primaryKeyType = tableMetadata.PrimaryKeyType;
+
+                object? value = null;
+
+                if (input.id != null)
                 {
-                    JsonElement jsonElement = (JsonElement)value;
-                    type.GetProperty($"{type.Name}Id")?.SetValue(entity, new Guid(jsonElement.ToString()));    
-                } 
-                else if (value is Guid)
+                    value = input.id;
+                }
+
+                if (fields.TryGetValue(primaryKeyName, out var field))
                 {
-                    type.GetProperty($"{type.Name}Id")?.SetValue(entity, value);
+                    value = field;
+                }
+
+                if (value == null)
+                {
+                    return new MapEntityResult()
+                    {
+                        Error = true,
+                        Message = $"Primary key not found for type {type.Name}."
+                    };
+                }
+
+                // value = fields[primaryKeyName];
+
+                // Handle different primary key types
+                if (value is JsonElement jsonElement)
+                {
+                    var stringValue = jsonElement.ToString();
+                    object? convertedValue = null;
+
+                    // Convert the value to the appropriate type
+                    if (primaryKeyType == typeof(Guid) || Nullable.GetUnderlyingType(primaryKeyType) == typeof(Guid))
+                    {
+                        convertedValue = new Guid(stringValue);
+                    }
+                    else if (primaryKeyType == typeof(int) || Nullable.GetUnderlyingType(primaryKeyType) == typeof(int))
+                    {
+                        convertedValue = int.Parse(stringValue);
+                    }
+                    else if (primaryKeyType == typeof(long) ||
+                             Nullable.GetUnderlyingType(primaryKeyType) == typeof(long))
+                    {
+                        convertedValue = long.Parse(stringValue);
+                    }
+                    else if (primaryKeyType == typeof(string))
+                    {
+                        convertedValue = stringValue;
+                    }
+                    else
+                    {
+                        // For other types, use Convert.ChangeType
+                        var targetType = Nullable.GetUnderlyingType(primaryKeyType) ?? primaryKeyType;
+                        convertedValue = Convert.ChangeType(stringValue, targetType);
+                    }
+
+                    primaryKeyProperty.SetValue(entity, convertedValue);
+                }
+                else
+                {
+                    // If the value is already the correct type, just set it
+                    primaryKeyProperty.SetValue(entity, value);
                 }
 
                 return new MapEntityResult()
@@ -427,40 +472,189 @@ namespace Xams.Core.Utils
                 Entity = entity
             };
         }
+        
 
-        public static Object PatchEntity(object entity, object preEntity, Dictionary<string, dynamic> fields)
+
+        public static DbContext? DbContext;
+
+        // Thread-safe dictionary for caching results
+        private static readonly
+            ConcurrentDictionary<(Type EntityType, Type ContextType), (string Schema, string TableName)>
+            TableNameCache = new();
+
+        /// <summary>
+        /// Gets the fully qualified table name (including schema) for an entity in the given DbContext type
+        /// </summary>
+        /// <param name="entityType">The entity type to get the table name for</param>
+        /// <param name="contextType">The DbContext type containing the entity mapping</param>
+        /// <returns>A tuple containing (Schema, TableName) or null if the entity type isn't mapped</returns>
+        public static (string Schema, string TableName) GetTableName(Type entityType, Type contextType)
         {
-            foreach (PropertyInfo property in preEntity.GetType().GetProperties())
+            if (entityType == null) throw new ArgumentNullException(nameof(entityType));
+            if (contextType == null) throw new ArgumentNullException(nameof(contextType));
+
+            if (!typeof(DbContext).IsAssignableFrom(contextType))
+                throw new ArgumentException($"The type {contextType.Name} is not a DbContext.");
+
+            // Try to get from cache first
+            var cacheKey = (entityType, contextType);
+            if (TableNameCache.TryGetValue(cacheKey, out var cachedResult))
             {
-                if (!fields.ContainsKey(property.Name))
+                return cachedResult;
+            }
+
+            // Create an instance of the DbContext and look up the table info
+            var result = LookupTableNameFromContext(entityType, contextType);
+
+            // Cache the result for future lookups
+            TableNameCache[cacheKey] = result;
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the fully qualified table name as a string in the format [Schema].[TableName]
+        /// </summary>
+        public static string GetFullTableName(Type entityType, Type contextType)
+        {
+            var (schema, tableName) = GetTableName(entityType, contextType);
+            return $"[{schema}].[{tableName}]";
+        }
+
+
+        /// <summary>
+        /// Internal method that does the actual work of creating a context and looking up the table name
+        /// </summary>
+        private static (string Schema, string TableName) LookupTableNameFromContext(Type entityType, Type contextType)
+        {
+            // Create an instance of the DbContext
+            if (DbContext == null)
+            {
+                DbContext = CreateDbContextInstance(contextType);
+            }
+            
+            // Get the IEntityType from the model
+            IEntityType entityTypeMetadata = DbContext.Model.FindEntityType(entityType);
+
+            if (entityTypeMetadata == null)
+                throw new ArgumentException(
+                    $"The type {entityType.Name} is not mapped as an entity in the provided DbContext.");
+
+            // Get the relational entity type annotation that contains table mapping info
+            var relationalEntityType = entityTypeMetadata.GetAnnotations()
+                .FirstOrDefault(a => a.Name == "Relational:TableName");
+
+            // Check if this is mapped to a table or a view
+            bool isView = entityTypeMetadata.GetAnnotations()
+                .Any(a => a.Name == "Relational:ViewName" && a.Value != null);
+
+            string tableName = null;
+
+            // If it's mapped to a view, get the view name
+            if (isView)
+            {
+                var viewAnnotation = entityTypeMetadata.GetAnnotations()
+                    .FirstOrDefault(a => a.Name == "Relational:ViewName");
+
+                tableName = viewAnnotation?.Value?.ToString();
+            }
+            // Otherwise get the table name
+            else
+            {
+                // Try to get from the annotation value
+                tableName = relationalEntityType?.Value?.ToString();
+
+                // If no explicit mapping is found, EF Core uses the DbSet property name or the class name
+                if (string.IsNullOrEmpty(tableName))
                 {
-                    object? oldValue = preEntity.GetType().GetProperty(property.Name)
-                        ?.GetValue(preEntity);
-                    entity.GetType().GetProperty(property.Name)?.SetValue(entity, oldValue);
+                    // Check if there's a DbSet property for this entity
+                    var dbSetProps = contextType.GetProperties()
+                        .Where(p =>
+                            p.PropertyType.IsGenericType &&
+                            p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>) &&
+                            p.PropertyType.GetGenericArguments()[0] == entityType);
+
+                    if (dbSetProps.Any())
+                    {
+                        tableName = dbSetProps.First().Name;
+                    }
+                    else
+                    {
+                        // Fall back to the entity class name
+                        tableName = entityType.Name;
+                    }
                 }
             }
 
-            return entity;
-        }
-        
-        public static string GetEntityTableName<T>(T? entity)
-        {
-            Type? type = entity?.GetType();
-            if (type != null &&
-                type.GetCustomAttributes().FirstOrDefault(x => x.GetType() == typeof(TableAttribute)) is TableAttribute
-                    tableAttribute)
+            // Get the schema - either explicit or default
+            var schemaAnnotation = entityTypeMetadata.GetAnnotations()
+                .FirstOrDefault(a => a.Name == "Relational:Schema");
+
+            string schema = schemaAnnotation?.Value?.ToString();
+
+            // If no schema was explicitly set, check for default schema
+            if (string.IsNullOrEmpty(schema))
             {
-                return tableAttribute.Name;
+                var defaultSchemaAnnotation = DbContext.Model.GetAnnotations()
+                    .FirstOrDefault(a => a.Name == "Relational:DefaultSchema");
+
+                schema = defaultSchemaAnnotation?.Value?.ToString() ?? "dbo"; // Default to dbo if no schema specified
             }
 
-            return type?.Name + "s";
+            return (Schema: schema, TableName: tableName);
         }
-        
+
+        /// <summary>
+        /// Creates an instance of the DbContext using reflection
+        /// </summary>
+        private static DbContext CreateDbContextInstance(Type contextType)
+        {
+            try
+            {
+                // Try to find a constructor with DbContextOptions parameter
+                var optionsConstructor = contextType.GetConstructor(new[] { typeof(DbContextOptions) });
+                if (optionsConstructor != null)
+                {
+                    // Create DbContextOptions using DbContextOptionsBuilder
+                    var optionsBuilderType = typeof(DbContextOptionsBuilder<>).MakeGenericType(contextType);
+                    var optionsBuilder = Activator.CreateInstance(optionsBuilderType);
+
+                    // Use UseInMemoryDatabase to create a functional context without real DB connection
+                    var useInMemoryMethod = optionsBuilderType.GetMethod("UseInMemoryDatabase",
+                        new[] { typeof(string) });
+                    useInMemoryMethod.Invoke(optionsBuilder, new object[] { "TemporaryInMemoryDbForTableNameLookup" });
+
+                    // Get the Options property from the builder
+                    var optionsProperty = optionsBuilderType.GetProperty("Options");
+                    var options = optionsProperty.GetValue(optionsBuilder);
+
+                    // Create context with options
+                    return (DbContext)Activator.CreateInstance(contextType, options);
+                }
+
+                // Try to find a parameterless constructor as fallback
+                var defaultConstructor = contextType.GetConstructor(Type.EmptyTypes);
+                if (defaultConstructor != null)
+                {
+                    return (DbContext)Activator.CreateInstance(contextType);
+                }
+
+                throw new InvalidOperationException(
+                    $"Could not create an instance of {contextType.Name}. " +
+                    "Ensure it has either a parameterless constructor or a constructor that accepts DbContextOptions.");
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Error creating DbContext instance of type {contextType.Name}.", ex);
+            }
+        }
+
         public static bool IsSystemEntity(string tableName)
         {
             if (new[]
                 {
-                    "Option", "Permission", "Role", "RolePermission", "Team", 
+                    "Option", "Permission", "Role", "RolePermission", "Team",
                     "TeamRole", "TeamUser", "User", "UserRole", "Setting", "Job", "JobHistory", "Audit", "AuditField",
                     "AuditHistory", "AuditHistoryDetail", "System", "Server"
                 }.Contains(tableName))

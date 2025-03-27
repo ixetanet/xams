@@ -1,8 +1,10 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
 using Xams.Core.Dtos;
+using Xams.Core.Dtos.Data;
 using Xams.Core.Utils;
 
 namespace Xams.Core.Pipeline.Stages;
@@ -31,20 +33,6 @@ public class PipeEntityDelete : BasePipelineStage
             };
         }
 
-        // If already being tracked, then remove and re-add to the change tracker
-        // TODO: This should be optimized either by keeping track of entities in a Dictionary on the DbContext
-        // TODO: Or another method (potentially disabling tracking and re-enabling https://learn.microsoft.com/en-us/ef/core/querying/tracking)
-        string primaryKey = $"{context.TableName}Id";
-        Guid entityId = context.Entity.GetValue<Guid>(primaryKey);
-        var entry = context.DataRepository.GetDbContext<BaseDbContext>().ChangeTracker
-            .Entries().FirstOrDefault(e =>
-                context.Entity != null && e.Entity.GetType().Name == context.TableName &&
-                e.Entity.GetValue<Guid>(primaryKey) == entityId);
-        if (entry != null)
-        {
-            entry.State = EntityState.Detached;
-        }
-
         var response = await context.DataRepository.Delete(context.Entity, context.SystemParameters.PreventSave);
         if (!response.Succeeded)
         {
@@ -67,36 +55,36 @@ public class PipeEntityDelete : BasePipelineStage
             };
         }
 
-        Guid entityId = context.Entity.GetValue<Guid>($"{entityType.Name}Id");
-
-        if (entityId == Guid.Empty)
-        {
-            return new Response<object?>()
-            {
-                Succeeded = false,
-                FriendlyMessage = $"Cannot delete entity with empty ID."
-            };
-        }
+        object entityId = context.Entity.GetValue<object>(Cache.Instance.GetTableMetadata(context.TableName).PrimaryKey);
 
         var dbContext = context.DataRepository.CreateNewDbContext<BaseDbContext>();
         var dependencies = DependencyFinder.GetDependencies(entityType, dbContext);
         var maxDepth = DependencyFinder.GetMaxDepth(dependencies);
-        var postOrderTraversal =
-            await DependencyFinder.GetPostOrderTraversal(dependencies, entityId, dbContext);
 
+        var traversalSettings = new DependencyFinder.PostOrderTraversalSettings()
+        {
+            Id = entityId,
+            Dependencies = dependencies,
+            // Use a DbContext in this transaction to ensure the latest records are retrieved
+            DbContextFactory = () => context.DataRepository.GetDbContext<BaseDbContext>()
+        };
+        
+        var postOrderTraversal = (await DependencyFinder.GetPostOrderTraversal(traversalSettings))
+            .OrderByDescending(x => x.Value.Depth)
+            .ToDictionary();
+        
+        
         // Sort by entities without Service Logic first
         postOrderTraversal = postOrderTraversal
             .OrderBy(x => Cache.Instance.GetTableMetadata(x.Value.Dependency.Type.Name).HasPostOpServiceLogic)
             .ToDictionary();
-
-        // Keep track of entities that will be deleted to avoid duplicate deletes
-        // Dictionary<string, HashSet<Guid>> uniqueRecords = new();
-
+        
+        
         // Delete from the highest depth to lowest
         while (maxDepth > -1)
         {
             // Create Pipeline Contexts and get Pre-Entities first
-            Dictionary<Guid, PipelineDependency> pipelineDependencies = new();
+            Dictionary<object, PipelineDependency> pipelineDependencies = new();
             var records = postOrderTraversal
                 .Where(x => x.Value.Depth == maxDepth).ToList();
             maxDepth--;
@@ -110,12 +98,7 @@ public class PipeEntityDelete : BasePipelineStage
                 var id = recordDependency.Key;
                 var dependency = recordDependency.Value.Dependency;
                 var tableMetadata = Cache.Instance.GetTableMetadata(dependency.Type.Name);
-
-                var fields = new Dictionary<string, dynamic>()
-                {
-                    { $"{dependency.Type.Name}Id", id }
-                };
-
+                
                 // Prevent the save if there's no post operation service logic
                 // Save when we reach an entity with post operating service logic or the end of the batch
                 bool preventSave = !tableMetadata.HasPostOpServiceLogic;
@@ -144,12 +127,16 @@ public class PipeEntityDelete : BasePipelineStage
                     pipelineDependencies.Remove(id);
                 }
 
-                var pipelineEntity = EntityUtil.ConvertToEntityId(dependency.Type, fields).Entity;
+                // var pipelineEntity = EntityUtil.ConvertToEntityId(dependency.Type, fields).Entity;
+                var pipelineEntity = EntityUtil.ConvertToEntityId(dependency.Type, new Input
+                {
+                    id = id
+                }).Entity;
 
                 var newPipelineContext = new PipelineContext()
                 {
                     Parent = context, // TODO: Might want to make this the parent pipeline context that's causing the delete
-                    TableName = dependency.Type.Name,
+                    TableName = EntityUtil.GetTableName(dependency.Type, EntityUtil.DbContext?.GetType() ?? throw new Exception("DbContext not yet initialized")).TableName,
                     UserId = context.UserId,
                     Entity = pipelineEntity,
                     InputParameters = context.InputParameters,
@@ -177,7 +164,7 @@ public class PipeEntityDelete : BasePipelineStage
             // Don't check security for the dependent records
             // Not checking for security on cascade\dependent records is default behavior for delete in most CRM systems
             await context.DataService
-                .BatchPreEntitySecurity(pipelineDependencies
+                .BatchPreEntity(pipelineDependencies
                     .Where(x => !string.IsNullOrEmpty(x.Value.PipelineContext.TableName))
                     .Where(x => Cache.Instance.GetTableMetadata(x.Value.PipelineContext.TableName).HasDeleteServiceLogic)
                     .Select(x => x.Value.PipelineContext).ToList(), false);
@@ -224,6 +211,7 @@ public class PipeEntityDelete : BasePipelineStage
                 {
                     return response;
                 }
+                
             }
 
             if (toDeleteCount > 0)
@@ -231,7 +219,6 @@ public class PipeEntityDelete : BasePipelineStage
                 await context.DataRepository.SaveChangesAsync();
             }
         }
-
 
         return new Response<object?>()
         {

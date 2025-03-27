@@ -6,6 +6,9 @@ using Xams.Core.Utils;
 
 namespace Xams.Core.Pipeline.Stages;
 
+/// <summary>
+/// Determines if the user can perform the Create\Read\Update\Delete operation
+/// </summary>
 public class PipePermissions : BasePipelineStage
 {
     public override async Task<Response<object?>> Execute(PipelineContext context)
@@ -15,20 +18,16 @@ public class PipePermissions : BasePipelineStage
         {
             return response;
         }
-
-        context.TablePermissions = (List<TablePermission>)response.Data!;
+        
         return await base.Execute(context);
     }
-
+    
+    
     private async Task<Response<T>> AccessPermissionCheck<T>(PipelineContext context)
     {
-        string[] permissions = context.TablePermissions
-            .Where(x => x.Table == context.TableName)
-            .SelectMany(x => x.Permissions)
-            .Where(x => x.EndsWith($"{context.DataOperation.ToString().ToUpper()}_USER") || 
-                        x.EndsWith($"{context.DataOperation.ToString().ToUpper()}_TEAM") || 
-                        x.EndsWith($"{context.DataOperation.ToString().ToUpper()}_SYSTEM"))
-            .ToArray();
+        string[] permissions = await Permissions.GetUserTablePermissions(context.UserId, context.TableName,
+            [context.DataOperation.ToString().ToUpper()]); 
+        
         Permissions.PermissionLevel? highestPermission = Permissions.GetHighestPermission(permissions);
         if (highestPermission is Permissions.PermissionLevel.System)
         {
@@ -44,8 +43,9 @@ public class PipePermissions : BasePipelineStage
         if (highestPermission is Permissions.PermissionLevel.Team && owningTeamId != null)
         {
             // Get the users teams, then check if the owning team is one of the users teams
-            List<Guid>? userTeams = (await context.SecurityRepository.UserTeams(context.UserId)).Data;
-            if (userTeams != null && userTeams.Any(x => x == owningTeamId))
+            List<Guid> userTeams = PermissionCache.UserTeams[context.UserId];
+            //(await context.SecurityRepository.UserTeams(context.UserId)).Data;
+            if (userTeams.Any(x => x == owningTeamId))
             {
                 return new Response<T>()
                 {
@@ -76,15 +76,7 @@ public class PipePermissions : BasePipelineStage
 
     private async Task<Response<T>> AssignPermissionCheck<T>(PipelineContext context)
     {
-        string[] permissions = [];
-        if (context.TablePermissions == null)
-        {
-            throw new Exception($"Table permissions not set in {nameof(PipePermissions)}. Cannot check assign permissions.");
-        }
-
-        permissions = context.TablePermissions.SelectMany(x => x.Permissions)
-            .Where(x => x.StartsWith($"TABLE_{context.TableName}_ASSIGN"))
-            .Select(x => x).ToArray();
+        var permissions = await Permissions.GetUserTablePermissions(context.UserId, context.TableName, ["ASSIGN"]);
 
         var owningTeamProperty = context.Entity.GetType().GetProperty("OwningTeamId");
         var owningUserProperty = context.Entity.GetType().GetProperty("OwningUserId");
@@ -140,23 +132,12 @@ public class PipePermissions : BasePipelineStage
         // If team permission, allow assignment to all teams the user is a member of
         if (owningTeamId != null)
         {
-            object? team = (await context.SecurityRepository.Team(owningTeamId.Value)).Data;
-
-            if (team == null)
-            {
-                return new Response<T>()
-                {
-                    Succeeded = false,
-                    FriendlyMessage = $"Could not find team with ID {owningTeamId}."
-                };
-            }
-
             if (highestPermission is Permissions.PermissionLevel.Team)
             {
                 // Get the users teams, then check if the owning team is one of the users teams
-                List<Guid>? userTeams = (await context.SecurityRepository.UserTeams(context.UserId)).Data;
+                List<Guid> userTeams = PermissionCache.UserTeams[context.UserId];
                 // make the below check more readable
-                bool isTeamAccessible = userTeams != null && userTeams.Any(x => x == owningTeamId);
+                bool isTeamAccessible = userTeams.Any(x => x == owningTeamId);
                 if (isTeamAccessible)
                 {
                     return new Response<T>()
@@ -168,7 +149,7 @@ public class PipePermissions : BasePipelineStage
                 return new Response<T>()
                 {
                     Succeeded = false,
-                    FriendlyMessage = $"No membership to team {team.GetType().GetProperty("Name").GetValue(team)}."
+                    FriendlyMessage = $"Cannot assign to team, No membership."
                 };
             }
 
@@ -176,7 +157,7 @@ public class PipePermissions : BasePipelineStage
             {
                 Succeeded = false,
                 FriendlyMessage =
-                    $"Cannot assign {context.TableName} to team {team.GetType().GetProperty("Name").GetValue(team)}. Can only assign to self."
+                    $"Cannot assign to team, can only assign to self."
             };
         }
 
@@ -207,7 +188,7 @@ public class PipePermissions : BasePipelineStage
 
             if (highestPermission is Permissions.PermissionLevel.Team)
             {
-                if ((await context.SecurityRepository.UsersExistInSameTeam(context.UserId, (Guid)owningUserId)).Data)
+                if (context.SecurityRepository.UsersExistInSameTeam(context.UserId, owningUserId.Value))
                 {
                     return new Response<T>()
                     {
@@ -236,14 +217,15 @@ public class PipePermissions : BasePipelineStage
             Data = default
         };
     }
-
+    
     private async Task<Response<object?>> CheckSecurity(PipelineContext context)
     {
         // Does the user have permission to perform the operation on the table?
-        context.TablePermissions = await GetTablePermissions(context);
-        if (!TablePermissionCheck(context, out Response<object?> repositoryResponse))
+        var tablePermissions = await GetTablePermissions(context);
+        var tablePermissionCheck = await TablePermissionCheck(context, tablePermissions);
+        if (!tablePermissionCheck.Succeeded)
         {
-            return repositoryResponse;
+            return tablePermissionCheck;
         }
 
         // Does the user have permission to update or delete the specific record?
@@ -269,56 +251,56 @@ public class PipePermissions : BasePipelineStage
 
         return new Response<object?>()
         {
-            Succeeded = true,
-            Data = context.TablePermissions
+            Succeeded = true
         };
     }
 
-    private bool TablePermissionCheck<T>(PipelineContext context, out Response<T?> response)
+    private async Task<Response<object?>> TablePermissionCheck(PipelineContext context, string[] permissions)
     {
         if (context.DataOperation is DataOperation.Read)
         {
             string[] tables = QueryUtil.GetTables(context.ReadInput);
+            var tablePermissions = permissions.ToTablePermissions(); 
             foreach (var table in tables)
             {
-                if (context.TablePermissions.FirstOrDefault(x => x.Table == table) == null)
+                if (tablePermissions.FirstOrDefault(x => x.Table == table) == null)
                 {
-                    response = new Response<T?>()
+                    return new Response<object?>()
                     {
                         Succeeded = false,
                         FriendlyMessage = $"Missing {context.DataOperation.ToString().ToLower()} permissions for {table}."
                     };
-                    return false;
                 }
             }
             
-            response = new Response<T?>()
+            return new Response<object?>()
             {
                 Succeeded = true
             };
-
-            return true;
+            
         }
 
-        if (context.TablePermissions.FirstOrDefault(x => x.Table == context.TableName) == null)
+        if (permissions.Length == 0)
         {
-            response = new Response<T?>()
+            return new Response<object?>()
             {
                 Succeeded = false,
                 FriendlyMessage = $"Missing {context.DataOperation.ToString().ToLower()} permissions for {context.TableName}."
             };
-            return false;
         }
         
-        response = new Response<T?>()
+        return new Response<object?>()
         {
             Succeeded = true
         };
-        
-        return true;
     }
 
-    private async Task<List<TablePermission>> GetTablePermissions(PipelineContext context)
+    /// <summary>
+    /// Retrieve and or provide additional security privileges depending on the type of call
+    /// </summary>
+    /// <param name="context"></param>
+    /// <returns></returns>
+    private async Task<string[]> GetTablePermissions(PipelineContext context)
     {
         string[] permissions;
         if (context.DataOperation is DataOperation.Read)
@@ -332,7 +314,7 @@ public class PipePermissions : BasePipelineStage
                 (context.ReadInput!.joins == null || context.ReadInput.joins.Length == 0))
             {
                 string owningTableName = context.InputParameters["tableName"].GetString()!;
-                permissions = await Permissions.GetUserPermissions(context.DataRepository.CreateNewDbContext(),
+                permissions = await PermissionCache.GetUserPermissions(
                     context.UserId,
                     [
                         $"TABLE_{owningTableName}_ASSIGN_USER",
@@ -360,24 +342,24 @@ public class PipePermissions : BasePipelineStage
                         }
                     ];
                 }
+                
             }
             else
             {
-                permissions = await Permissions.GetUserTablePermissions(context.DataRepository.CreateNewDbContext(),
+                permissions = await Permissions.GetUserTablePermissions(
                     context.UserId,
                     tables, context.DataOperation.ToString().ToUpper());
             }
+            
+            
         }
         else
         {
-            if (context.TablePermissions == null)
-            {
-                throw new Exception($"Null table permissions in {nameof(PipePermissions)}.");
-            }
-            return context.TablePermissions;
+            permissions = await Permissions.GetUserTablePermissions(context.UserId, context.TableName, 
+                [context.DataOperation.ToString().ToUpper()]);
         }
 
-        return permissions.ToTablePermissions();
+        return permissions;
     }
 
     

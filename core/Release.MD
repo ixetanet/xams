@@ -1,5 +1,19 @@
 # Release Notes
 
+## 1.0.6
+
+- Support for numerical and custom keys
+- Support for all c# data types on Entities
+- Tables no longer require the Table attribute
+- Entities no longer require a Name property or UIName attribute
+- Significant permission caching performance increase
+- Permissions caching enabled by default
+- Delete PostOrderTraversal parallelized for performance increase
+- Parallelized PreEntity fetching
+- Disabled query change tracking for DbContext
+- Deletes now take 15% of the previous deletion time
+- Fixed Delete retrieves available records in current transaction
+
 ## 1.0.5
 
 - Added JobTimeZone attribute to adjust job scheduled time for a specific timezone

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -18,9 +19,8 @@ namespace Xams.Core.Services
         private readonly Guid ExecutionId = Guid.NewGuid();
         private readonly DataRepository _dataRepository = new(typeof(TDbContext));
         private readonly MetadataRepository _metadataRepository = new(typeof(TDbContext));
-        private readonly SecurityRepository _securityRepository = new(typeof(TDbContext));
-        private readonly Dictionary<string, HashSet<Guid>> _deletes = new();
-        private List<TablePermission> TablePermissions { get; set; } = new();
+        private readonly SecurityRepository _securityRepository = new();
+        private readonly Dictionary<string, HashSet<dynamic>> _deletes = new();
         private List<ServiceContext> ServiceContexts { get; set; } = new();
         internal ILogger Logger { get; private set; }
 
@@ -61,11 +61,11 @@ namespace Xams.Core.Services
         /// <param name="entity"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        public bool TrackDelete(string entity, Guid id)
+        public bool TrackDelete(string entity, object id)
         {
             if (!_deletes.ContainsKey(entity))
             {
-                _deletes.Add(entity, new HashSet<Guid>());
+                _deletes.Add(entity, new HashSet<dynamic>());
             }
             if (!_deletes[entity].Contains(id))
             {
@@ -76,9 +76,15 @@ namespace Xams.Core.Services
             return false;
         }
 
-        public bool TrackingDelete(string entity, Guid id)
+        public bool TrackingDelete(string entity, object id)
         {
-            return _deletes.ContainsKey(entity) && _deletes[entity].Contains(id);
+            if (!(id is Guid guidId))
+            {
+                // For now, we only track Guid IDs
+                return false;
+            }
+            
+            return _deletes.ContainsKey(entity) && _deletes[entity].Contains(guidId);
         }
 
         public async Task<Response<ReadOutput>> Read(Guid userId, ReadInput readInput, PipelineContext? parent = null)
@@ -120,6 +126,7 @@ namespace Xams.Core.Services
                 {
                     Succeeded = result.Succeeded,
                     FriendlyMessage = result.FriendlyMessage,
+                    LogMessage = result.LogMessage,
                     Data = result.Data as ReadOutput
                 };
             }
@@ -237,26 +244,8 @@ namespace Xams.Core.Services
             }
 
             // Verify User has action permissions
-            var permissions = await _securityRepository.UserPermissions(userId, $"ACTION_{input.name}");
-            if (!permissions.Succeeded)
-            {
-                return new Response<object?>()
-                {
-                    Succeeded = false,
-                    FriendlyMessage = permissions.FriendlyMessage
-                };
-            }
-
-            if (permissions.Data == null)
-            {
-                return new Response<object?>()
-                {
-                    Succeeded = false,
-                    FriendlyMessage = $"Missing {input.name} permissions."
-                };
-            }
-
-            if (permissions.Data.Length == 0)
+            var permissions = await PermissionCache.GetUserPermissions(userId, [$"ACTION_{input.name}"]); 
+            if (permissions.Length == 0)
             {
                 return new Response<object?>()
                 {
@@ -468,9 +457,7 @@ namespace Xams.Core.Services
                 {
                     TableName = x.tableName ?? "",
                     DataOperation = DataOperation.Create,
-                    Entity = EntityUtil.GetEntity(x.tableName ?? "", x.fields ?? [], DataOperation.Create,
-                                 out string error).Data ??
-                             throw new Exception(error),
+                    Entity = EntityUtil.GetEntity(x, DataOperation.Create, out string error).Data ?? throw new Exception(error),
                     Input = x
                 }));
 
@@ -478,10 +465,7 @@ namespace Xams.Core.Services
                 {
                     TableName = x.tableName ?? "",
                     DataOperation = DataOperation.Update,
-                    Entity = EntityUtil.GetEntity(x.tableName ?? "", x.fields ?? [], DataOperation.Update,
-                                     out string error)
-                                 .Data ??
-                             throw new Exception(error),
+                    Entity = EntityUtil.GetEntity(x, DataOperation.Update, out string error).Data ?? throw new Exception(error),
                     Input = x
                 }));
 
@@ -489,10 +473,7 @@ namespace Xams.Core.Services
                 {
                     TableName = x.tableName ?? "",
                     DataOperation = DataOperation.Delete,
-                    Entity = EntityUtil.GetEntity(x.tableName ?? "", x.fields ?? [], DataOperation.Delete,
-                                     out string error)
-                                 .Data ??
-                             throw new Exception(error),
+                    Entity = EntityUtil.GetEntity(x, DataOperation.Delete, out string error).Data ?? throw new Exception(error),
                     Input = x
                 }));
 
@@ -518,7 +499,7 @@ namespace Xams.Core.Services
                         };
                     }).SelectMany(x => x).Distinct();
 
-                var permissions = await _securityRepository.UserPermissions(userId, requiredPermissions.ToArray());
+                var permissions = await PermissionCache.GetUserPermissions(userId, requiredPermissions.ToArray()); 
 
                 // This acts as an immediate guard for unauthorized operations, it prevents the system from
                 // retrieving a bunch of PreEntity records only to find out the user doesn't have the permissions.
@@ -572,10 +553,6 @@ namespace Xams.Core.Services
                         $"Missing create permissions for {string.Join(", ", missingCreatePermissions)}");
                 }
 
-                // Cache the list of table permissions in case ServiceLogic calls Create \ Update \ Delete 
-                // method during the same transaction so there's no need to re-fetch the permissions
-                TablePermissions.AddRange(permissions.ToTablePermissions());
-
                 List<PipelineContext> pipelineContexts = new List<PipelineContext>();
 
                 foreach (var operation in operations)
@@ -600,8 +577,7 @@ namespace Xams.Core.Services
                         DataRepository = _dataRepository,
                         MetadataRepository = _metadataRepository,
                         SecurityRepository = _securityRepository,
-                        Fields = operation.Input.fields,
-                        TablePermissions = TablePermissions.Where(x => x.Table == operation.TableName).ToList()
+                        Fields = operation.Input.fields
                     };
                     ServiceContexts.Add(pipelineContext.CreateServiceContext());
                     pipelineContexts.Add(pipelineContext);
@@ -609,7 +585,7 @@ namespace Xams.Core.Services
 
                 // Batch retrieve PreEntities and run security validation
                 // Pre-Entity is always required for Update and Delete to perform security checks
-                var securityResponse = await BatchPreEntitySecurity(pipelineContexts);
+                var securityResponse = await BatchPreEntity(pipelineContexts);
                 if (!securityResponse.Succeeded)
                 {
                     return securityResponse;
@@ -725,16 +701,7 @@ namespace Xams.Core.Services
                     FriendlyMessage = "Entity is required."
                 };
             }
-
-            // If we haven't retrieved the users permissions for this table yet, get them
-            string tableName = entity.GetType().Name;
-            if (TablePermissions.All(x => x.Table != tableName))
-            {
-                var db = _dataRepository.CreateNewDbContext();
-                var permissions = await Core.Permissions.GetUserTablePermissions(db, userId, tableName,
-                    ["CREATE", "UPDATE", "DELETE", "ASSIGN"]);
-                TablePermissions.AddRange(permissions.ToTablePermissions());
-            }
+            
             
             // It's possible that hierarchy of deletes is occuring from a PostTraversalDelete and as part of the
             // ServiceLogic, a deleted is called on an entity that has been or will be deleted. In this case, we need
@@ -772,9 +739,9 @@ namespace Xams.Core.Services
                 Entity = entity,
                 PreEntity = dataOperation is DataOperation.Delete or DataOperation.Update
                     ? await DynamicLinq<BaseDbContext>.Find(_dataRepository.CreateNewDbContext(), entityType,
-                        entity.GetIdValue(entityType))
+                        (Guid)entity.GetIdValue(entityType))
                     : null,
-                TableName = entity.GetType().Name,
+                TableName = EntityUtil.GetTableName(entity.GetType(), EntityUtil.DbContext?.GetType() ?? throw new Exception("DbContext not yet initialized")).TableName,
                 DataOperation = dataOperation,
                 InputParameters = (parameters != null ? Util.ObjectToParameters(parameters) : null) ??
                                   new Dictionary<string, JsonElement>(),
@@ -786,8 +753,7 @@ namespace Xams.Core.Services
                 DataService = this,
                 DataRepository = _dataRepository,
                 MetadataRepository = _metadataRepository,
-                SecurityRepository = _securityRepository,
-                TablePermissions = TablePermissions.Where(x => x.Table == tableName).ToList()
+                SecurityRepository = _securityRepository
             };
             ServiceContexts.Add(pipelineContext.CreateServiceContext());
             var securityResponse = await Pipelines.SecurityPipeline.Execute(pipelineContext);
@@ -905,7 +871,7 @@ namespace Xams.Core.Services
         /// <param name="checkSecurity">Execute the Security Pipeline for all Pipeline Contexts</param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public async Task<Response<object?>> BatchPreEntitySecurity(List<PipelineContext> pipelineContexts,
+        public async Task<Response<object?>> BatchPreEntity(List<PipelineContext> pipelineContexts,
             bool checkSecurity = true)
         {
             if (pipelineContexts.Count == 0)
@@ -919,7 +885,7 @@ namespace Xams.Core.Services
             // Group the Pipeline Contexts by Table Name to isolate queries
             var updateDeletePContexts = pipelineContexts
                 .Where(x => x.DataOperation is DataOperation.Update or DataOperation.Delete).ToList();
-            var tableOperationGroups = (from pipelineContext in updateDeletePContexts
+            var deleteTableGroups = (from pipelineContext in updateDeletePContexts
                 group pipelineContext by pipelineContext.TableName
                 into g
                 select new TableOperationGroup()
@@ -929,49 +895,48 @@ namespace Xams.Core.Services
                 }).ToList();
 
 
-            // Check security for PreEntities in Batches of 25
+            // Check security for PreEntities in batches
             // This is to prevent a user with unauthorized access from querying all PreEntities
-            foreach (var tableGroup in tableOperationGroups)
+            using var cts = new CancellationTokenSource();
+            Response<object?>? cancelledResponse = null;
+            await Parallel.ForEachAsync(deleteTableGroups, cts.Token, async (tableGroup, token) =>
             {
                 var ids = tableGroup.PipelineContexts
-                    .Select(x => x.Entity?.GetValue<Guid>($"{x.TableName}Id")
+                    .Select(x => x.Entity?.GetValue<object>(Cache.Instance.GetTableMetadata(x.TableName).PrimaryKey)
                                  ?? throw new Exception($"Failed to get Id from {x.TableName} entity.")).ToList();
-
-                if (ids.Contains(Guid.Empty))
-                {
-                    throw new Exception($"Entity must contain primary key");
-                }
-                
+            
                 var tableType = Cache.Instance.GetTableMetadata(tableGroup.TableName).Type;
-
-                int batchSize = 100;
-                while (ids.Any())
+                
+                Stopwatch sw = new  Stopwatch();
+                
+                var preEntities =
+                    await DynamicLinq<BaseDbContext>.BatchRequestThreaded(() => _dataRepository.CreateNewDbContext(),
+                        tableType,
+                        ids);
+                
+                // Set each PreEntity on the pipeline context and run security validation
+                foreach (var pipelineContext in tableGroup.PipelineContexts.Where(x => x.PreEntity == null))
                 {
-                    var batchIds = ids.Take(batchSize).ToList();
-                    ids = ids.Skip(batchSize).ToList();
-                    var preEntities =
-                        await DynamicLinq<BaseDbContext>.BatchRequest(_dataRepository.CreateNewDbContext(),
-                            tableType,
-                            batchIds, batchIds.Count);
-
-                    // Set each PreEntity on the pipeline context and run security validation
-                    foreach (var pipelineContext in tableGroup.PipelineContexts.Where(x => x.PreEntity == null))
+                    var metadata = Cache.Instance.GetTableMetadata(pipelineContext.TableName);
+                    pipelineContext.PreEntity = preEntities[pipelineContext.Entity?.GetValue<dynamic>(metadata.PrimaryKey)];
+                    if (!checkSecurity)
                     {
-                        pipelineContext.PreEntity = preEntities.FirstOrDefault(x =>
-                            ((object)x).GetValue<Guid>($"{pipelineContext.TableName}Id") ==
-                            pipelineContext.Entity?.GetValue<Guid>($"{pipelineContext.TableName}Id"));
-                        if (!checkSecurity)
-                        {
-                            continue;
-                        }
-
-                        var response = await Pipelines.SecurityPipeline.Execute(pipelineContext);
-                        if (!response.Succeeded)
-                        {
-                            return response;
-                        }
+                        continue;
+                    }
+                        
+                    var response = await Pipelines.SecurityPipeline.Execute(pipelineContext);
+                    if (!response.Succeeded)
+                    {
+                        cancelledResponse = response;
+                        await cts.CancelAsync();
                     }
                 }
+            });
+            
+
+            if (cancelledResponse != null)
+            {
+                return cancelledResponse;
             }
 
             // Run security on the remaining operations

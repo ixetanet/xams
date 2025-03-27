@@ -1,6 +1,7 @@
 using System.Dynamic;
 using System.Linq.Dynamic.Core;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Xams.Core.Base;
 using Xams.Core.Dtos;
@@ -23,6 +24,7 @@ namespace Xams.Core.Repositories
             _dataContextType = dataContext;
             _dataContext = (BaseDbContext?)Activator.CreateInstance(_dataContextType) ??
                            throw new ArgumentNullException();
+            _dataContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             _nullabilityInfoContext = new();
         }
 
@@ -38,14 +40,13 @@ namespace Xams.Core.Repositories
 
         public BaseDbContext CreateNewDbContext()
         {
-            var dbContext = ((BaseDbContext)Activator.CreateInstance(_dataContextType)!);
-            _dbContexts.Add(dbContext);
-            return dbContext;
+            return CreateNewDbContext<BaseDbContext>();
         }
 
         public T CreateNewDbContext<T>() where T : BaseDbContext
         {
             var dbContext = ((T)Activator.CreateInstance(_dataContextType)!);
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             _dbContexts.Add(dbContext);
             return dbContext;
         }
@@ -203,7 +204,8 @@ namespace Xams.Core.Repositories
                 return new Response<ReadOutput>()
                 {
                     Succeeded = false,
-                    FriendlyMessage = e.Message
+                    FriendlyMessage = e.Message,
+                    LogMessage = e.StackTrace ?? e.InnerException?.Message
                 };
             }
         }

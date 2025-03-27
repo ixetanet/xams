@@ -34,7 +34,7 @@ public class SettingService : IServiceLogic
         ];
         string[] boolSettings =
         [
-            AuditStartupService.AuditEnabledSetting, SystemRecords.CachePermissionsSetting,
+            AuditStartupService.AuditEnabledSetting,
         ];
         
         if (context.DataOperation is Create or Update)
@@ -74,16 +74,7 @@ public class SettingService : IServiceLogic
                 // Update the audit cache refresh setting to force refresh of cache
                 await Queries.UpdateSystemRecord(db, "AuditLastRefresh", DateTime.UtcNow.ToString("O"));
             }
-
-            if (SystemRecords.CachePermissionsSetting == settingName)
-            {
-                if (bool.TryParse(settingValue, out bool isEnabled) && !isEnabled)
-                {
-                    // Clear any cached permissions
-                    Permissions.CachedPermissions.Clear();
-                    Permissions.CacheLastUpdate = string.Empty;
-                }
-            }
+            
         }
 
         if (context.DataOperation is Delete)

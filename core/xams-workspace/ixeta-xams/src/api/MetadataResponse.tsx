@@ -15,6 +15,7 @@ export interface MetadataField {
   lookupTable: string;
   lookupTableNameField: string;
   lookupTableDescriptionField: string;
+  lookupPrimaryKeyField: string;
   dateFormat: string;
   isTimeless: boolean;
   isNullable: boolean;

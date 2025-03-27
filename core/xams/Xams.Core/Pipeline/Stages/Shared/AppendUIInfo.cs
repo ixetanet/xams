@@ -11,9 +11,19 @@ public static class AppendUIInfo
         string tableName = context.TableName;
         List<object> results = new List<object>();
         
-        string permissionNames =
-            $"TABLE_{tableName}_UPDATE_USER, TABLE_{tableName}_UPDATE_TEAM, TABLE_{tableName}_UPDATE_SYSTEM, TABLE_{tableName}_DELETE_USER, TABLE_{tableName}_DELETE_TEAM, TABLE_{tableName}_DELETE_SYSTEM, TABLE_{tableName}_ASSIGN_USER, TABLE_{tableName}_ASSIGN_TEAM, TABLE_{tableName}_ASSIGN_SYSTEM";
-        string[] permissions = (await context.SecurityRepository.UserPermissions(context.UserId, permissionNames)).Data!;
+        string[] permissionNames =
+        [
+            $"TABLE_{tableName}_UPDATE_USER",
+            $"TABLE_{tableName}_UPDATE_TEAM",
+            $"TABLE_{tableName}_UPDATE_SYSTEM",
+            $"TABLE_{tableName}_DELETE_USER",
+            $"TABLE_{tableName}_DELETE_TEAM",
+            $"TABLE_{tableName}_DELETE_SYSTEM",
+            $"TABLE_{tableName}_ASSIGN_USER",
+            $"TABLE_{tableName}_ASSIGN_TEAM",
+            $"TABLE_{tableName}_ASSIGN_SYSTEM",
+        ];
+        string[] permissions = await PermissionCache.GetUserPermissions(context.UserId, permissionNames);
         string[] deletePermissions =
             permissions.Where(x => x.StartsWith($"TABLE_{tableName}_DELETE_")).ToArray();
         string[] updatePermissions =
@@ -21,35 +31,36 @@ public static class AppendUIInfo
         string[] assignPermissions =
             permissions.Where(x => x.StartsWith($"TABLE_{tableName}_ASSIGN_")).ToArray();
 
-        List<Guid> userTeamIds = new List<Guid>();
-        foreach (var entity in readOutput.results)
-        {
-            if (!entity.HasField("OwningTeamId"))
-            {
-                continue;
-            }
-            
-            Guid? owningTeamId = entity.GetValue<Guid?>("OwningTeamId");
-            if (owningTeamId != null)
-            {
-                userTeamIds.Add(owningTeamId.Value);
-            }
-        }
-        userTeamIds = userTeamIds.Distinct().ToList();
+        // List<Guid> userTeamIds = new List<Guid>();
+        // foreach (var entity in readOutput.results)
+        // {
+        //     if (!entity.HasField("OwningTeamId"))
+        //     {
+        //         continue;
+        //     }
+        //     
+        //     Guid? owningTeamId = entity.GetValue<Guid?>("OwningTeamId");
+        //     if (owningTeamId != null)
+        //     {
+        //         userTeamIds.Add(owningTeamId.Value);
+        //     }
+        // }
+        // userTeamIds = userTeamIds.Distinct().ToList();
 
         
         // Get teamIds in batches of 500
-        List<Guid> verifiedUserTeamIds = new List<Guid>();
-        int batchCount = 500;
-        while (userTeamIds.Count > 0)
-        {
-            var teamIds = (await context.SecurityRepository.UserTeams(context.UserId, userTeamIds.Take(batchCount).ToArray())).Data;
-            userTeamIds.RemoveRange(0, Math.Min(batchCount, userTeamIds.Count));
-            if (teamIds != null)
-            {
-                verifiedUserTeamIds.AddRange(teamIds);
-            }
-        }
+        // List<Guid> verifiedUserTeamIds = new List<Guid>();
+        // int batchCount = 500;
+        // while (userTeamIds.Count > 0)
+        // {
+        //     var teamIds = PermissionCache.UserTeams[context.UserId].Where(x => userTeamIds.Contains(x.Key));
+        //        // (await context.SecurityRepository.UserTeams(context.UserId, userTeamIds.Take(batchCount).ToArray())).Data;
+        //     userTeamIds.RemoveRange(0, Math.Min(batchCount, userTeamIds.Count));
+        //     if (teamIds != null)
+        //     {
+        //         verifiedUserTeamIds.AddRange(teamIds);
+        //     }
+        // }
         
 
         // Jobs canTrigger
@@ -60,7 +71,7 @@ public static class AppendUIInfo
                 .Select(x => x.Value)
                 .Select(x => $"JOB_{x.ServiceJobAttribute.Name}")
                 .ToArray();
-            triggerPermissions = (await context.SecurityRepository.UserPermissions(context.UserId, jobNames));
+            triggerPermissions = await PermissionCache.GetUserPermissions(context.UserId, jobNames); 
         }
 
         // Set canDelete and canUpdate
@@ -99,7 +110,9 @@ public static class AppendUIInfo
             {
                 if (expandoDictionary.ContainsKey("OwningTeamId") && expandoObject.OwningTeamId != null)
                 {
-                    canUpdate = verifiedUserTeamIds.Contains(expandoObject.OwningTeamId);
+                    var teamId = (Guid)expandoObject.OwningTeamId;
+                    canUpdate = PermissionCache.UserTeams[context.UserId]
+                        .Contains(teamId);
                 }
 
                 if (expandoDictionary.ContainsKey("OwningUserId") && expandoObject.OwningUserId != null &&
@@ -124,7 +137,9 @@ public static class AppendUIInfo
             {
                 if (expandoDictionary.ContainsKey("OwningTeamId") && expandoObject.OwningTeamId != null)
                 {
-                    canDelete = verifiedUserTeamIds.Contains(expandoObject.OwningTeamId);
+                    var teamId = (Guid)expandoObject.OwningTeamId;
+                    canDelete = PermissionCache.UserTeams[context.UserId]
+                        .Contains(teamId);
                 }
 
                 if (expandoDictionary.ContainsKey("OwningUserId") && expandoObject.OwningUserId != null &&

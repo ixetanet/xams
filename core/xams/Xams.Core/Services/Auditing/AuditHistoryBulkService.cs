@@ -71,20 +71,20 @@ internal class AuditHistoryBulkService : IBulkService
                     ServiceContexts = g.ToList()
                 }).ToList();
 
-            var entDict = new Dictionary<Guid, ServiceContext>();
-            if (entDict == null) throw new ArgumentNullException(nameof(entDict));
-            foreach (var tableGroup in tableGroups)
-            {
-                var auditInfo = Cache.Instance.TableAuditInfo[tableGroup.TableName];
-                if (auditInfo is { IsCreateAuditEnabled: false, IsUpdateAuditEnabled: false, IsDeleteAuditEnabled: false })
+                var entDict = new Dictionary<object, ServiceContext>();
+                if (entDict == null) throw new ArgumentNullException(nameof(entDict));
+                foreach (var tableGroup in tableGroups)
                 {
-                    continue;
-                }
-                // Put all the entities into a dictionary for faster access
-                foreach (var serviceContext in tableGroup.ServiceContexts)
-                {
-                    entDict.Add(serviceContext.GetId(), serviceContext);
-                }
+                    var auditInfo = Cache.Instance.TableAuditInfo[tableGroup.TableName];
+                    if (auditInfo is { IsCreateAuditEnabled: false, IsUpdateAuditEnabled: false, IsDeleteAuditEnabled: false })
+                    {
+                        continue;
+                    }
+                    // Put all the entities into a dictionary for faster access
+                    foreach (var serviceContext in tableGroup.ServiceContexts)
+                    {
+                        entDict.Add(serviceContext.GetId(), serviceContext);
+                    }
 
                 var tableType = Cache.Instance.GetTableMetadata(tableGroup.TableName).Type;
                 
@@ -93,13 +93,14 @@ internal class AuditHistoryBulkService : IBulkService
                     .Where(x => x.DataOperation == DataOperation.Delete)
                     .Select(sc => sc.GetId()).ToList();
                 // Query for deletes outside of this transaction to retrieve the data as it existed before the delete
-                var deleteResults = await DynamicLinq<BaseDbContext>.BatchRequest(newDb, tableType, deleteIds, 100);
+                // We need to handle the case where the IDs might not be Guids
+                var deleteResults = await DynamicLinq<BaseDbContext>.BatchRequest(newDb, tableType, deleteIds.ToList());
                 
                 // Updates and Creates
                 var updateIds = tableGroup.ServiceContexts
                     .Where(x => x.DataOperation != DataOperation.Delete)
                     .Select(sc => sc.GetId()).ToList();
-                var updateResults = await DynamicLinq<BaseDbContext>.BatchRequest(db, tableType, updateIds, 100);
+                var updateResults = await DynamicLinq<BaseDbContext>.BatchRequest(db, tableType, updateIds.ToList());
                 updateResults.AddRange(deleteResults);
                 foreach (var entity in updateResults.Select(x => (object)x).ToList())
                 {
@@ -124,13 +125,14 @@ internal class AuditHistoryBulkService : IBulkService
         var db = context.GetDbContext<BaseDbContext>();
         var entityMetadata = Cache.Instance.GetTableMetadata(context.TableName);
         string? name = string.Empty;
-        Guid? id = null;
+        object? id = null;
         if (entity != null &&
             context.DataOperation is DataOperation.Create or DataOperation.Update or DataOperation.Delete)
         {
             name = context.DataOperation is DataOperation.Delete
                 ? context.GetPreEntity<object>().GetNameFieldValue(entityMetadata.Type)
                 : entity.GetNameFieldValue(entityMetadata.Type);
+            // Get the ID value - this could be any type, not just Guid
             id = entity.GetIdValue(entityMetadata.Type);
         }
 
