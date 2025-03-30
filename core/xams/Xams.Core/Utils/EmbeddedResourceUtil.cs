@@ -31,7 +31,7 @@ public static class EmbeddedResourceUtil
     /// <param name="app">The application builder</param>
     /// <param name="options"></param>
     /// <returns>The application builder</returns>
-    public static IApplicationBuilder UseXamsDashboard(
+    internal static IApplicationBuilder UseXamsDashboard(
         this IApplicationBuilder app,
         Action<XamsDashboardOptions> options)
     {
