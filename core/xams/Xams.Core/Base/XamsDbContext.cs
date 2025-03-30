@@ -40,6 +40,11 @@ namespace Xams.Core.Base
         where TRole : Role
         where TSetting : Setting, new()
     {
+        public IQueryable<User> UsersBase => Set<User>();
+        public IQueryable<Role> RolesBase => Set<Role>();
+        public IQueryable<Team> TeamsBase => Set<Team>();
+        public IQueryable<Setting> SettingsBase => Set<Setting>();
+        
         public DbSet<TUser> Users { get; set; } = null!;
         public DbSet<TRole> Roles { get; set; } = null!;
         public DbSet<Permission> Permissions { get; set; } = null!;
@@ -137,7 +142,9 @@ namespace Xams.Core.Base
                     e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
             }
 
-            return await base.SaveChangesAsync(cancellationToken);
+            var result = await base.SaveChangesAsync(cancellationToken);
+            ChangeTracker.Clear();
+            return result;
         }
 
         public override int SaveChanges()
@@ -148,9 +155,11 @@ namespace Xams.Core.Base
                     e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
             }
 
-            return base.SaveChanges();
+            var result = base.SaveChanges();
+            ChangeTracker.Clear();
+            return result;
         }
-
+        
 
         /// <summary>
         /// Returns the current database provider.

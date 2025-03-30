@@ -50,6 +50,11 @@ namespace Xams.Core
             foreach (var prop in props)
             {
                 var propType = prop.PropertyType;
+                // DbSets only
+                if (prop.PropertyType.Name != "DbSet`1")
+                {
+                    continue;
+                }
                 if (propType.GenericTypeArguments.Length > 0)
                 {
                     var entityType = propType.GetGenericArguments()[0];

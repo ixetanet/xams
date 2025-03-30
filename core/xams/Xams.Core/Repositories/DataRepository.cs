@@ -52,26 +52,7 @@ namespace Xams.Core.Repositories
             _dbContexts.Add(dbContext);
             return dbContext;
         }
-
-        /// <summary>
-        /// TODO: This doesn't work when _dataContext has a default schema - need to fix
-        /// </summary>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
-        internal XamsDbContext<User, Team, Role, Setting> GetInternalDbContext()
-        {
-            var optionsBuilder = _dataContext.GetDbOptionsBuilder();
-            if (optionsBuilder == null)
-            {
-                throw new Exception(
-                    $"Failed to get db options builder. Ensure that base.OnConfiguring(optionsBuilder) is in the OnConfiguring method of the DbContext.");
-            }
-
-            var baseDbContext = new XamsDbContext<User, Team, Role, Setting>(optionsBuilder.Options);
-            _dbContexts.Add(baseDbContext);
-            return baseDbContext;
-        }
-
+        
         public async Task<Response<ReadOutput>> Find(string tableName, object[] ids, bool newDataContext,
             string[]? fields = null, bool updateFieldPrefixes = false)
         {
@@ -292,104 +273,103 @@ namespace Xams.Core.Repositories
         {
             try
             {
-                var appDbContext = CreateNewDbContext();
-                var db = GetInternalDbContext();
-                if (appDbContext.IsUserCustom())
+                var db = CreateNewDbContext();
+                if (db.IsUserCustom())
                 {
                     // If User is extended with a custom entity ensure that all the user
                     // records are using the custom entities discriminator
-                    var user = await db.Users.IgnoreQueryFilters()
+                    var user = await db.UsersBase.IgnoreQueryFilters()
                         .Where(x => x.Discriminator == 0) // Non-Custom
                         .FirstOrDefaultAsync();
                     if (user != null)
                     {
-                        await db.Users.ExecuteUpdateAsync(x
+                        await db.UsersBase.ExecuteUpdateAsync(x
                             => x.SetProperty(y => y.Discriminator, 1));
                     }
                 }
                 else
                 {
-                    var user = await db.Users.IgnoreQueryFilters()
+                    var user = await db.UsersBase.IgnoreQueryFilters()
                         .Where(x => x.Discriminator == 1) // Custom
                         .FirstOrDefaultAsync();
                     if (user != null)
                     {
-                        await db.Users.ExecuteUpdateAsync(x
+                        await db.UsersBase.ExecuteUpdateAsync(x
                             => x.SetProperty(y => y.Discriminator, 0));
                     }
                 }
 
-                if (appDbContext.IsTeamCustom())
+                if (db.IsTeamCustom())
                 {
                     // If User is extended with a custom entity ensure that all the user
                     // records are using the custom entities discriminator
-                    var user = await db.Teams.IgnoreQueryFilters()
+                    var user = await db.TeamsBase.IgnoreQueryFilters()
                         .Where(x => x.Discriminator == 0) // Non-Custom
                         .FirstOrDefaultAsync();
                     if (user != null)
                     {
-                        await db.Teams.ExecuteUpdateAsync(x
+                        await db.TeamsBase.ExecuteUpdateAsync(x
                             => x.SetProperty(y => y.Discriminator, 1));
                     }
                 }
                 else
                 {
-                    var user = await db.Teams.IgnoreQueryFilters()
+                    var user = await db.TeamsBase.IgnoreQueryFilters()
                         .Where(x => x.Discriminator == 1) // Custom
                         .FirstOrDefaultAsync();
                     if (user != null)
                     {
-                        await db.Teams.ExecuteUpdateAsync(x
+                        await db.TeamsBase.ExecuteUpdateAsync(x
                             => x.SetProperty(y => y.Discriminator, 0));
                     }
                 }
 
-                if (appDbContext.IsRoleCustom())
+                if (db.IsRoleCustom())
                 {
                     // If User is extended with a custom entity ensure that all the user
                     // records are using the custom entities discriminator
-                    var user = await db.Roles.IgnoreQueryFilters()
+                    var user = await db.RolesBase.IgnoreQueryFilters()
                         .Where(x => x.Discriminator == 0) // Non-Custom
                         .FirstOrDefaultAsync();
                     if (user != null)
                     {
-                        await db.Roles.ExecuteUpdateAsync(x
+                        await db.RolesBase.ExecuteUpdateAsync(x
                             => x.SetProperty(y => y.Discriminator, 1));
                     }
                 }
                 else
                 {
-                    var user = await db.Roles.IgnoreQueryFilters()
+                    var user = await db.RolesBase.IgnoreQueryFilters()
                         .Where(x => x.Discriminator == 1) // Custom
                         .FirstOrDefaultAsync();
                     if (user != null)
                     {
-                        await db.Roles.ExecuteUpdateAsync(x
+                        await db.RolesBase.ExecuteUpdateAsync(x
                             => x.SetProperty(y => y.Discriminator, 0));
                     }
                 }
 
-                if (appDbContext.IsSettingCustom())
+                if (db.IsSettingCustom())
                 {
                     // If User is extended with a custom entity ensure that all the user
                     // records are using the custom entities discriminator
-                    var user = await db.Settings.IgnoreQueryFilters()
+                    var user = await db.SettingsBase.IgnoreQueryFilters()
                         .Where(x => x.Discriminator == 0) // Non-Custom
                         .FirstOrDefaultAsync();
                     if (user != null)
                     {
-                        await db.Settings.ExecuteUpdateAsync(x
+                        await db.SettingsBase.ExecuteUpdateAsync(x
                             => x.SetProperty(y => y.Discriminator, 1));
                     }
                 }
                 else
                 {
-                    var user = await db.Settings.IgnoreQueryFilters()
+                    var user = await db.SettingsBase.IgnoreQueryFilters()
                         .Where(x => x.Discriminator == 1) // Custom
                         .FirstOrDefaultAsync();
                     if (user != null)
                     {
-                        await db.Settings.ExecuteUpdateAsync(x
+                        await db.SettingsBase.ExecuteUpdateAsync(x
                             => x.SetProperty(y => y.Discriminator, 0));
                     }
                 }
