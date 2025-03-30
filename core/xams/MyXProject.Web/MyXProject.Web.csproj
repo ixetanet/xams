@@ -21,14 +21,32 @@
 
 
     <ItemGroup>
-      <Folder Include="wwwroot\admin\" />
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
     </ItemGroup>
 
 
     <ItemGroup>
-      <Content Include="..\.dockerignore">
-        <Link>.dockerignore</Link>
-      </Content>
+      <_ContentIncludedByDefault Remove="wwwroot\_next\static\9ATGjGTD4eCOgAqwDVurJ\_buildManifest.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_next\static\9ATGjGTD4eCOgAqwDVurJ\_ssgManifest.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_next\static\chunks\1a31c4b6-989e40d394f8f9eb.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_next\static\chunks\2-7b4a8162f2565031.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_next\static\chunks\456144eb-c86b3a21ea598077.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_next\static\chunks\849baa33-62f8b997a8a3ad34.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_next\static\chunks\framework-47900422bd5f2ab2.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_next\static\chunks\main-2c04e9e3c5105d5e.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_next\static\chunks\pages\index-b82eff6eac12190d.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_next\static\chunks\pages\_app-645b6aa2adf2a2b3.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_next\static\chunks\pages\_error-88e38b962650355f.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_next\static\chunks\polyfills-42372ed130431b0a.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_next\static\chunks\webpack-2df7a8d27de1794c.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_next\static\css\acaf7fb6f9d7cd80.css" />
+    </ItemGroup>
+
+
+    <ItemGroup>
+      <Folder Include="wwwroot\" />
     </ItemGroup>
 
 </Project>
