@@ -44,7 +44,7 @@ namespace Xams.Core.Base
         public DbSet<TRole> Roles { get; set; } = null!;
         public DbSet<Permission> Permissions { get; set; } = null!;
         public DbSet<TTeam> Teams { get; set; } = null!;
-        public DbSet<TeamUser<TUser, TTeam>> TeamUsers { get; set; } = null!;
+        public DbSet<TeamUser<TTeam, TUser>> TeamUsers { get; set; } = null!;
         public DbSet<TeamRole<TTeam, TRole>> TeamRoles { get; set; } = null!;
         public DbSet<RolePermission<TRole>> RolePermissions { get; set; } = null!;
         public DbSet<UserRole<TUser, TRole>> UserRoles { get; set; } = null!;
