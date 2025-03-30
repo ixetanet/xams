@@ -13,6 +13,20 @@ public interface IXamsDbContext : IDisposable
     internal IQueryable<Role> RolesBase { get; }
     internal IQueryable<Team> TeamsBase { get; }
     internal IQueryable<Setting> SettingsBase { get; }
+    internal IQueryable<Permission> PermissionsBase { get; }
+    internal IQueryable<TeamUser<Team, User>> TeamUsersBase { get; } 
+    internal IQueryable<TeamRole<Team, Role>> TeamRolesBase { get; }
+    internal IQueryable<RolePermission<Role>> RolePermissionsBase { get; }
+    internal IQueryable<UserRole<User, Role>> UserRolesBase { get; } 
+    internal IQueryable<Option> OptionsBase { get; }
+    internal IQueryable<Xams.Core.Entities.System> SystemsBase { get; }
+    internal IQueryable<Server> ServersBase { get; }
+    internal IQueryable<Job> JobsBase { get; }
+    internal IQueryable<JobHistory> JobHistoriesBase { get; }
+    internal IQueryable<Audit> AuditsBase { get; }
+    internal IQueryable<AuditField> AuditFieldsBase { get; }
+    internal IQueryable<AuditHistory> AuditHistoriesBase { get; }
+    internal IQueryable<AuditHistoryDetail> AuditHistoryDetailsBase { get; }
 
     public bool SaveChangesCalledWithPendingChanges();
     DatabaseFacade Database { get; }
@@ -30,7 +44,6 @@ public interface IXamsDbContext : IDisposable
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
     DbProvider GetDbProvider();
-    internal DbContextOptionsBuilder? GetDbOptionsBuilder();
 
     /// <summary>
     /// Takes in raw SQL for Postgres, translates it to the current database provider, and executes it.
