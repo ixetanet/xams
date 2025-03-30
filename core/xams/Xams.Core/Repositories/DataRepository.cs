@@ -53,33 +53,41 @@ namespace Xams.Core.Repositories
             return dbContext;
         }
 
+        /// <summary>
+        /// TODO: This doesn't work when _dataContext has a default schema - need to fix
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         internal XamsDbContext<User, Team, Role, Setting> GetInternalDbContext()
         {
             var optionsBuilder = _dataContext.GetDbOptionsBuilder();
             if (optionsBuilder == null)
             {
-                throw new Exception($"Failed to get db options builder. Ensure that base.OnConfiguring(optionsBuilder) is in the OnConfiguring method of the DbContext.");
+                throw new Exception(
+                    $"Failed to get db options builder. Ensure that base.OnConfiguring(optionsBuilder) is in the OnConfiguring method of the DbContext.");
             }
+
             var baseDbContext = new XamsDbContext<User, Team, Role, Setting>(optionsBuilder.Options);
             _dbContexts.Add(baseDbContext);
             return baseDbContext;
         }
 
-        public async Task<Response<ReadOutput>> Find(string tableName, object[] ids, bool newDataContext, string[]? fields = null, bool updateFieldPrefixes = false)
+        public async Task<Response<ReadOutput>> Find(string tableName, object[] ids, bool newDataContext,
+            string[]? fields = null, bool updateFieldPrefixes = false)
         {
             IXamsDbContext dataContext = GetDbContext<IXamsDbContext>();
-        
+
             if (newDataContext)
             {
                 dataContext = CreateNewDbContext();
             }
 
             List<dynamic> results = new List<dynamic>();
-            
+
             // Batches of 500
             List<object> batchIds = new List<object>();
             batchIds.AddRange(ids);
-            
+
             List<object> toProcess = new List<object>();
             while (batchIds.Count > 0)
             {
@@ -95,7 +103,7 @@ namespace Xams.Core.Repositories
                 // results.AddRange(await new Query(dataContext, fields ?? ["*"])
                 //     .From(tableName).Where(where)
                 //     .ToDynamicListAsync());
-                
+
                 toProcess.Clear();
             }
 
@@ -103,7 +111,7 @@ namespace Xams.Core.Repositories
             {
                 results = UpdateFieldPrefixes(results);
             }
-            
+
             return new Response<ReadOutput>()
             {
                 Succeeded = true,
@@ -113,24 +121,26 @@ namespace Xams.Core.Repositories
                 }
             };
         }
+
         public async Task<Response<object?>> Find(string tableName, object id, bool newDataContext)
         {
             IXamsDbContext dataContext = GetDbContext<IXamsDbContext>();
-        
+
             if (newDataContext)
             {
                 dataContext = CreateNewDbContext();
             }
-            
+
             var entity = await dataContext.FindAsync(Cache.Instance.GetTableMetadata(tableName).Type, id);
-            
-            
+
+
             return new Response<object?>()
             {
                 Succeeded = true,
                 Data = entity,
             };
         }
+
         /// <summary>
         /// This will return a list of ExpandoObjects
         /// </summary>
@@ -164,14 +174,14 @@ namespace Xams.Core.Repositories
                 {
                     permissions = [$"TABLE_{readInput.tableName}_READ_SYSTEM"];
                 }
-                
+
                 IQueryable query = new QueryFactory(dataContext, new QueryFactory.QueryOptions()
                 {
                     UserId = userId,
                     Permissions = permissions
-                },readInput).Create().ToQueryable();
-                
-                
+                }, readInput).Create().ToQueryable();
+
+
                 int totalCount = query.Count();
                 int totalPages = Convert.ToInt32(Math.Ceiling(totalCount / (float)readInput.maxResults));
 
@@ -186,16 +196,16 @@ namespace Xams.Core.Repositories
                 {
                     DatesToUTC(results);
                 }
-                
+
                 // Remove root_ prefix from fields and change alias prefixes to "alias."
                 results = UpdateFieldPrefixes(results, readInput);
-                
+
                 // If denormalize is true, denormalize the results
                 if (readInput.denormalize == true)
                 {
                     results = Denormalize(results, readInput);
                 }
-                
+
                 return new Response<ReadOutput>()
                 {
                     Succeeded = true,
@@ -280,108 +290,117 @@ namespace Xams.Core.Repositories
         /// </summary>
         internal async Task FixDiscriminators()
         {
-            var appDbContext = CreateNewDbContext();
-            var db = GetInternalDbContext();
-            if (appDbContext.IsUserCustom())
+            try
             {
-                // If User is extended with a custom entity ensure that all the user
-                // records are using the custom entities discriminator
-                var user = await db.Users.IgnoreQueryFilters()
-                    .Where(x => x.Discriminator == 0) // Non-Custom
-                    .FirstOrDefaultAsync();
-                if (user != null)
+                var appDbContext = CreateNewDbContext();
+                var db = GetInternalDbContext();
+                if (appDbContext.IsUserCustom())
                 {
-                    await db.Users.ExecuteUpdateAsync(x 
-                        => x.SetProperty(y => y.Discriminator, 1));
+                    // If User is extended with a custom entity ensure that all the user
+                    // records are using the custom entities discriminator
+                    var user = await db.Users.IgnoreQueryFilters()
+                        .Where(x => x.Discriminator == 0) // Non-Custom
+                        .FirstOrDefaultAsync();
+                    if (user != null)
+                    {
+                        await db.Users.ExecuteUpdateAsync(x
+                            => x.SetProperty(y => y.Discriminator, 1));
+                    }
+                }
+                else
+                {
+                    var user = await db.Users.IgnoreQueryFilters()
+                        .Where(x => x.Discriminator == 1) // Custom
+                        .FirstOrDefaultAsync();
+                    if (user != null)
+                    {
+                        await db.Users.ExecuteUpdateAsync(x
+                            => x.SetProperty(y => y.Discriminator, 0));
+                    }
+                }
+
+                if (appDbContext.IsTeamCustom())
+                {
+                    // If User is extended with a custom entity ensure that all the user
+                    // records are using the custom entities discriminator
+                    var user = await db.Teams.IgnoreQueryFilters()
+                        .Where(x => x.Discriminator == 0) // Non-Custom
+                        .FirstOrDefaultAsync();
+                    if (user != null)
+                    {
+                        await db.Teams.ExecuteUpdateAsync(x
+                            => x.SetProperty(y => y.Discriminator, 1));
+                    }
+                }
+                else
+                {
+                    var user = await db.Teams.IgnoreQueryFilters()
+                        .Where(x => x.Discriminator == 1) // Custom
+                        .FirstOrDefaultAsync();
+                    if (user != null)
+                    {
+                        await db.Teams.ExecuteUpdateAsync(x
+                            => x.SetProperty(y => y.Discriminator, 0));
+                    }
+                }
+
+                if (appDbContext.IsRoleCustom())
+                {
+                    // If User is extended with a custom entity ensure that all the user
+                    // records are using the custom entities discriminator
+                    var user = await db.Roles.IgnoreQueryFilters()
+                        .Where(x => x.Discriminator == 0) // Non-Custom
+                        .FirstOrDefaultAsync();
+                    if (user != null)
+                    {
+                        await db.Roles.ExecuteUpdateAsync(x
+                            => x.SetProperty(y => y.Discriminator, 1));
+                    }
+                }
+                else
+                {
+                    var user = await db.Roles.IgnoreQueryFilters()
+                        .Where(x => x.Discriminator == 1) // Custom
+                        .FirstOrDefaultAsync();
+                    if (user != null)
+                    {
+                        await db.Roles.ExecuteUpdateAsync(x
+                            => x.SetProperty(y => y.Discriminator, 0));
+                    }
+                }
+
+                if (appDbContext.IsSettingCustom())
+                {
+                    // If User is extended with a custom entity ensure that all the user
+                    // records are using the custom entities discriminator
+                    var user = await db.Settings.IgnoreQueryFilters()
+                        .Where(x => x.Discriminator == 0) // Non-Custom
+                        .FirstOrDefaultAsync();
+                    if (user != null)
+                    {
+                        await db.Settings.ExecuteUpdateAsync(x
+                            => x.SetProperty(y => y.Discriminator, 1));
+                    }
+                }
+                else
+                {
+                    var user = await db.Settings.IgnoreQueryFilters()
+                        .Where(x => x.Discriminator == 1) // Custom
+                        .FirstOrDefaultAsync();
+                    if (user != null)
+                    {
+                        await db.Settings.ExecuteUpdateAsync(x
+                            => x.SetProperty(y => y.Discriminator, 0));
+                    }
                 }
             }
-            else
+            catch (Exception e)
             {
-                var user = await db.Users.IgnoreQueryFilters()
-                    .Where(x => x.Discriminator == 1) // Custom
-                    .FirstOrDefaultAsync();
-                if (user != null)
-                {
-                    await db.Users.ExecuteUpdateAsync(x 
-                        => x.SetProperty(y => y.Discriminator, 0));
-                }
+                var currentFgColor = Console.ForegroundColor;
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"Failed to fix discriminators - if extending User, Team, Role or Setting update Discriminator column to 1 otherwise 0");
+                Console.ForegroundColor = currentFgColor;
             }
-            
-            if (appDbContext.IsTeamCustom())
-            {
-                // If User is extended with a custom entity ensure that all the user
-                // records are using the custom entities discriminator
-                var user = await db.Teams.IgnoreQueryFilters()
-                    .Where(x => x.Discriminator == 0) // Non-Custom
-                    .FirstOrDefaultAsync();
-                if (user != null)
-                {
-                    await db.Teams.ExecuteUpdateAsync(x 
-                        => x.SetProperty(y => y.Discriminator, 1));
-                }
-            }
-            else
-            {
-                var user = await db.Teams.IgnoreQueryFilters()
-                    .Where(x => x.Discriminator == 1) // Custom
-                    .FirstOrDefaultAsync();
-                if (user != null)
-                {
-                    await db.Teams.ExecuteUpdateAsync(x 
-                        => x.SetProperty(y => y.Discriminator, 0));
-                }
-            }
-            
-            if (appDbContext.IsRoleCustom())
-            {
-                // If User is extended with a custom entity ensure that all the user
-                // records are using the custom entities discriminator
-                var user = await db.Roles.IgnoreQueryFilters()
-                    .Where(x => x.Discriminator == 0) // Non-Custom
-                    .FirstOrDefaultAsync();
-                if (user != null)
-                {
-                    await db.Roles.ExecuteUpdateAsync(x 
-                        => x.SetProperty(y => y.Discriminator, 1));
-                }
-            }
-            else
-            {
-                var user = await db.Roles.IgnoreQueryFilters()
-                    .Where(x => x.Discriminator == 1) // Custom
-                    .FirstOrDefaultAsync();
-                if (user != null)
-                {
-                    await db.Roles.ExecuteUpdateAsync(x 
-                        => x.SetProperty(y => y.Discriminator, 0));
-                }
-            }
-            
-            if (appDbContext.IsSettingCustom())
-            {
-                // If User is extended with a custom entity ensure that all the user
-                // records are using the custom entities discriminator
-                var user = await db.Settings.IgnoreQueryFilters()
-                    .Where(x => x.Discriminator == 0) // Non-Custom
-                    .FirstOrDefaultAsync();
-                if (user != null)
-                {
-                    await db.Settings.ExecuteUpdateAsync(x 
-                        => x.SetProperty(y => y.Discriminator, 1));
-                }
-            }
-            else
-            {
-                var user = await db.Settings.IgnoreQueryFilters()
-                    .Where(x => x.Discriminator == 1) // Custom
-                    .FirstOrDefaultAsync();
-                if (user != null)
-                {
-                    await db.Settings.ExecuteUpdateAsync(x 
-                        => x.SetProperty(y => y.Discriminator, 0));
-                }
-            }
-            
         }
 
         /// <summary>
@@ -396,6 +415,7 @@ namespace Xams.Core.Repositories
             {
                 return results;
             }
+
             PropertyInfo[] properties = results.First().GetType().GetProperties(); //result.GetType().GetProperties();
             List<dynamic> newResults = new();
             List<string?> aliases = readInput?.joins?.Select(x => x.alias).ToList() ?? new List<string?>();
@@ -404,25 +424,25 @@ namespace Xams.Core.Repositories
                 dynamic expando = new ExpandoObject();
                 IDictionary<string, object?> expandoDictionary = ((IDictionary<string, object?>)expando);
                 newResults.Add(expando);
-                
+
                 foreach (var property in properties)
                 {
-                    
                     if (property.Name == "Item")
                         continue;
-                    
+
                     string fieldName = property.Name;
                     if (fieldName.StartsWith("root_"))
                     {
                         fieldName = fieldName.Substring(5);
                     }
+
                     // If any field names start with an alias, remove the alias
                     string? alias = aliases.FirstOrDefault(x => fieldName.StartsWith($"{x}_"));
                     if (!string.IsNullOrEmpty(alias))
                     {
-                        fieldName = $"{alias}.{fieldName.Substring(alias.Length + 1)}" ;
+                        fieldName = $"{alias}.{fieldName.Substring(alias.Length + 1)}";
                     }
-                    
+
                     expandoDictionary[fieldName] = property.GetValue(result);
                 }
             }
@@ -471,10 +491,11 @@ namespace Xams.Core.Repositories
                 {
                     if (result.ContainsKey($"{alias}.{join.toField}"))
                     {
-                        if (result.ContainsKey($"{alias}.{join.toTable}Id") && 
+                        if (result.ContainsKey($"{alias}.{join.toTable}Id") &&
                             result[$"{alias}.{join.toTable}Id"] != null &&
-                            !joinUniqueIds.Contains((Guid)(result[$"{alias}.{join.toTable}Id"] ?? 
-                                                           throw new InvalidOperationException($"Failed to get {alias}.{join.toTable}Id"))))
+                            !joinUniqueIds.Contains((Guid)(result[$"{alias}.{join.toTable}Id"] ??
+                                                           throw new InvalidOperationException(
+                                                               $"Failed to get {alias}.{join.toTable}Id"))))
                         {
                             joinUniqueIds.Add((Guid)result[$"{alias}.{join.toTable}Id"]!);
                             IDictionary<string, object?> newResult = new ExpandoObject();
@@ -494,16 +515,18 @@ namespace Xams.Core.Repositories
             }
 
             rootRecords = DenormalizeJoins(readInput.tableName, rootRecords, joinedRecords, readInput);
-            
+
             return rootRecords;
         }
 
-        public List<dynamic> DenormalizeJoins(string fromTable, List<dynamic> results, Dictionary<string, List<dynamic>> joinedRecords, ReadInput readInput)
+        public List<dynamic> DenormalizeJoins(string fromTable, List<dynamic> results,
+            Dictionary<string, List<dynamic>> joinedRecords, ReadInput readInput)
         {
             if (readInput.joins == null)
             {
                 throw new Exception($"No joins found query.");
             }
+
             foreach (IDictionary<string, object?> rootRecord in results)
             {
                 foreach (Join join in readInput.joins)
@@ -522,11 +545,12 @@ namespace Xams.Core.Repositories
                                 relatedRecords.Add(aRecord);
                             }
                         }
-                        
+
                         DenormalizeJoins(alias, relatedRecords, joinedRecords, readInput);
                     }
                 }
             }
+
             return results;
         }
 
@@ -540,6 +564,7 @@ namespace Xams.Core.Repositories
                     FriendlyMessage = "Entity is null."
                 };
             }
+
             foreach (var property in entity.GetType().GetProperties())
             {
                 bool isNullable = Nullable.GetUnderlyingType(property.PropertyType) != null;
@@ -572,7 +597,7 @@ namespace Xams.Core.Repositories
                     }
                 }
             }
-            
+
             return new Response<object?>()
             {
                 Succeeded = true
@@ -588,14 +613,16 @@ namespace Xams.Core.Repositories
                 {
                     properties = result.GetType().GetProperties();
                 }
-                properties.Where(x => x.PropertyType == typeof(DateTime) || x.PropertyType == typeof(DateTime?)).ToList().ForEach(x =>
-                {
-                    var date = x.GetValue(result);
-                    if (date != null)
+
+                properties.Where(x => x.PropertyType == typeof(DateTime) || x.PropertyType == typeof(DateTime?))
+                    .ToList().ForEach(x =>
                     {
-                        x.SetValue(result, DateTime.SpecifyKind(date, DateTimeKind.Utc));    
-                    }
-                });
+                        var date = x.GetValue(result);
+                        if (date != null)
+                        {
+                            x.SetValue(result, DateTime.SpecifyKind(date, DateTimeKind.Utc));
+                        }
+                    });
             }
         }
 
@@ -641,10 +668,8 @@ namespace Xams.Core.Repositories
                 await _transaction.RollbackAsync();
             }
         }
-        
-
     }
-    
+
     public class ReadOptions
     {
         public required string[] Permissions { get; init; }
