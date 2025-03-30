@@ -53,10 +53,10 @@ public static class PermissionCache
     /// </summary>
     /// <param name="db"></param>
     /// <param name="userId"></param>
-    public static async Task CacheUsers(BaseDbContext db, Guid? userId = null)
+    public static async Task CacheUsers(IXamsDbContext db, Guid? userId = null)
     {
         var user = Cache.Instance.GetTableMetadata("User");
-        var userQuery = new DynamicLinq<BaseDbContext>(db, user.Type).Query;
+        var userQuery = new DynamicLinq(db, user.Type).Query;
         IQueryable query = userQuery;
         
         ConcurrentDictionary<Guid, User> users = new();
@@ -102,13 +102,13 @@ public static class PermissionCache
     /// </summary>
     /// <param name="db"></param>
     /// <param name="roleId"></param>
-    public static async Task CacheRolePermissions(BaseDbContext db, Guid? roleId = null)
+    public static async Task CacheRolePermissions(IXamsDbContext db, Guid? roleId = null)
     {
         var permission = Cache.Instance.GetTableMetadata("Permission");
         var rolePermission = Cache.Instance.GetTableMetadata("RolePermission");
         
-        var permissionQuery = new DynamicLinq<BaseDbContext>(db, permission.Type).Query;
-        var rolePermissionQuery = new DynamicLinq<BaseDbContext>(db,rolePermission.Type).Query;
+        var permissionQuery = new DynamicLinq(db, permission.Type).Query;
+        var rolePermissionQuery = new DynamicLinq(db,rolePermission.Type).Query;
 
         IQueryable query = rolePermissionQuery
             .Join(permissionQuery, "PermissionId", "PermissionId",
@@ -148,10 +148,10 @@ public static class PermissionCache
     /// </summary>
     /// <param name="db"></param>
     /// <param name="userId"></param>
-    public static async Task CacheUserRoles(BaseDbContext db, Guid? userId = null)
+    public static async Task CacheUserRoles(IXamsDbContext db, Guid? userId = null)
     {
         var userRole = Cache.Instance.GetTableMetadata("UserRole");
-        var userRoleQuery = new DynamicLinq<BaseDbContext>(db, userRole.Type).Query;
+        var userRoleQuery = new DynamicLinq(db, userRole.Type).Query;
 
         ConcurrentDictionary<Guid, List<Guid>> userRoles = new();
         if (userId != null)
@@ -187,10 +187,10 @@ public static class PermissionCache
     /// </summary>
     /// <param name="db"></param>
     /// <param name="teamId"></param>
-    public static async Task CacheTeamRoles(BaseDbContext db, Guid? teamId = null)
+    public static async Task CacheTeamRoles(IXamsDbContext db, Guid? teamId = null)
     {
         var teamRole = Cache.Instance.GetTableMetadata("TeamRole");
-        var teamRoleQuery = new DynamicLinq<BaseDbContext>(db, teamRole.Type).Query;
+        var teamRoleQuery = new DynamicLinq(db, teamRole.Type).Query;
         ConcurrentDictionary<Guid, List<Guid>> teamRoles = new();
         if (teamId != null)
         {
@@ -223,10 +223,10 @@ public static class PermissionCache
     /// </summary>
     /// <param name="db"></param>
     /// <param name="userId"></param>
-    public static async Task CacheUserTeams(BaseDbContext db, Guid? userId = null)
+    public static async Task CacheUserTeams(IXamsDbContext db, Guid? userId = null)
     {
         var teamUser = Cache.Instance.GetTableMetadata("TeamUser");
-        var teamUserQuery = new DynamicLinq<BaseDbContext>(db, teamUser.Type).Query;
+        var teamUserQuery = new DynamicLinq(db, teamUser.Type).Query;
         ConcurrentDictionary<Guid, List<Guid>> teamUsers = new();
         if (userId != null)
         {
@@ -263,7 +263,7 @@ public static class PermissionCache
         if (!_users.ContainsKey(userId))
         {
             var dataService = ServiceProvider.GetRequiredService<IDataService>();
-            await using var db = dataService.GetDataRepository().CreateNewDbContext<BaseDbContext>();
+            await using var db = dataService.GetDataRepository().CreateNewDbContext();
             await CacheUsers(db, userId);
             if (!_users.ContainsKey(userId))
             {
@@ -282,7 +282,7 @@ public static class PermissionCache
         {
             await Task.Delay(3000);
             var dataService = ServiceProvider.GetRequiredService<IDataService>();
-            await using var db = dataService.GetDataRepository().CreateNewDbContext<BaseDbContext>();
+            await using var db = dataService.GetDataRepository().CreateNewDbContext();
             await CacheUserRoles(db, userId);
             await CacheUserTeams(db, userId);
         }

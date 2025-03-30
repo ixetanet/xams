@@ -28,8 +28,8 @@ internal class AuditHistoryBulkService : IBulkService
             return ServiceResult.Success();
         }
         GetMaxLength();
-        var db = context.GetDbContext<BaseDbContext>();
-        var newDb = context.AllServiceContexts.First().DataRepository.CreateNewDbContext<BaseDbContext>();
+        var db = context.GetDbContext<IXamsDbContext>();
+        var newDb = context.AllServiceContexts.First().DataRepository.CreateNewDbContext();
         // Handle Read service contexts
         var readServiceContexts = context.AllServiceContexts
             .Where(sc => sc.DataOperation is DataOperation.Read)
@@ -94,17 +94,17 @@ internal class AuditHistoryBulkService : IBulkService
                     .Select(sc => sc.GetId()).ToList();
                 // Query for deletes outside of this transaction to retrieve the data as it existed before the delete
                 // We need to handle the case where the IDs might not be Guids
-                var deleteResults = await DynamicLinq<BaseDbContext>.BatchRequest(newDb, tableType, deleteIds.ToList());
+                var deleteResults = await DynamicLinq.BatchRequest(newDb, tableType, deleteIds.ToList());
                 
                 // Updates and Creates
                 var updateIds = tableGroup.ServiceContexts
                     .Where(x => x.DataOperation != DataOperation.Delete)
                     .Select(sc => sc.GetId()).ToList();
-                var updateResults = await DynamicLinq<BaseDbContext>.BatchRequest(db, tableType, updateIds.ToList());
+                var updateResults = await DynamicLinq.BatchRequest(db, tableType, updateIds.ToList());
                 updateResults.AddRange(deleteResults);
                 foreach (var entity in updateResults.Select(x => (object)x).ToList())
                 {
-                    var serviceContext = entDict[entity.GetIdValue(tableType)];
+                    var serviceContext = entDict[entity.GetId()];
                     var auditHistory = AddAuditHistoryRecord(serviceContext, entity);
                     await AddCreateUpdateDeleteDetails(serviceContext, auditHistory);
                 }
@@ -122,7 +122,7 @@ internal class AuditHistoryBulkService : IBulkService
 
     private object AddAuditHistoryRecord(ServiceContext context, object? entity = null)
     {
-        var db = context.GetDbContext<BaseDbContext>();
+        var db = context.GetDbContext<IXamsDbContext>();
         var entityMetadata = Cache.Instance.GetTableMetadata(context.TableName);
         string? name = string.Empty;
         object? id = null;
@@ -133,7 +133,7 @@ internal class AuditHistoryBulkService : IBulkService
                 ? context.GetPreEntity<object>().GetNameFieldValue(entityMetadata.Type)
                 : entity.GetNameFieldValue(entityMetadata.Type);
             // Get the ID value - this could be any type, not just Guid
-            id = entity.GetIdValue(entityMetadata.Type);
+            id = entity.GetId();
         }
 
         if (context.DataOperation is DataOperation.Read)
@@ -173,7 +173,7 @@ internal class AuditHistoryBulkService : IBulkService
         var entityMetadata = Cache.Instance.GetTableMetadata(context.TableName);
         var auditHistoryDetailMetadata = Cache.Instance.TableMetadata["AuditHistoryDetail"];
         var auditInfo = Cache.Instance.TableAuditInfo[context.TableName];
-        var db = context.GetDbContext<BaseDbContext>();
+        var db = context.GetDbContext<IXamsDbContext>();
 
         if (context.DataOperation is DataOperation.Create)
         {
@@ -193,7 +193,7 @@ internal class AuditHistoryBulkService : IBulkService
                 // Is this Guid property a relationship to another entity?
                 if (lookupType != null)
                 {
-                    DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(newDbContext, lookupType);
+                    DynamicLinq dynamicLinq = new DynamicLinq(newDbContext, lookupType);
                     var lookupIdValue = entity.GetValue(entityProperty.Name);
                     if (lookupIdValue != null)
                     {
@@ -241,7 +241,7 @@ internal class AuditHistoryBulkService : IBulkService
                 // Is this Guid property a relationship to another entity?
                 if (lookupType != null)
                 {
-                    DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(newDbContext, lookupType);
+                    DynamicLinq dynamicLinq = new DynamicLinq(newDbContext, lookupType);
                     var newLookupIdValue = entity.GetValue(entityProperty.Name);
                     if (newLookupIdValue != null)
                     {
@@ -297,7 +297,7 @@ internal class AuditHistoryBulkService : IBulkService
                 // Is this Guid property a relationship to another entity?
                 if (lookupType != null)
                 {
-                    DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(newDbContext, lookupType);
+                    DynamicLinq dynamicLinq = new DynamicLinq(newDbContext, lookupType);
                     var lookupIdValue = preEntity.GetValue(entityProperty.Name);
                     if (lookupIdValue != null)
                     {

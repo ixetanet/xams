@@ -5,10 +5,10 @@ namespace Xams.Core.Utils;
 
 public static class Queries
 {
-    public static async Task<string?> GetCreateSetting(BaseDbContext db, string name, string defaultValue)
+    public static async Task<string?> GetCreateSetting(IXamsDbContext db, string name, string defaultValue)
     {
         Type settingType = Cache.Instance.GetTableMetadata("Setting").Type;
-        DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(db, settingType);
+        DynamicLinq dynamicLinq = new DynamicLinq(db, settingType);
         var settings = (await dynamicLinq.Query.Where("Name == @0", name)
             .ToDynamicListAsync()).Select(x => (object)x).ToList();
         
@@ -27,10 +27,10 @@ public static class Queries
         return settings.First().GetValue<string?>("Value");
     }
 
-    public static async Task UpdateSystemRecord(BaseDbContext db, string name, string value)
+    public static async Task UpdateSystemRecord(IXamsDbContext db, string name, string value)
     {
         var systemType = Cache.Instance.GetTableMetadata("System").Type;
-        var dynamicLinq = new DynamicLinq<BaseDbContext>(db, systemType);
+        var dynamicLinq = new DynamicLinq(db, systemType);
         var query = dynamicLinq.Query.Where("Name == @0", "AuditLastRefresh");
         var auditSystemRecord = (await query.ToDynamicListAsync()).FirstOrDefault();
         if (auditSystemRecord == null)

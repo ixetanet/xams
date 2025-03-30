@@ -4,12 +4,12 @@ namespace Xams.Core.Jobs;
 
 public class JobPing
 {
-    private BaseDbContext _dbContext { get; set; }
+    private IXamsDbContext _dbContext { get; set; }
     private dynamic _jobHistory { get; set; }
     private Timer? _timer { get; set; }
     private bool _isRunning { get; set; }
 
-    public JobPing(BaseDbContext dbContext, dynamic jobHistory)
+    public JobPing(IXamsDbContext dbContext, dynamic jobHistory)
     {
         _dbContext = dbContext;
         _jobHistory = jobHistory;

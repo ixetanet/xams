@@ -15,9 +15,9 @@ public class PermissionCacheJob : IServiceJob
     public async Task<Response<object?>> Execute(JobServiceContext context)
     {
         // Retrieve all the security cache records since the last retrieval date
-        var db = context.GetDbContext<BaseDbContext>();
+        var db = context.GetDbContext<IXamsDbContext>();
         var systemMetadata = Cache.Instance.GetTableMetadata("System");
-        var dLinq = new DynamicLinq<BaseDbContext>(db, systemMetadata.Type);
+        var dLinq = new DynamicLinq(db, systemMetadata.Type);
         var query = dLinq.Query.Where("Name == @0 && DateTime > @1", "SECURITY_CACHE", PermissionCache.LastUpdateTime);
         var refreshDateTime = DateTime.UtcNow;
         var secrurityQueue = await query.ToDynamicListAsync();

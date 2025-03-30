@@ -34,87 +34,87 @@ public static class QueryUtil
     }
     
     /// <summary>
-    /// Adds a "Contains" filter to an IQueryable based on an array of primitive key values
+    /// Adds a "Contains" filter to an IQueryable based on an array of  values
     /// </summary>
     /// <typeparam name="T">Type of the entity</typeparam>
     /// <param name="query">The IQueryable to filter</param>
-    /// <param name="ids">Array of primary key values</param>
-    /// <param name="primaryKeyName">Name of the primary key property (defaults to "Id")</param>
+    /// <param name="values">Array of values</param>
+    /// <param name="field">Name of the field</param>
     /// <returns>Filtered IQueryable with Where clause applied</returns>
-    public static IQueryable WhereIdIn(this IQueryable query, object[] ids, string primaryKeyName)
+    public static IQueryable Contains(this IQueryable query, object[] values, string field)
     {
         if (query == null) throw new ArgumentNullException(nameof(query));
-        if (ids == null || ids.Length == 0) return query;
+        if (values == null || values.Length == 0) return query;
         
         // Get the non-null IDs for type determination
-        var nonNullIds = ids.Where(id => id != null).ToArray();
+        var nonNullIds = values.Where(id => id != null).ToArray();
         if (nonNullIds.Length == 0) return query;
 
         // Determine the type and apply the appropriate filter
         if (nonNullIds[0] is int || nonNullIds[0] is int?)
         {
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList<int>());
+            return query.Where($"@0.Contains({field})", values.ToDynamicList<int>());
         }
         else if (nonNullIds[0] is long || nonNullIds[0] is long?)
         {
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList<long>());
+            return query.Where($"@0.Contains({field})", values.ToDynamicList<long>());
         }
         else if (nonNullIds[0] is short || nonNullIds[0] is short?)
         {
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList<short>());
+            return query.Where($"@0.Contains({field})", values.ToDynamicList<short>());
         }
         else if (nonNullIds[0] is byte || nonNullIds[0] is byte?)
         {
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList<byte>());
+            return query.Where($"@0.Contains({field})", values.ToDynamicList<byte>());
         }
         else if (nonNullIds[0] is uint || nonNullIds[0] is uint?)
         {
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList<uint>());
+            return query.Where($"@0.Contains({field})", values.ToDynamicList<uint>());
         }
         else if (nonNullIds[0] is ulong || nonNullIds[0] is ulong?)
         {
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList<ulong>());
+            return query.Where($"@0.Contains({field})", values.ToDynamicList<ulong>());
         }
         else if (nonNullIds[0] is ushort || nonNullIds[0] is ushort?)
         {
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList<ushort>());
+            return query.Where($"@0.Contains({field})", values.ToDynamicList<ushort>());
         }
         else if (nonNullIds[0] is sbyte || nonNullIds[0] is sbyte?)
         {
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList<sbyte>());
+            return query.Where($"@0.Contains({field})", values.ToDynamicList<sbyte>());
         }
         else if (nonNullIds[0] is decimal || nonNullIds[0] is decimal?)
         {
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList<decimal>());
+            return query.Where($"@0.Contains({field})", values.ToDynamicList<decimal>());
         }
         else if (nonNullIds[0] is string)
         {
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList<string>());
+            return query.Where($"@0.Contains({field})", values.ToDynamicList<string>());
         }
         else if (nonNullIds[0] is Guid || nonNullIds[0] is Guid?)
         {
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList<Guid>());
+            return query.Where($"@0.Contains({field})", values.ToDynamicList<Guid>());
         }
         else if (nonNullIds[0] is DateTime || nonNullIds[0] is DateTime?)
         {
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList<DateTime>());
+            return query.Where($"@0.Contains({field})", values.ToDynamicList<DateTime>());
         }
         else if (nonNullIds[0] is DateTimeOffset || nonNullIds[0] is DateTimeOffset?)
         {
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList<DateTimeOffset>());
+            return query.Where($"@0.Contains({field})", values.ToDynamicList<DateTimeOffset>());
         }
         else if (nonNullIds[0] is TimeSpan || nonNullIds[0] is TimeSpan?)
         {
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList<TimeSpan>());
+            return query.Where($"@0.Contains({field})", values.ToDynamicList<TimeSpan>());
         }
         else if (nonNullIds[0] is Enum)
         {
             // Use dynamic typing for enum values
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList(nonNullIds[0].GetType()));
+            return query.Where($"@0.Contains({field})", values.ToDynamicList(nonNullIds[0].GetType()));
         }
         else if (nonNullIds[0] is byte[])
         {
-            return query.Where($"@0.Contains({primaryKeyName})", ids.ToDynamicList<byte[]>());
+            return query.Where($"@0.Contains({field})", values.ToDynamicList<byte[]>());
         }
         else
         {
@@ -123,9 +123,9 @@ public static class QueryUtil
             // Use generic method with Type parameter - converting using reflection
             var method = typeof(DynamicQueryableExtensions).GetMethod("ToDynamicList");
             var genericMethod = method.MakeGenericMethod(elementType);
-            var dynamicList = genericMethod.Invoke(null, new object[] { ids });
+            var dynamicList = genericMethod.Invoke(null, new object[] { values });
             
-            return query.Where($"@0.Contains({primaryKeyName})", dynamicList);
+            return query.Where($"@0.Contains({field})", dynamicList);
         }
     }
     

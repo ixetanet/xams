@@ -26,7 +26,8 @@ namespace Xams.Core
             using (var scope = _serviceProvider.CreateScope())
             {
                 var dataService = scope.ServiceProvider.GetRequiredService<IDataService>();
-                await using var db = dataService.GetDataRepository().CreateNewDbContext<BaseDbContext>();
+                await using var db = dataService.GetDataRepository().CreateNewDbContext();
+                await dataService.GetDataRepository().FixDiscriminators();
                 var dataServiceType = dataService.GetType();
                 var dbContextType = dataServiceType.GenericTypeArguments[0];
                 Cache.Initialize(dbContextType, dataService);

@@ -39,10 +39,10 @@ public class JobStartupService : IServiceStartup
             return;
         }
         Console.WriteLine("Creating Jobs");
-        BaseDbContext baseDbContext = _dataService.GetDataRepository().CreateNewDbContext();
+        IXamsDbContext xamsDbContext = _dataService.GetDataRepository().CreateNewDbContext();
         var baseDbContextType = Cache.Instance.GetTableMetadata("Job");
 
-        DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(baseDbContext, baseDbContextType.Type);
+        DynamicLinq dynamicLinq = new DynamicLinq(xamsDbContext, baseDbContextType.Type);
         IQueryable query = dynamicLinq.Query;
 
         // Get all jobs
@@ -56,7 +56,7 @@ public class JobStartupService : IServiceStartup
             var actualJobExists = Cache.Instance.ServiceJobs.Any(m => m.Value.ServiceJobAttribute.Name == jobName);
             if (actualJobExists == false)
             {
-                baseDbContext.Remove(job);
+                xamsDbContext.Remove(job);
                 removedJobs.Add(job);
             }
         }
@@ -68,7 +68,7 @@ public class JobStartupService : IServiceStartup
 
         try
         {
-            await baseDbContext.SaveChangesAsync();
+            await xamsDbContext.SaveChangesAsync();
         }
         catch (Exception e)
         {
@@ -76,7 +76,7 @@ public class JobStartupService : IServiceStartup
         }
         finally
         {
-            baseDbContext.ChangeTracker.Clear();
+            xamsDbContext.ChangeTracker.Clear();
         }
 
         // Get all job ids
@@ -96,25 +96,25 @@ public class JobStartupService : IServiceStartup
                 job["Tag"] = jobInfo.Value.ServiceJobAttribute.Tag;
                 job["LastExecution"] = DateTime.MinValue.ToUniversalTime();
                 object entity = EntityUtil.DictionaryToEntity(baseDbContextType.Type, job);
-                baseDbContext.Add(entity);
+                xamsDbContext.Add(entity);
             }
             // If the name of the queue has changed, update it
             else if (jobInfo.Value.ServiceJobAttribute.Queue != jobs.First(j => (Guid)j.JobId == jobId).Queue)
             {
                 var job = jobs.First(j => (Guid)j.JobId == jobId);
                 job.Queue = jobInfo.Value.ServiceJobAttribute.Queue;
-                baseDbContext.Update(job);
+                xamsDbContext.Update(job);
             }
         }
         
-        await baseDbContext.SaveChangesAsync();
+        await xamsDbContext.SaveChangesAsync();
 
         
     }
 
     public async Task GetJobRetentionSettings(StartupContext context)
     {
-        var db = context.DataService.GetDbContext<BaseDbContext>();
+        var db = context.DataService.GetDbContext<IXamsDbContext>();
         var retentionDays = int.Parse((await Queries.GetCreateSetting(db, SettingName, "30") ?? "30"));
         Cache.Instance.JobHistoryRetentionDays = retentionDays;
     }

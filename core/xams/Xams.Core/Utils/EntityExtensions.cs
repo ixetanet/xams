@@ -74,10 +74,10 @@ internal static class EntityExtensions
         return obj.GetType().GetProperty(fieldName) != null;
     }
     
-    public static object GetIdValue(this object obj, Type type)
+    public static object GetId(this object obj)
     {
         // Get the metadata for this type to find the primary key
-        var tableMetadata = Cache.Instance.GetTableMetadata(EntityUtil.GetTableName(type, EntityUtil.DbContext?.GetType() ?? throw new Exception("DbContext not yet initialized")).TableName);
+        var tableMetadata = obj.EntityMetadata();
         var primaryKeyName = tableMetadata.PrimaryKey;
         
         if (obj is ExpandoObject)
@@ -295,6 +295,11 @@ internal static class EntityExtensions
     public static Cache.MetadataInfo EntityMetadata(this object obj)
     {
         return Cache.Instance.GetTableMetadata(obj.GetType());
+    }
+
+    public static Cache.MetadataInfo EntityMetadata(this Type obj)
+    {
+        return Cache.Instance.GetTableMetadata(obj);
     }
 }
 

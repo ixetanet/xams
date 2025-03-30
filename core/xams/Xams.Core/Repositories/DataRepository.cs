@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Dynamic;
 using System.Linq.Dynamic.Core;
 using System.Reflection;
@@ -6,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Xams.Core.Base;
 using Xams.Core.Dtos;
 using Xams.Core.Dtos.Data;
+using Xams.Core.Entities;
 using Xams.Core.Services;
 using Xams.Core.Utils;
 
@@ -14,21 +16,21 @@ namespace Xams.Core.Repositories
     public class DataRepository : IDisposable
     {
         private readonly Type _dataContextType;
-        private readonly BaseDbContext? _dataContext;
+        private readonly IXamsDbContext? _dataContext;
         private IDbContextTransaction? _transaction;
         private readonly NullabilityInfoContext _nullabilityInfoContext;
-        private readonly List<BaseDbContext> _dbContexts = new();
+        private readonly List<IXamsDbContext> _dbContexts = new();
 
         public DataRepository(Type dataContext)
         {
             _dataContextType = dataContext;
-            _dataContext = (BaseDbContext?)Activator.CreateInstance(_dataContextType) ??
+            _dataContext = (IXamsDbContext?)Activator.CreateInstance(_dataContextType) ??
                            throw new ArgumentNullException();
             _dataContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             _nullabilityInfoContext = new();
         }
 
-        public TDbContext GetDbContext<TDbContext>() where TDbContext : BaseDbContext
+        public TDbContext GetDbContext<TDbContext>() where TDbContext : IXamsDbContext
         {
             if (!(_dataContext is TDbContext))
             {
@@ -38,12 +40,12 @@ namespace Xams.Core.Repositories
             return (TDbContext)_dataContext!;
         }
 
-        public BaseDbContext CreateNewDbContext()
+        public IXamsDbContext CreateNewDbContext()
         {
-            return CreateNewDbContext<BaseDbContext>();
+            return CreateNewDbContext<IXamsDbContext>();
         }
 
-        public T CreateNewDbContext<T>() where T : BaseDbContext
+        public T CreateNewDbContext<T>() where T : IXamsDbContext
         {
             var dbContext = ((T)Activator.CreateInstance(_dataContextType)!);
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
@@ -51,9 +53,21 @@ namespace Xams.Core.Repositories
             return dbContext;
         }
 
-        public async Task<Response<ReadOutput>> Find(string tableName, Guid[] ids, bool newDataContext, string[]? fields = null, bool updateFieldPrefixes = false)
+        internal XamsDbContext<User, Team, Role, Setting> GetInternalDbContext()
         {
-            BaseDbContext dataContext = GetDbContext<BaseDbContext>();
+            var optionsBuilder = _dataContext.GetDbOptionsBuilder();
+            if (optionsBuilder == null)
+            {
+                throw new Exception($"Failed to get db options builder. Ensure that base.OnConfiguring(optionsBuilder) is in the OnConfiguring method of the DbContext.");
+            }
+            var baseDbContext = new XamsDbContext<User, Team, Role, Setting>(optionsBuilder.Options);
+            _dbContexts.Add(baseDbContext);
+            return baseDbContext;
+        }
+
+        public async Task<Response<ReadOutput>> Find(string tableName, object[] ids, bool newDataContext, string[]? fields = null, bool updateFieldPrefixes = false)
+        {
+            IXamsDbContext dataContext = GetDbContext<IXamsDbContext>();
         
             if (newDataContext)
             {
@@ -63,18 +77,26 @@ namespace Xams.Core.Repositories
             List<dynamic> results = new List<dynamic>();
             
             // Batches of 500
-            List<Guid> batchIds = new List<Guid>();
+            List<object> batchIds = new List<object>();
             batchIds.AddRange(ids);
             
-            List<Guid> toProcess = new List<Guid>();
+            List<object> toProcess = new List<object>();
             while (batchIds.Count > 0)
             {
                 toProcess.AddRange(batchIds.Take(500));
                 batchIds.RemoveRange(0, Math.Min(500, batchIds.Count));
-                string where = string.Join(" OR ", toProcess.Select(x => $"root_{tableName}Id == \"{x}\""));
-                results.AddRange(await new Query(dataContext, fields ?? ["*"])
-                    .From(tableName).Where(where)
-                    .ToDynamicListAsync());
+                var query = new Query(dataContext, fields ?? ["*"])
+                    .From(tableName)
+                    .Contains($"root_{tableName}Id", toProcess.ToArray());
+
+                var batchResult = await query.ToDynamicListAsync();
+                results.AddRange(batchResult);
+                // string where = string.Join(" OR ", toProcess.Select(x => $"root_{tableName}Id == \"{x}\""));
+                // results.AddRange(await new Query(dataContext, fields ?? ["*"])
+                //     .From(tableName).Where(where)
+                //     .ToDynamicListAsync());
+                
+                toProcess.Clear();
             }
 
             if (updateFieldPrefixes)
@@ -91,9 +113,9 @@ namespace Xams.Core.Repositories
                 }
             };
         }
-        public async Task<Response<ReadOutput>> Find(string tableName, Guid id, bool newDataContext)
+        public async Task<Response<object?>> Find(string tableName, object id, bool newDataContext)
         {
-            BaseDbContext dataContext = GetDbContext<BaseDbContext>();
+            IXamsDbContext dataContext = GetDbContext<IXamsDbContext>();
         
             if (newDataContext)
             {
@@ -102,19 +124,11 @@ namespace Xams.Core.Repositories
             
             var entity = await dataContext.FindAsync(Cache.Instance.GetTableMetadata(tableName).Type, id);
             
-            List<dynamic> results = new();
-            if (entity != null)
-            {
-                results.Add(entity);
-            }
             
-            return new Response<ReadOutput>()
+            return new Response<object?>()
             {
                 Succeeded = true,
-                Data = new ReadOutput()
-                {
-                    results = results
-                }
+                Data = entity,
             };
         }
         /// <summary>
@@ -128,7 +142,7 @@ namespace Xams.Core.Repositories
         {
             try
             {
-                BaseDbContext dataContext = _dataContext!;
+                IXamsDbContext dataContext = _dataContext!;
 
                 if (readOptions.NewDataContext)
                 {
@@ -168,7 +182,7 @@ namespace Xams.Core.Repositories
                 var results = await query.ToDynamicListAsync();
 
                 // If using SQL Server, dates come back as "Unspecified" by default, convert dates to UTC
-                if (dataContext.GetDBProvider() != DbProvider.Postgres)
+                if (dataContext.GetDbProvider() != DbProvider.Postgres)
                 {
                     DatesToUTC(results);
                 }
@@ -258,6 +272,116 @@ namespace Xams.Core.Repositories
         public async Task SaveChangesAsync()
         {
             if (_dataContext != null) await _dataContext.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// If the User, Team, Role or Setting has been extended a new discriminator column
+        /// has been added, we need to ensure that it has the correct value
+        /// </summary>
+        internal async Task FixDiscriminators()
+        {
+            var appDbContext = CreateNewDbContext();
+            var db = GetInternalDbContext();
+            if (appDbContext.IsUserCustom())
+            {
+                // If User is extended with a custom entity ensure that all the user
+                // records are using the custom entities discriminator
+                var user = await db.Users.IgnoreQueryFilters()
+                    .Where(x => x.Discriminator == 0) // Non-Custom
+                    .FirstOrDefaultAsync();
+                if (user != null)
+                {
+                    await db.Users.ExecuteUpdateAsync(x 
+                        => x.SetProperty(y => y.Discriminator, 1));
+                }
+            }
+            else
+            {
+                var user = await db.Users.IgnoreQueryFilters()
+                    .Where(x => x.Discriminator == 1) // Custom
+                    .FirstOrDefaultAsync();
+                if (user != null)
+                {
+                    await db.Users.ExecuteUpdateAsync(x 
+                        => x.SetProperty(y => y.Discriminator, 0));
+                }
+            }
+            
+            if (appDbContext.IsTeamCustom())
+            {
+                // If User is extended with a custom entity ensure that all the user
+                // records are using the custom entities discriminator
+                var user = await db.Teams.IgnoreQueryFilters()
+                    .Where(x => x.Discriminator == 0) // Non-Custom
+                    .FirstOrDefaultAsync();
+                if (user != null)
+                {
+                    await db.Teams.ExecuteUpdateAsync(x 
+                        => x.SetProperty(y => y.Discriminator, 1));
+                }
+            }
+            else
+            {
+                var user = await db.Teams.IgnoreQueryFilters()
+                    .Where(x => x.Discriminator == 1) // Custom
+                    .FirstOrDefaultAsync();
+                if (user != null)
+                {
+                    await db.Teams.ExecuteUpdateAsync(x 
+                        => x.SetProperty(y => y.Discriminator, 0));
+                }
+            }
+            
+            if (appDbContext.IsRoleCustom())
+            {
+                // If User is extended with a custom entity ensure that all the user
+                // records are using the custom entities discriminator
+                var user = await db.Roles.IgnoreQueryFilters()
+                    .Where(x => x.Discriminator == 0) // Non-Custom
+                    .FirstOrDefaultAsync();
+                if (user != null)
+                {
+                    await db.Roles.ExecuteUpdateAsync(x 
+                        => x.SetProperty(y => y.Discriminator, 1));
+                }
+            }
+            else
+            {
+                var user = await db.Roles.IgnoreQueryFilters()
+                    .Where(x => x.Discriminator == 1) // Custom
+                    .FirstOrDefaultAsync();
+                if (user != null)
+                {
+                    await db.Roles.ExecuteUpdateAsync(x 
+                        => x.SetProperty(y => y.Discriminator, 0));
+                }
+            }
+            
+            if (appDbContext.IsSettingCustom())
+            {
+                // If User is extended with a custom entity ensure that all the user
+                // records are using the custom entities discriminator
+                var user = await db.Settings.IgnoreQueryFilters()
+                    .Where(x => x.Discriminator == 0) // Non-Custom
+                    .FirstOrDefaultAsync();
+                if (user != null)
+                {
+                    await db.Settings.ExecuteUpdateAsync(x 
+                        => x.SetProperty(y => y.Discriminator, 1));
+                }
+            }
+            else
+            {
+                var user = await db.Settings.IgnoreQueryFilters()
+                    .Where(x => x.Discriminator == 1) // Custom
+                    .FirstOrDefaultAsync();
+                if (user != null)
+                {
+                    await db.Settings.ExecuteUpdateAsync(x 
+                        => x.SetProperty(y => y.Discriminator, 0));
+                }
+            }
+            
         }
 
         /// <summary>
@@ -503,7 +627,7 @@ namespace Xams.Core.Repositories
         public async Task CommitTransaction()
         {
             // Only allow commit if SaveChanges was called and there's something to commit
-            if (_transaction != null && GetDbContext<BaseDbContext>().SaveChangesCalledWithPendingChanges)
+            if (_transaction != null && GetDbContext<IXamsDbContext>().SaveChangesCalledWithPendingChanges())
             {
                 await _transaction.CommitAsync();
             }
@@ -512,11 +636,13 @@ namespace Xams.Core.Repositories
         public async Task RollbackTransaction()
         {
             // Only allow rollback if SaveChanges was called and there's something to roll back
-            if (_transaction != null && GetDbContext<BaseDbContext>().SaveChangesCalledWithPendingChanges)
+            if (_transaction != null && GetDbContext<IXamsDbContext>().SaveChangesCalledWithPendingChanges())
             {
                 await _transaction.RollbackAsync();
             }
         }
+        
+
     }
     
     public class ReadOptions

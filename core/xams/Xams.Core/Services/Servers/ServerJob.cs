@@ -19,10 +19,10 @@ public class ServerJob : IServiceJob
     public async Task<Response<object?>> Execute(JobServiceContext context)
     {
         // Get a list of all servers ordered by serverid
-        var db = context.GetDbContext<BaseDbContext>();
+        var db = context.GetDbContext<IXamsDbContext>();
         Type serverType = Cache.Instance.GetTableMetadata("Server").Type;
         
-        DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(db, serverType);
+        DynamicLinq dynamicLinq = new DynamicLinq(db, serverType);
         var query = dynamicLinq.Query.OrderBy("Name asc, LastPing desc");
         var results = await query.ToDynamicArrayAsync();
         

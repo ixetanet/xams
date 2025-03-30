@@ -96,8 +96,7 @@ public class PipeProtectSystemRecords : BasePipelineStage
 
             if (context.DataOperation is DataOperation.Delete)
             {
-                var metadata = Cache.Instance.GetTableMetadata(context.TableName);
-                object idObj = context.Entity?.GetIdValue(metadata.Type) ??
+                object idObj = context.Entity?.GetId() ??
                           throw new Exception($"Missing ID for {context.TableName}");
                 
                 // Check if the ID is a Guid and matches any of the system record IDs

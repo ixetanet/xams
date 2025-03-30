@@ -101,10 +101,10 @@ public class PipePermissionRules : BasePipelineStage
 
                 if (!string.IsNullOrEmpty(name))
                 {
-                    BaseDbContext dbContext = context.DataRepository.CreateNewDbContext();
+                    IXamsDbContext dbContext = context.DataRepository.CreateNewDbContext();
                     var metaData = Cache.Instance.GetTableMetadata(context.TableName);
-                    DynamicLinq<BaseDbContext> dynamicLinq =
-                        new DynamicLinq<BaseDbContext>(dbContext, metaData.Type);
+                    DynamicLinq dynamicLinq =
+                        new DynamicLinq(dbContext, metaData.Type);
                     IQueryable query = dynamicLinq.Query;
                     var existingPermission = await query.Where("Name == @0", name).ToDynamicListAsync();
                     if (existingPermission.Count > 0)
@@ -138,14 +138,14 @@ public class PipePermissionRules : BasePipelineStage
                 Guid roleId = (Guid)roleIdProperty.GetValue(context.Entity)!;
                 Guid permissionId = (Guid)permissionIdProperty.GetValue(context.Entity)!;
                 
-                BaseDbContext dbContext = context.DataRepository.CreateNewDbContext();
+                IXamsDbContext dbContext = context.DataRepository.CreateNewDbContext();
                 
                 var permissionMetadata = Cache.Instance.GetTableMetadata("Permission");
                 var roleMatadata = Cache.Instance.GetTableMetadata("Role");
                 var rolePermissionMetadata = Cache.Instance.GetTableMetadata("RolePermission");
                 
                 // First get the permission we're trying to create
-                DynamicLinq<BaseDbContext> linqPermission = new DynamicLinq<BaseDbContext>(dbContext, permissionMetadata.Type);
+                DynamicLinq linqPermission = new DynamicLinq(dbContext, permissionMetadata.Type);
                 IQueryable permissionQuery = linqPermission.Query;
                 permissionQuery = permissionQuery.Where("PermissionId == @0", permissionId);
                 var permission = (await permissionQuery.ToDynamicListAsync()).FirstOrDefault();
@@ -176,9 +176,9 @@ public class PipePermissionRules : BasePipelineStage
                 }
                 
                 // Check to see if a table permission already exists 
-                DynamicLinq<BaseDbContext> linqRole = new DynamicLinq<BaseDbContext>(dbContext, roleMatadata.Type);
-                DynamicLinq<BaseDbContext> linqRolePermission =
-                    new DynamicLinq<BaseDbContext>(dbContext, rolePermissionMetadata.Type);
+                DynamicLinq linqRole = new DynamicLinq(dbContext, roleMatadata.Type);
+                DynamicLinq linqRolePermission =
+                    new DynamicLinq(dbContext, rolePermissionMetadata.Type);
                 IQueryable query = linqRole.Query;
                 query = query.Join(linqRolePermission.Query, "RoleId", "RoleId", "inner");
                 query = query.Join(linqPermission.Query, "PermissionId", "PermissionId", "new (outer as outer, inner as inner)");
@@ -211,7 +211,7 @@ public class PipePermissionRules : BasePipelineStage
     {
         if (context.DataOperation is DataOperation.Create)
         {
-            BaseDbContext db = context.DataRepository.GetDbContext<BaseDbContext>();
+            IXamsDbContext db = context.DataRepository.GetDbContext<IXamsDbContext>();
             var metaData = Cache.Instance.GetTableMetadata("RolePermission").Type;
             var rolePermission = Activator.CreateInstance(metaData);
             metaData.GetProperty("RolePermissionId")?.SetValue(rolePermission, Guid.NewGuid());

@@ -57,16 +57,16 @@ public class PipeEntityDelete : BasePipelineStage
 
         object entityId = context.Entity.GetValue<object>(Cache.Instance.GetTableMetadata(context.TableName).PrimaryKey);
 
-        var dbContext = context.DataRepository.CreateNewDbContext<BaseDbContext>();
+        var dbContext = context.DataRepository.GetDbContext<IXamsDbContext>();
         var dependencies = DependencyFinder.GetDependencies(entityType, dbContext);
         var maxDepth = DependencyFinder.GetMaxDepth(dependencies);
-
+        
         var traversalSettings = new DependencyFinder.PostOrderTraversalSettings()
         {
             Id = entityId,
             Dependencies = dependencies,
             // Use a DbContext in this transaction to ensure the latest records are retrieved
-            DbContextFactory = () => context.DataRepository.GetDbContext<BaseDbContext>()
+            DbContextFactory = () => context.DataRepository.GetDbContext<IXamsDbContext>()
         };
         
         var postOrderTraversal = (await DependencyFinder.GetPostOrderTraversal(traversalSettings))

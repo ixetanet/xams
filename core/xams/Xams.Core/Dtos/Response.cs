@@ -4,7 +4,20 @@ namespace Xams.Core.Dtos
 {
     public class Response<T> : IResponse<T>
     {
-        public bool Succeeded { get; set; }
+        private bool _succeeded;
+
+        public bool Succeeded
+        {
+            get
+            {
+                return _succeeded;
+            }
+            set
+            {
+                _succeeded = value;
+            }
+        }
+
         public string? FriendlyMessage { get; set; }
         public string? LogMessage { get; set; }
         public T? Data { get; set; }

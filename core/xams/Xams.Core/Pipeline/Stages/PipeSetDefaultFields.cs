@@ -94,13 +94,13 @@ public class PipeSetDefaultFields : BasePipelineStage
             Type tableNameType = lookupInfo.LookupType;
             Type tableNameUnderlyingType = Nullable.GetUnderlyingType(tableNameType) ?? tableNameType;
             
-            Response<ReadOutput> readOutput =
+            Response<object?> readOutput =
                 await context.DataRepository.Find(tableNameUnderlyingType.Name, lookupInfo.Id, true);
             
             // If the results aren't in the database (hasn't been committed yet) check change tracking
-            if (readOutput.Data!.results.Count == 0)
+            if (readOutput.Data == null)
             {
-                var changeTracker = context.DataRepository.GetDbContext<BaseDbContext>().ChangeTracker;
+                var changeTracker = context.DataRepository.GetDbContext<IXamsDbContext>().ChangeTracker;
                 var entityEntry = changeTracker.Entries()
                     .FirstOrDefault(x => x.Entity.GetType() == tableNameUnderlyingType
                                          && x.Property($"{tableNameUnderlyingType.Name}Id")
@@ -120,7 +120,7 @@ public class PipeSetDefaultFields : BasePipelineStage
                 continue;
             }
             
-            var lookupEntity = readOutput.Data?.results[0];
+            var lookupEntity = readOutput.Data;
             string lookupNameValue = EntityUtil.GetLookupNameValue(lookupEntity);
             lookupInfo.Property.SetValue(context.Entity, lookupNameValue);   
         }

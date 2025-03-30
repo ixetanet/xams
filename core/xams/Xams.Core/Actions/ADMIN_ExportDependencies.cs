@@ -15,12 +15,12 @@ namespace Xams.Core.Actions
             return new Response<object?>()
             {
                 Succeeded = true,
-                Data = BuildDependencyGraph(context.DataRepository.GetDbContext<BaseDbContext>())
+                Data = BuildDependencyGraph(context.DataRepository.GetDbContext<IXamsDbContext>())
                     .OrderBy(x => x.Name)
             };
         }
     
-        public List<DependencyInfo> BuildDependencyGraph(BaseDbContext context)
+        public List<DependencyInfo> BuildDependencyGraph(IXamsDbContext context)
         {
             var graph = new List<DependencyInfo>();
 

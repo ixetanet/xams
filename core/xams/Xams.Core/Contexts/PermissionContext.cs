@@ -11,12 +11,12 @@ public class PermissionContext
         DataService = dataService;
     }
     
-    public T GetDbContext<T>() where T : BaseDbContext
+    public T GetDbContext<T>() where T : IXamsDbContext
     {
         return DataService.GetDataRepository().GetDbContext<T>();
     }
     
-    public T CreateNewDbContext<T>() where T : BaseDbContext
+    public T CreateNewDbContext<T>() where T : IXamsDbContext
     {
         return DataService.GetDataRepository().CreateNewDbContext<T>();
     }

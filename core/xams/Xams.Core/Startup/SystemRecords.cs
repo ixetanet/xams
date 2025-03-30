@@ -27,10 +27,10 @@ namespace Xams.Core.Startup
         public async Task CreateSystemUser()
         {
             Console.WriteLine("Creating System User");
-            BaseDbContext baseDbContext = _dataService.GetDataRepository().CreateNewDbContext();
+            IXamsDbContext xamsDbContext = _dataService.GetDataRepository().CreateNewDbContext();
             var baseDbContextType = Cache.Instance.GetTableMetadata("User");
         
-            DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(baseDbContext, baseDbContextType.Type);
+            DynamicLinq dynamicLinq = new DynamicLinq(xamsDbContext, baseDbContextType.Type);
             IQueryable query = dynamicLinq.Query;
             query = query.Where("UserId == @0", SystemUserId);
             if (query.ToDynamicList().Count == 0)
@@ -40,8 +40,8 @@ namespace Xams.Core.Startup
                 systemUser["Name"] = "SYSTEM";
                 systemUser["CreatedDate"] = DateTime.UtcNow;
                 object entity = EntityUtil.DictionaryToEntity(baseDbContextType.Type, systemUser);
-                baseDbContext.Add(entity);
-                await baseDbContext.SaveChangesAsync();
+                xamsDbContext.Add(entity);
+                await xamsDbContext.SaveChangesAsync();
             }
         }
             
@@ -49,10 +49,10 @@ namespace Xams.Core.Startup
         public async Task CreateSystemRoles()
         {
             Console.WriteLine("Creating System Roles");
-            BaseDbContext baseDbContext = _dataService.GetDataRepository().CreateNewDbContext();
+            IXamsDbContext xamsDbContext = _dataService.GetDataRepository().CreateNewDbContext();
             var baseDbContextType = Cache.Instance.GetTableMetadata("Role");
         
-            DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(baseDbContext, baseDbContextType.Type);
+            DynamicLinq dynamicLinq = new DynamicLinq(xamsDbContext, baseDbContextType.Type);
             IQueryable query = dynamicLinq.Query;
             query = query.Where("RoleId == @0", SystemAdministratorRoleId);
             if (query.ToDynamicList().Count == 0)
@@ -62,8 +62,8 @@ namespace Xams.Core.Startup
                 systemRole["Name"] = "System Administrator";
                 systemRole["CreatedDate"] = DateTime.UtcNow;
                 object entity = EntityUtil.DictionaryToEntity(baseDbContextType.Type, systemRole);
-                baseDbContext.Add(entity);
-                await baseDbContext.SaveChangesAsync();
+                xamsDbContext.Add(entity);
+                await xamsDbContext.SaveChangesAsync();
             }
         }
             
@@ -71,10 +71,10 @@ namespace Xams.Core.Startup
         public async Task CreateSystemTeams()
         {
             Console.WriteLine("Creating System Teams");
-            BaseDbContext baseDbContext = _dataService.GetDataRepository().CreateNewDbContext();
+            IXamsDbContext xamsDbContext = _dataService.GetDataRepository().CreateNewDbContext();
             var baseDbContextType = Cache.Instance.GetTableMetadata("Team");
         
-            DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(baseDbContext, baseDbContextType.Type);
+            DynamicLinq dynamicLinq = new DynamicLinq(xamsDbContext, baseDbContextType.Type);
             IQueryable query = dynamicLinq.Query;
             query = query.Where("TeamId == @0", SystemAdministratorTeamId);
             if (query.ToDynamicList().Count == 0)
@@ -84,8 +84,8 @@ namespace Xams.Core.Startup
                 systemTeam["Name"] = "System Administrators";
                 systemTeam["CreatedDate"] = DateTime.UtcNow;
                 object entity = EntityUtil.DictionaryToEntity(baseDbContextType.Type, systemTeam);
-                baseDbContext.Add(entity);
-                await baseDbContext.SaveChangesAsync();
+                xamsDbContext.Add(entity);
+                await xamsDbContext.SaveChangesAsync();
             }
         }
             
@@ -94,11 +94,11 @@ namespace Xams.Core.Startup
         {
             Console.WriteLine("Creating System Permissions");
             
-            BaseDbContext baseDbContext = _dataService.GetDataRepository().CreateNewDbContext();
+            IXamsDbContext xamsDbContext = _dataService.GetDataRepository().CreateNewDbContext();
             var permissionMetadata = Cache.Instance.GetTableMetadata("Permission");
             PropertyInfo nameProp = permissionMetadata.Type.GetProperty("Name") ?? throw new ArgumentNullException($"baseDbContextType.Type.GetProperty(\"Name\")");
         
-            DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(baseDbContext, permissionMetadata.Type);
+            DynamicLinq dynamicLinq = new DynamicLinq(xamsDbContext, permissionMetadata.Type);
             IQueryable existingPermissionsQuery = dynamicLinq.Query;
             existingPermissionsQuery = existingPermissionsQuery.Where("Tag == @0", "System");
             List<dynamic> existingPermissions = await existingPermissionsQuery.ToDynamicListAsync();
@@ -169,7 +169,7 @@ namespace Xams.Core.Startup
                     systemPermission["Tag"] = "System";
                     systemPermission["CreatedDate"] = DateTime.UtcNow;
                     object entity = EntityUtil.DictionaryToEntity(permissionMetadata.Type, systemPermission);
-                    baseDbContext.Add(entity);
+                    xamsDbContext.Add(entity);
                 }
             }
 
@@ -181,23 +181,23 @@ namespace Xams.Core.Startup
                 if (actualPermissionExists == false)
                 {
                     // Delete any RolePermissions that reference this permission
-                    DynamicLinq<BaseDbContext> dLinq = new DynamicLinq<BaseDbContext>(baseDbContext, Cache.Instance.GetTableMetadata("RolePermission").Type);
+                    DynamicLinq dLinq = new DynamicLinq(xamsDbContext, Cache.Instance.GetTableMetadata("RolePermission").Type);
                     IQueryable query = dLinq.Query;
                     query = query.Where("PermissionId == @0", (Guid)existingPermission.PermissionId);
                     var rolePermissions = await query.ToDynamicListAsync();
-                    baseDbContext.RemoveRange(rolePermissions);
-                    baseDbContext.Remove(existingPermission);
+                    xamsDbContext.RemoveRange(rolePermissions);
+                    xamsDbContext.Remove(existingPermission);
                 }
             }
 
-            await baseDbContext.SaveChangesAsync();
+            await xamsDbContext.SaveChangesAsync();
         }
     
         // Ensure system roles have system permissions
         public async Task CreateRolePermissions()
         {
             Console.WriteLine("Creating Role Permissions");
-            BaseDbContext baseDbContext = _dataService.GetDataRepository().CreateNewDbContext();
+            IXamsDbContext xamsDbContext = _dataService.GetDataRepository().CreateNewDbContext();
             var rolePermissionMetadata = Cache.Instance.GetTableMetadata("RolePermission");
             var permissionMetadata = Cache.Instance.GetTableMetadata("Permission");
             var rolePermissionPermissionIdProp = rolePermissionMetadata.Type.GetProperty("PermissionId") ?? throw new ArgumentNullException($"rolePermissionMetadata.Type.GetProperty(\"PermissionId\")");
@@ -205,13 +205,13 @@ namespace Xams.Core.Startup
             var permissionNameProp = permissionMetadata.Type.GetProperty("Name") ?? throw new ArgumentNullException($"permissionMetadata.Type.GetProperty(\"Name\")");
         
             // Retrieve all permissions for system administrator role
-            DynamicLinq<BaseDbContext> rolPermissionLinq = new DynamicLinq<BaseDbContext>(baseDbContext, rolePermissionMetadata.Type);
+            DynamicLinq rolPermissionLinq = new DynamicLinq(xamsDbContext, rolePermissionMetadata.Type);
             IQueryable query = rolPermissionLinq.Query;
             query = query.Where("RoleId == @0", SystemAdministratorRoleId);
             List<dynamic> rolePermissions = await query.ToDynamicListAsync();
             
             // Retrieve all permissions
-            DynamicLinq<BaseDbContext> permissionLinq = new DynamicLinq<BaseDbContext>(baseDbContext, permissionMetadata.Type);
+            DynamicLinq permissionLinq = new DynamicLinq(xamsDbContext, permissionMetadata.Type);
             IQueryable permissionQuery = permissionLinq.Query;
             List<dynamic> permissions = await permissionQuery.ToDynamicListAsync();
             
@@ -240,22 +240,22 @@ namespace Xams.Core.Startup
                     systemRolePermission["PermissionId"] = permissionId;
                     systemRolePermission["CreatedDate"] = DateTime.UtcNow;
                     object entity = EntityUtil.DictionaryToEntity(rolePermissionMetadata.Type, systemRolePermission);
-                    baseDbContext.Add(entity);
+                    xamsDbContext.Add(entity);
                 }
             }
         
-            await baseDbContext.SaveChangesAsync();
+            await xamsDbContext.SaveChangesAsync();
         }
             
         // Ensure system user has system roles
         public async Task CreateUserRoles()
         {
             Console.WriteLine("Creating User Roles");
-            BaseDbContext baseDbContext = _dataService.GetDataRepository().CreateNewDbContext();
+            IXamsDbContext xamsDbContext = _dataService.GetDataRepository().CreateNewDbContext();
             var baseDbContextType = Cache.Instance.GetTableMetadata("UserRole");
         
             // Create system administrator role for system user
-            DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(baseDbContext, baseDbContextType.Type);
+            DynamicLinq dynamicLinq = new DynamicLinq(xamsDbContext, baseDbContextType.Type);
             IQueryable query = dynamicLinq.Query;
             query = query.Where("UserRoleId == @0", SystemUserRoleId);
             if (query.ToDynamicList().Count == 0)
@@ -266,8 +266,8 @@ namespace Xams.Core.Startup
                 systemUserRole["RoleId"] = SystemAdministratorRoleId;
                 systemUserRole["CreatedDate"] = DateTime.UtcNow;
                 object entity = EntityUtil.DictionaryToEntity(baseDbContextType.Type, systemUserRole);
-                baseDbContext.Add(entity);
-                await baseDbContext.SaveChangesAsync();
+                xamsDbContext.Add(entity);
+                await xamsDbContext.SaveChangesAsync();
             }
         }
     
@@ -275,11 +275,11 @@ namespace Xams.Core.Startup
         public async Task CreateTeamRoles()
         {
             Console.WriteLine("Creating Team Roles");
-            BaseDbContext baseDbContext = _dataService.GetDataRepository().CreateNewDbContext();
+            IXamsDbContext xamsDbContext = _dataService.GetDataRepository().CreateNewDbContext();
             var baseDbContextType = Cache.Instance.GetTableMetadata("TeamRole");
         
             // Create system administrator role for system user
-            DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(baseDbContext, baseDbContextType.Type);
+            DynamicLinq dynamicLinq = new DynamicLinq(xamsDbContext, baseDbContextType.Type);
             IQueryable query = dynamicLinq.Query;
             query = query.Where("TeamRoleId == @0", SystemAdministratorsTeamRoleId);
             if (query.ToDynamicList().Count == 0)
@@ -290,8 +290,8 @@ namespace Xams.Core.Startup
                 systemTeamRole["RoleId"] = SystemAdministratorRoleId;
                 systemTeamRole["CreatedDate"] = DateTime.UtcNow;
                 object entity = EntityUtil.DictionaryToEntity(baseDbContextType.Type, systemTeamRole);
-                baseDbContext.Add(entity);
-                await baseDbContext.SaveChangesAsync();
+                xamsDbContext.Add(entity);
+                await xamsDbContext.SaveChangesAsync();
             }
         }
         
@@ -299,11 +299,11 @@ namespace Xams.Core.Startup
         public async Task CreateTeamUsers()
         {
             Console.WriteLine("Creating Team Users");
-            BaseDbContext baseDbContext = _dataService.GetDataRepository().CreateNewDbContext();
+            IXamsDbContext xamsDbContext = _dataService.GetDataRepository().CreateNewDbContext();
             var baseDbContextType = Cache.Instance.GetTableMetadata("TeamUser");
         
             // Create system administrator role for system user
-            DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(baseDbContext, baseDbContextType.Type);
+            DynamicLinq dynamicLinq = new DynamicLinq(xamsDbContext, baseDbContextType.Type);
             IQueryable query = dynamicLinq.Query;
             query = query.Where("TeamUserId == @0", SystemTeamUserId);
             if (query.ToDynamicList().Count == 0)
@@ -314,8 +314,8 @@ namespace Xams.Core.Startup
                 systemTeamUser["UserId"] = SystemUserId;
                 systemTeamUser["CreatedDate"] = DateTime.UtcNow;
                 object entity = EntityUtil.DictionaryToEntity(baseDbContextType.Type, systemTeamUser);
-                baseDbContext.Add(entity);
-                await baseDbContext.SaveChangesAsync();
+                xamsDbContext.Add(entity);
+                await xamsDbContext.SaveChangesAsync();
             }
         }
         
@@ -323,7 +323,7 @@ namespace Xams.Core.Startup
         public async Task CreateSettingAndSystemRecords()
         {
             Console.WriteLine("Creating System and Setting Records");
-            BaseDbContext baseDbContext = _dataService.GetDataRepository().CreateNewDbContext();
+            IXamsDbContext xamsDbContext = _dataService.GetDataRepository().CreateNewDbContext();
             var settingMetadata = Cache.Instance.GetTableMetadata("Setting");
             var systemMetadata = Cache.Instance.GetTableMetadata("System");
 
@@ -337,8 +337,8 @@ namespace Xams.Core.Startup
             foreach (var setting in settings)
             {
                 Guid id = GuidUtil.FromString(setting.Name);
-                DynamicLinq<BaseDbContext>
-                    dynamicLinq = new DynamicLinq<BaseDbContext>(baseDbContext, settingMetadata.Type);
+                DynamicLinq
+                    dynamicLinq = new DynamicLinq(xamsDbContext, settingMetadata.Type);
                 IQueryable query = dynamicLinq.Query;
                 query = query.Where("SettingId == @0", id);
                 if (query.ToDynamicList().Count == 0)
@@ -348,15 +348,15 @@ namespace Xams.Core.Startup
                     systemSetting["Name"] = setting.Name;
                     systemSetting["Value"] = setting.Value;
                     object entity = EntityUtil.DictionaryToEntity(settingMetadata.Type, systemSetting);
-                    baseDbContext.Add(entity);
+                    xamsDbContext.Add(entity);
                 }
             }
 
             foreach (var system in systems)
             {
                 Guid id = GuidUtil.FromString(system.Name);
-                DynamicLinq<BaseDbContext>
-                    dynamicLinq = new DynamicLinq<BaseDbContext>(baseDbContext, systemMetadata.Type);
+                DynamicLinq
+                    dynamicLinq = new DynamicLinq(xamsDbContext, systemMetadata.Type);
                 IQueryable query = dynamicLinq.Query;
                 query = query.Where("SystemId == @0", id);
                 if (query.ToDynamicList().Count == 0)
@@ -366,11 +366,11 @@ namespace Xams.Core.Startup
                     systemSetting["Name"] = system.Name;
                     systemSetting["Value"] = system.Value;
                     object entity = EntityUtil.DictionaryToEntity(systemMetadata.Type, systemSetting);
-                    baseDbContext.Add(entity);
+                    xamsDbContext.Add(entity);
                 }
             }
 
-            await baseDbContext.SaveChangesAsync();
+            await xamsDbContext.SaveChangesAsync();
         }
 
         

@@ -83,41 +83,30 @@ public class PipeExecuteServiceLogic : BasePipelineStage
             object? outputData = null;
             foreach (var serviceLogic in serviceLogics)
             {
-                try
+                // This is intentionally not wrapped in try catch so the entire
+                // stack trace is sent to the browser log
+                var instance = Activator.CreateInstance(serviceLogic);
+                var executeMethod = serviceLogic.GetMethod("Execute");
+                if (executeMethod != null)
                 {
-                    var instance = Activator.CreateInstance(serviceLogic);
-                    var executeMethod = serviceLogic.GetMethod("Execute");
-                    if (executeMethod != null)
+                    Response<object?> response = await ((Task<Response<object?>>)executeMethod.Invoke(instance,
+                    [
+                        serviceContext
+                    ])!);
+                    
+                    if (!response.Succeeded)
                     {
-                        Response<object?> response = await ((Task<Response<object?>>)executeMethod.Invoke(instance,
-                        [
-                            serviceContext
-                        ])!);
-                        
-                        if (!response.Succeeded)
-                        {
-                            return response;
-                        }
-                        
-                        if (context.DataOperation is DataOperation.Read && response.Data is ReadOutput)
-                        {
-                            outputData = response.Data;
-                        }
-                        else if (response.Data != null)
-                        {
-                            outputData = response.Data;
-                        }
+                        return response;
                     }
-                }
-                catch (Exception ex)
-                {
-                    context.DataService.GetLogger().LogError(ex, "ServiceLogic Error: {Message}", ex.Message);
-                    return new Response<object?>()
+                    
+                    if (context.DataOperation is DataOperation.Read && response.Data is ReadOutput)
                     {
-                        Succeeded = false,
-                        FriendlyMessage = ex.InnerException?.Message ?? ex.Message,
-                        LogMessage = $"{ex.InnerException?.Message ?? ex.Message}\n---StackTrace---\n{ex.StackTrace}\n---Inner StackTrace---\n{ex.InnerException?.StackTrace}",
-                    };
+                        outputData = response.Data;
+                    }
+                    else if (response.Data != null)
+                    {
+                        outputData = response.Data;
+                    }
                 }
             }
 

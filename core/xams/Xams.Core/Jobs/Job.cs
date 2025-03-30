@@ -95,7 +95,7 @@ public class Job
         
         var dataService = scope.ServiceProvider.GetRequiredService<IDataService>();
         
-        BaseDbContext baseDbContext = dataService.GetDataRepository().CreateNewDbContext();
+        IXamsDbContext xamsDbContext = dataService.GetDataRepository().CreateNewDbContext();
         
         Guid jobHistoryId = Guid.NewGuid();
         Type jobHistoryType = Cache.Instance.GetTableMetadata("JobHistory").Type;
@@ -103,7 +103,7 @@ public class Job
         try
         {
             // Get the last Job history record for this server
-            DynamicLinq<BaseDbContext> dlinqJobHistory = new DynamicLinq<BaseDbContext>(baseDbContext, jobHistoryType);
+            DynamicLinq dlinqJobHistory = new DynamicLinq(xamsDbContext, jobHistoryType);
             IQueryable jobHistoryQuery = dlinqJobHistory.Query;
             jobHistoryQuery = jobHistoryQuery
                 .Where("JobId == @0", JobId)
@@ -114,13 +114,13 @@ public class Job
             if (jobHistory != null && jobHistory?.Status == "Running" && DateTime.UtcNow - jobHistory?.Ping >
                 TimeSpan.FromSeconds(JobService.Singleton!.PingInterval * 3))
             {
-                baseDbContext.ChangeTracker.Clear();
+                xamsDbContext.ChangeTracker.Clear();
                 
                 // Update Job History Records
                 string jobStatus = "Failed";
-                baseDbContext.ChangeTracker.Clear();
-                DynamicLinq<BaseDbContext> dynamicLinq =
-                    new DynamicLinq<BaseDbContext>(baseDbContext, jobHistoryType);
+                xamsDbContext.ChangeTracker.Clear();
+                DynamicLinq dynamicLinq =
+                    new DynamicLinq(xamsDbContext, jobHistoryType);
                 IQueryable query = dynamicLinq.Query;
                 query = query.Where($"JobId == @0", JobId);
                 query = query.Where($"Status == @0", "Running");
@@ -129,9 +129,9 @@ public class Job
                 {
                     jHistory.Status = jobStatus;
                     jHistory.CompletedDate = DateTime.UtcNow;
-                    baseDbContext.Update(jHistory);
+                    xamsDbContext.Update(jHistory);
                 }
-                await baseDbContext.SaveChangesAsync();
+                await xamsDbContext.SaveChangesAsync();
             }
 
             string jobName = Name ?? throw new Exception($"Job missing name.");
@@ -198,7 +198,7 @@ public class Job
 
             // Create Job History Record
             string status = "Running";
-            baseDbContext.ChangeTracker.Clear();
+            xamsDbContext.ChangeTracker.Clear();
             jobHistory = Activator.CreateInstance(jobHistoryType)!;
             jobHistory.JobHistoryId = jobHistoryId;
             jobHistory.Status = status;
@@ -207,13 +207,13 @@ public class Job
             jobHistory.Name = Name;
             jobHistory.Message = string.Empty;
             jobHistory.ServerName = Cache.Instance.ServerName;
-            baseDbContext.Add(jobHistory);
-            await baseDbContext.SaveChangesAsync();
+            xamsDbContext.Add(jobHistory);
+            await xamsDbContext.SaveChangesAsync();
                 
                 
             // Update job to running
-            dynamic? updateJob = await baseDbContext.FindAsync(Entity.GetType(), JobId);
-            baseDbContext.ChangeTracker.Clear();
+            dynamic? updateJob = await xamsDbContext.FindAsync(Entity.GetType(), JobId);
+            xamsDbContext.ChangeTracker.Clear();
             try
             {
                 // It's possible multiple servers try to update the LastExecution at the same time
@@ -223,8 +223,8 @@ public class Job
                     throw new Exception($"Couldn't find Job to update with Id {JobId}");
                 }
                 updateJob.LastExecution = DateTime.UtcNow;
-                baseDbContext.Update(updateJob);
-                await baseDbContext.SaveChangesAsync();
+                xamsDbContext.Update(updateJob);
+                await xamsDbContext.SaveChangesAsync();
             }
             catch (Exception)
             {
@@ -264,30 +264,30 @@ public class Job
                 
             // Update job history
             status = jobResponse.Succeeded ? "Completed" : "Failed";
-            baseDbContext.ChangeTracker.Clear();
-            jobHistory = await baseDbContext.FindAsync(jobHistoryType, jobHistoryId) ?? 
+            xamsDbContext.ChangeTracker.Clear();
+            jobHistory = await xamsDbContext.FindAsync(jobHistoryType, jobHistoryId) ?? 
                          throw new Exception($"Failed to find Job History Id {jobHistoryId}");
             jobHistory.Status = status;
             jobHistory.Message = jobResponse.FriendlyMessage ?? string.Empty;
             jobHistory.CompletedDate = DateTime.UtcNow;
-            baseDbContext.Update(jobHistory);
-            await baseDbContext.SaveChangesAsync();
+            xamsDbContext.Update(jobHistory);
+            await xamsDbContext.SaveChangesAsync();
 
             // Update job last execution
-            baseDbContext.ChangeTracker.Clear();
+            xamsDbContext.ChangeTracker.Clear();
             try
             {
                 // It's possible multiple servers try to update the LastExecution at the same time
                 // and create a contention issue. In that case, ignore and move on.
-                updateJob = await baseDbContext.FindAsync(Entity.GetType(), JobId);
+                updateJob = await xamsDbContext.FindAsync(Entity.GetType(), JobId);
                 if (updateJob == null)
                 {
                     throw new Exception($"Couldn't find Job to update last execution with Id {JobId}");
                 }
                 // updateJob.Status = status;
                 updateJob.LastExecution = DateTime.UtcNow;
-                baseDbContext.Update(updateJob);
-                await baseDbContext.SaveChangesAsync();
+                xamsDbContext.Update(updateJob);
+                await xamsDbContext.SaveChangesAsync();
             }
             catch (Exception)
             {
@@ -310,22 +310,22 @@ public class Job
                 }
                 
                 // Update job history
-                baseDbContext.ChangeTracker.Clear();
+                xamsDbContext.ChangeTracker.Clear();
                 string status = "Failed";
-                dynamic jobHistory = await baseDbContext.FindAsync(jobHistoryType, jobHistoryId) ??
+                dynamic jobHistory = await xamsDbContext.FindAsync(jobHistoryType, jobHistoryId) ??
                                      throw new Exception($"Failed to find Job History Id {jobHistoryId}");
                 if (jobHistory != null)
                 {
                     jobHistory.Status = status;
                     jobHistory.Message = e.InnerException?.ToString() ?? string.Empty;
                     jobHistory.CompletedDate = DateTime.UtcNow;
-                    baseDbContext.Update(jobHistory);
-                    await baseDbContext.SaveChangesAsync();    
+                    xamsDbContext.Update(jobHistory);
+                    await xamsDbContext.SaveChangesAsync();    
                 }
                     
                 // Update job last execution
-                baseDbContext.ChangeTracker.Clear();
-                dynamic? updateJob = await baseDbContext.FindAsync(Entity.GetType(), JobId);
+                xamsDbContext.ChangeTracker.Clear();
+                dynamic? updateJob = await xamsDbContext.FindAsync(Entity.GetType(), JobId);
                 if (updateJob == null)
                 {
                     throw new Exception($"Multiple errors attempting to update Job with Id {JobId}");
@@ -334,8 +334,8 @@ public class Job
                 {
                     // updateJob.Status = status;
                     updateJob.LastExecution = DateTime.UtcNow;
-                    baseDbContext.Update(updateJob);
-                    await baseDbContext.SaveChangesAsync();    
+                    xamsDbContext.Update(updateJob);
+                    await xamsDbContext.SaveChangesAsync();    
                 }
 
                 return ServiceResult.Success();

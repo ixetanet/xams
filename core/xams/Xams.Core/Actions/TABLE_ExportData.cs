@@ -26,7 +26,7 @@ public class TABLE_ExportData : IServiceAction
             return ServiceResult.Error($"Data Export requires a query");
         }
         
-        var db = context.DataRepository.GetDbContext<BaseDbContext>();
+        var db = context.DataRepository.GetDbContext<IXamsDbContext>();
 
         string query = context.Parameters["query"].GetRawText()!;
         

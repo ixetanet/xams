@@ -3,6 +3,7 @@ using Xams.Core.Dtos;
 using Xams.Core.Dtos.Data;
 using Xams.Core.Pipeline.Stages.Shared;
 using Xams.Core.Repositories;
+using Xams.Core.Utils;
 
 namespace Xams.Core.Pipeline.Stages;
 
@@ -18,16 +19,20 @@ public class PipeResultEntity : BasePipelineStage
                 Data = null
             };
         }
+
+        object? id = context.Entity?.GetId() ?? null;
+
+        if (id == null)
+        {
+            throw new Exception("Id is null");
+        }
         
-        Guid id = (Guid)(context.Entity.GetType().GetProperty(context.Entity.GetType().Name + "Id")
-                             ?.GetValue(context.Entity) ??
-                         Guid.Empty);
-        
-        // If the _system_return_entity parameter is set, return the entity as is, this is used for creates, updates, deletes from a Job \ Action \ Service class
+        // If the _system_return_entity parameter is set, return the entity as is,
+        // this is used for creates, updates, deletes from a Job \ Action \ Service class
         // Returns the entity as a c# class versus a dynamic object
         if (context.SystemParameters.ReturnEntity)
         {
-            Response<ReadOutput> readEntity = await context.DataRepository.Find(context.TableName, id, false);
+            Response<object?> readEntity = await context.DataRepository.Find(context.TableName, id, false);
             if (readEntity.Data == null)
             {
                 return new Response<object?>()
@@ -39,7 +44,7 @@ public class PipeResultEntity : BasePipelineStage
             return new Response<object?>()
             {
                 Succeeded = true,
-                Data = readEntity.Data.results.FirstOrDefault()
+                Data = readEntity.Data
             };
         }
         

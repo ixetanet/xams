@@ -19,12 +19,12 @@ namespace Xams.Core.Actions
             var tables = JsonSerializer.Deserialize<DependencyInfo[]>(json);
             var sortedTables = TopologicalSort(tables);
 
-            var dataContext = context.DataRepository.GetDbContext<BaseDbContext>();
+            var dataContext = context.DataRepository.GetDbContext<IXamsDbContext>();
             List<TableExport> tableExports = new List<TableExport>();
             foreach (string table in sortedTables)
             {
                 var dbContextType = Cache.Instance.GetTableMetadata(table);
-                DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(dataContext, dbContextType.Type);
+                DynamicLinq dynamicLinq = new DynamicLinq(dataContext, dbContextType.Type);
             
                 string strFields = EntityUtil.GetEntityFields(dbContextType.Type, null, string.Empty, EntityUtil.FieldModifications.NoRelatedFields);
             

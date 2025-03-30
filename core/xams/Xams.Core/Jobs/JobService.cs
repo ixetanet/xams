@@ -30,11 +30,11 @@ public class JobService
         {
             var dataService = scope.ServiceProvider.GetRequiredService<IDataService>();
             // Get all jobs
-            BaseDbContext baseDbContext = dataService.GetDataRepository().CreateNewDbContext();
+            IXamsDbContext xamsDbContext = dataService.GetDataRepository().CreateNewDbContext();
             var baseDbContextType = Cache.Instance.GetTableMetadata("Job");
 
-            DynamicLinq<BaseDbContext> dynamicLinq =
-                new DynamicLinq<BaseDbContext>(baseDbContext, baseDbContextType.Type);
+            DynamicLinq dynamicLinq =
+                new DynamicLinq(xamsDbContext, baseDbContextType.Type);
             IQueryable query = dynamicLinq.Query;
             var jobs = query.ToDynamicList();
             var queues = jobs
@@ -93,9 +93,9 @@ public class JobService
     {
         var dataService = scope.ServiceProvider.GetRequiredService<IDataService>();
         // Get all jobs
-        BaseDbContext baseDbContext = dataService.GetDataRepository().CreateNewDbContext();
+        IXamsDbContext xamsDbContext = dataService.GetDataRepository().CreateNewDbContext();
         
-        var systemDLinq = new DynamicLinq<BaseDbContext>(baseDbContext, Cache.Instance.GetTableMetadata("System").Type);
+        var systemDLinq = new DynamicLinq(xamsDbContext, Cache.Instance.GetTableMetadata("System").Type);
         var systemQuery = systemDLinq.Query;
         systemQuery = systemQuery
             .Where("Name == @0", $"EXECUTE_JOB_{Cache.Instance.ServerName}")
@@ -105,16 +105,16 @@ public class JobService
         // Delete system records to prevent re-triggering
         foreach (var systemRecord in systemRecords)
         {
-            baseDbContext.Remove(systemRecord);
+            xamsDbContext.Remove(systemRecord);
         }
-        await baseDbContext.SaveChangesAsync();
+        await xamsDbContext.SaveChangesAsync();
 
         var jobMetadata = Cache.Instance.GetTableMetadata("Job");
         foreach (var systemRecord in systemRecords)
         {
             Console.WriteLine($"Running on Server: {Cache.Instance.ServerName}");
-            DynamicLinq<BaseDbContext> dLinqJobs =
-                new DynamicLinq<BaseDbContext>(baseDbContext, jobMetadata.Type);
+            DynamicLinq dLinqJobs =
+                new DynamicLinq(xamsDbContext, jobMetadata.Type);
             IQueryable query = dLinqJobs.Query;
             string jobName = systemRecord.Value;
             query = query.Where("Name == @0", jobName);
@@ -129,7 +129,7 @@ public class JobService
         }
         
         // Delete stale records
-        baseDbContext.ChangeTracker.Clear();
+        xamsDbContext.ChangeTracker.Clear();
         systemQuery = systemDLinq.Query;
         systemQuery = systemQuery
             .Where("Name.StartsWith(@0)", $"EXECUTE_JOB_")
@@ -137,9 +137,9 @@ public class JobService
         systemRecords = await systemQuery.ToDynamicListAsync();
         foreach (var systemRecord in systemRecords)
         { 
-            baseDbContext.Remove(systemRecord);
+            xamsDbContext.Remove(systemRecord);
         }
-        await baseDbContext.SaveChangesAsync();
+        await xamsDbContext.SaveChangesAsync();
         
     }
 
@@ -151,11 +151,11 @@ public class JobService
     {
         var dataService = scope.ServiceProvider.GetRequiredService<IDataService>();
         // Get all jobs
-        BaseDbContext baseDbContext = dataService.GetDataRepository().CreateNewDbContext();
+        IXamsDbContext xamsDbContext = dataService.GetDataRepository().CreateNewDbContext();
         var jobMetadata = Cache.Instance.GetTableMetadata("Job");
         // Execute all scheduled jobs
-        DynamicLinq<BaseDbContext> dLinqJobs =
-            new DynamicLinq<BaseDbContext>(baseDbContext, jobMetadata.Type);
+        DynamicLinq dLinqJobs =
+            new DynamicLinq(xamsDbContext, jobMetadata.Type);
         IQueryable query = dLinqJobs.Query;
         // Get all jobs every execution because the job might have been actived\deactivated
         var dynamicJobs = query.ToDynamicList();
@@ -163,8 +163,8 @@ public class JobService
                 
         // Get the default server to execute jobs that should only run on 1 server, where a specific
         // server hasn't been specified
-        DynamicLinq<BaseDbContext> dlinqServer =
-            new DynamicLinq<BaseDbContext>(baseDbContext, Cache.Instance.GetTableMetadata("Server").Type);
+        DynamicLinq dlinqServer =
+            new DynamicLinq(xamsDbContext, Cache.Instance.GetTableMetadata("Server").Type);
         IQueryable serverQuery = dlinqServer.Query;
         serverQuery = serverQuery.OrderBy("Name asc, LastPing desc");
         // Get all jobs every execution because the job might have been updated

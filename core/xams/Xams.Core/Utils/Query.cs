@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Xams.Core.Attributes;
+using Xams.Core.Base;
 
 namespace Xams.Core.Utils;
 
@@ -10,8 +11,8 @@ public class Query
 {
     public string TableName { get; private set; } = null!;
     public string RootAlias { get; }
-    private readonly DbContext _dbContext;
-    private DynamicLinq<DbContext> _dynamicLinq = null!;
+    private readonly IXamsDbContext _dbContext;
+    private DynamicLinq _dynamicLinq = null!;
     private IQueryable _query = null!;
     private IOrderedQueryable _orderedQueryable = null!;
     private int _top { get; set; } = -1;
@@ -24,7 +25,7 @@ public class Query
     private bool _isDistinct { get; set; }
     private Dictionary<string, string> _fieldMap { get; set; } = new();
 
-    public Query(DbContext dbContext, string[] fields, string rootAlias = "root")
+    public Query(IXamsDbContext dbContext, string[] fields, string rootAlias = "root")
     {
         _dbContext = dbContext;
         RootAlias = rootAlias;
@@ -52,7 +53,7 @@ public class Query
 
         TableName = tableName;
         var baseType = Cache.Instance.GetTableMetadata(tableName).Type;
-        _dynamicLinq = new DynamicLinq<DbContext>(_dbContext, baseType);
+        _dynamicLinq = new DynamicLinq(_dbContext, baseType);
         _query = _dynamicLinq.Query;
 
         bool selectAll = _selectedFields.Contains($"{RootAlias}_*");
@@ -112,7 +113,7 @@ public class Query
         _aliases.Add(alias);
 
         Type joinType = Cache.Instance.GetTableMetadata(toParts[0]).Type;
-        DynamicLinq<DbContext> dynamicLinqJoin = new DynamicLinq<DbContext>(_dbContext, joinType);
+        DynamicLinq dynamicLinqJoin = new DynamicLinq(_dbContext, joinType);
         IQueryable joinQuery = dynamicLinqJoin.Query;
 
         List<string> resultSelector = new List<string>();
@@ -205,7 +206,7 @@ public class Query
         _aliases.Add(alias);
 
         var joinType = Cache.Instance.GetTableMetadata(toParts[0]).Type;
-        DynamicLinq<DbContext> dynamicLinqJoin = new DynamicLinq<DbContext>(_dbContext, joinType);
+        DynamicLinq dynamicLinqJoin = new DynamicLinq(_dbContext, joinType);
 
         List<string> joinQueryFields = new List<string>();
         List<string> selectManyInnerFields = new List<string>();
@@ -327,6 +328,12 @@ public class Query
     public Query Where(string where, params object[]? args)
     {
         _query = args != null ? _query.Where(where, args) : _query.Where(where);
+        return this;
+    }
+
+    public Query Contains(string contains, params object[] args)
+    {
+        _query = _query.Contains(args, contains);
         return this;
     }
 
