@@ -40,24 +40,24 @@ namespace Xams.Core.Base
         where TRole : Role
         where TSetting : Setting, new()
     {
-        public IQueryable<User> UsersBase => Set<User>();
-        public IQueryable<Role> RolesBase => Set<Role>();
-        public IQueryable<Team> TeamsBase => Set<Team>();
-        public IQueryable<Setting> SettingsBase => Set<Setting>();
-        public IQueryable<Permission> PermissionsBase => Set<Permission>();
-        public IQueryable<TeamUser<Team, User>> TeamUsersBase => Set<TeamUser<Team, User>>();
-        public IQueryable<TeamRole<Team, Role>> TeamRolesBase => Set<TeamRole<Team, Role>>();
-        public IQueryable<RolePermission<Role>> RolePermissionsBase => Set<RolePermission<Role>>();
-        public IQueryable<UserRole<User, Role>> UserRolesBase => Set<UserRole<User, Role>>();
-        public IQueryable<Option> OptionsBase => Set<Option>();
-        public IQueryable<Entities.System> SystemsBase => Set<Entities.System>();
-        public IQueryable<Server> ServersBase => Set<Server>();
-        public IQueryable<Job> JobsBase => Set<Job>();
-        public IQueryable<JobHistory> JobHistoriesBase => Set<JobHistory>();
-        public IQueryable<Audit> AuditsBase => Set<Audit>();
-        public IQueryable<AuditField> AuditFieldsBase => Set<AuditField>();
-        public IQueryable<AuditHistory> AuditHistoriesBase => Set<AuditHistory>();
-        public IQueryable<AuditHistoryDetail> AuditHistoryDetailsBase => Set<AuditHistoryDetail>();
+        public IQueryable<User> UsersBase => Set<User>().IgnoreQueryFilters();
+        public IQueryable<Role> RolesBase => Set<Role>().IgnoreQueryFilters();
+        public IQueryable<Team> TeamsBase => Set<Team>().IgnoreQueryFilters();
+        public IQueryable<Setting> SettingsBase => Set<Setting>().IgnoreQueryFilters();
+        public IQueryable<Permission> PermissionsBase => Set<Permission>().IgnoreQueryFilters();
+        public IQueryable<TeamUser<Team, User>> TeamUsersBase => Set<TeamUser<Team, User>>().IgnoreQueryFilters();
+        public IQueryable<TeamRole<Team, Role>> TeamRolesBase => Set<TeamRole<Team, Role>>().IgnoreQueryFilters();
+        public IQueryable<RolePermission<Role>> RolePermissionsBase => Set<RolePermission<Role>>().IgnoreQueryFilters();
+        public IQueryable<UserRole<User, Role>> UserRolesBase => Set<UserRole<User, Role>>().IgnoreQueryFilters();
+        public IQueryable<Option> OptionsBase => Set<Option>().IgnoreQueryFilters();
+        public IQueryable<Entities.System> SystemsBase => Set<Entities.System>().IgnoreQueryFilters();
+        public IQueryable<Server> ServersBase => Set<Server>().IgnoreQueryFilters();
+        public IQueryable<Job> JobsBase => Set<Job>().IgnoreQueryFilters();
+        public IQueryable<JobHistory> JobHistoriesBase => Set<JobHistory>().IgnoreQueryFilters();
+        public IQueryable<Audit> AuditsBase => Set<Audit>().IgnoreQueryFilters();
+        public IQueryable<AuditField> AuditFieldsBase => Set<AuditField>().IgnoreQueryFilters();
+        public IQueryable<AuditHistory> AuditHistoriesBase => Set<AuditHistory>().IgnoreQueryFilters();
+        public IQueryable<AuditHistoryDetail> AuditHistoryDetailsBase => Set<AuditHistoryDetail>().IgnoreQueryFilters();
 
         public DbSet<TUser> Users { get; set; } = null!;
         public DbSet<TRole> Roles { get; set; } = null!;
