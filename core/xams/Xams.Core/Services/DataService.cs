@@ -370,17 +370,6 @@ namespace Xams.Core.Services
 
                 return response;
             }
-            catch (ServiceException ex)
-            {
-                Logger.LogError(ex, "Action Failed: {Message}", ex.Message);
-                await _dataRepository.RollbackTransaction();
-                return new Response<object?>()
-                {
-                    Succeeded = false,
-                    FriendlyMessage = ex.Message,
-                    LogMessage = ex.logMessage
-                };
-            }
             catch (Exception e)
             {
                 Logger.LogError(e, "Action Failed: {Message}", e.Message);
@@ -826,7 +815,7 @@ namespace Xams.Core.Services
             if (!response.Succeeded)
             {
                 // This was likely called from within a Service Logic, so we need to throw an exception if it fails
-                throw new ServiceException(response.FriendlyMessage ?? "", response.LogMessage ?? "");
+                throw new Exception(response.FriendlyMessage);
             }
 
             return response;
