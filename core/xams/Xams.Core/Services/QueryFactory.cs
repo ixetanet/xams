@@ -13,11 +13,11 @@ namespace Xams.Core.Services;
 
 public class QueryFactory
 {
-    private readonly BaseDbContext _dbContext;
+    private readonly IXamsDbContext _dbContext;
     private readonly QueryOptions _queryOptions;
     private readonly ReadInput _readInput;
 
-    public QueryFactory(BaseDbContext dbContext, QueryOptions queryOptions, ReadInput readInput)
+    public QueryFactory(IXamsDbContext dbContext, QueryOptions queryOptions, ReadInput readInput)
     {
         _dbContext = dbContext;
         _queryOptions = queryOptions;

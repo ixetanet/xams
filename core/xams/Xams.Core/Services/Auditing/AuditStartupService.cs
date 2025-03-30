@@ -22,7 +22,7 @@ public class AuditStartupService : IServiceStartup
             return response;
         }
 
-        response = await CacheAuditRecords(startupContext.DataService.GetDbContext<BaseDbContext>());
+        response = await CacheAuditRecords(startupContext.DataService.GetDbContext<IXamsDbContext>());
         if (!response.Succeeded)
         {
             return response;
@@ -38,16 +38,16 @@ public class AuditStartupService : IServiceStartup
         try
         {
             Console.WriteLine($"Creating Audit Data");
-            var db = context.DataService.GetDbContext<BaseDbContext>();
+            var db = context.DataService.GetDbContext<IXamsDbContext>();
 
             // Query for all the audit and audit field records
             var auditMetadata = Cache.Instance.GetTableMetadata("Audit");
-            var auditLinq = new DynamicLinq<BaseDbContext>(db, auditMetadata.Type);
+            var auditLinq = new DynamicLinq(db, auditMetadata.Type);
             var auditQuery = auditLinq.Query;
             var audits = (await auditQuery.ToDynamicListAsync()).ToList<object>();
 
             var auditFieldMetadata = Cache.Instance.GetTableMetadata("AuditField");
-            var auditFieldLinq = new DynamicLinq<BaseDbContext>(db, auditFieldMetadata.Type);
+            var auditFieldLinq = new DynamicLinq(db, auditFieldMetadata.Type);
             var auditFieldQuery = auditFieldLinq.Query;
             var auditFields = (await auditFieldQuery.ToDynamicListAsync()).ToList<object>();
 
@@ -174,12 +174,12 @@ public class AuditStartupService : IServiceStartup
         return ServiceResult.Success();
     }
 
-    public static async Task<Response<object?>> CacheAuditRecords(BaseDbContext db)
+    public static async Task<Response<object?>> CacheAuditRecords(IXamsDbContext db)
     {
         // Load last refresh time
         bool refreshCache = false;
         var systemType = Cache.Instance.GetTableMetadata("System").Type;
-        var dynamicLinq = new DynamicLinq<BaseDbContext>(db, systemType);
+        var dynamicLinq = new DynamicLinq(db, systemType);
         var query = dynamicLinq.Query.Where("Name == @0", "AuditLastRefresh");
         var systemResults = await query.ToDynamicListAsync();
         if (!systemResults.Any())
@@ -215,9 +215,9 @@ public class AuditStartupService : IServiceStartup
         // Load Audit Info
         var auditType = Cache.Instance.GetTableMetadata("Audit").Type;
         var auditFieldType = Cache.Instance.GetTableMetadata("AuditField").Type;
-        var audits = (await DynamicLinq<BaseDbContext>.FindAll(db, auditType))
+        var audits = (await DynamicLinq.FindAll(db, auditType))
             .Select(x => (object)x).ToList();
-        var auditFields = (await DynamicLinq<BaseDbContext>.FindAll(db, auditFieldType))
+        var auditFields = (await DynamicLinq.FindAll(db, auditFieldType))
             .Select(x => (object)x).ToList();
         Cache.Instance.IsAuditEnabled =
             bool.Parse(await Queries.GetCreateSetting(db, AuditEnabledSetting, "false") ?? "false");
@@ -225,7 +225,7 @@ public class AuditStartupService : IServiceStartup
         foreach (var audit in audits)
         {
             var tableName = audit.GetValue<string>("Name");
-            var id = audit.GetIdValue(auditType);
+            var id = audit.GetId();
             // Check if the ID is a Guid
             if (!(id is Guid guidId))
             {
@@ -268,7 +268,7 @@ public class AuditStartupService : IServiceStartup
 
     public async Task GetAuditSettings(StartupContext context)
     {
-        var db = context.DataService.GetDbContext<BaseDbContext>();
+        var db = context.DataService.GetDbContext<IXamsDbContext>();
         int retentionDays = int.Parse(await Queries.GetCreateSetting(db, AuditRetentionSetting, "30") ?? "30");
         Cache.Instance.AuditHistoryRetentionDays = retentionDays;
         bool auditEnabled = bool.Parse(await Queries.GetCreateSetting(db, AuditEnabledSetting, "false") ?? "false");

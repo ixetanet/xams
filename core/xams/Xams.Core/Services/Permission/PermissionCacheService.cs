@@ -28,7 +28,7 @@ public class PermissionCacheService : IBulkService
             return ServiceResult.Success();
         }
         
-        var db = context.GetDbContext<BaseDbContext>();
+        var db = context.GetDbContext<IXamsDbContext>();
         db.ChangeTracker.Clear();
 
         // Only track\communicate changes that will affect permission assignments
@@ -140,7 +140,7 @@ public class PermissionCacheService : IBulkService
     private void CreateSystemRecord(BulkServiceContext context, string value)
     {
         var systemMetadata = Cache.Instance.GetTableMetadata("System");
-        var db = context.GetDbContext<BaseDbContext>();
+        var db = context.GetDbContext<IXamsDbContext>();
         Dictionary<string, dynamic> systemRecord = new Dictionary<string, dynamic>();
         systemRecord["SystemId"] = Guid.NewGuid();
         systemRecord["Name"] = $"SECURITY_CACHE";

@@ -7,7 +7,7 @@ namespace Xams.Core.Utils;
 
 public class DependencyFinder
 {
-    public static List<Dependency> GetDependencies(Type targetType, DbContext dbContext, int depth = 0, Dependency? parent = null)
+    public static List<Dependency> GetDependencies(Type targetType, IXamsDbContext dbContext, int depth = 0, Dependency? parent = null)
     {
         var result = new List<Dependency>();
         var allEntities = Cache.Instance.TableMetadata.Select(x => x.Value.Type).ToList();
@@ -78,7 +78,7 @@ public class DependencyFinder
     {
         public required object Id { get; set; } 
         public required List<Dependency> Dependencies { get; set; }
-        public required Func<BaseDbContext> DbContextFactory { get; set; }
+        public required Func<IXamsDbContext> DbContextFactory { get; set; }
     }
 
     public class PostOrderTraversalContext
@@ -96,23 +96,22 @@ public class DependencyFinder
             context = new PostOrderTraversalContext()
             {
                 Id = settings.Id,
-                Depth = 0,
                 Dependencies = settings.Dependencies,
                 RecordInfoDict = new ConcurrentDictionary<object, RecordInfo>(),
+                Depth = 0
             };
         }
-
-        await Parallel.ForEachAsync(context.Dependencies, async (dependency, token) =>
+        
+        foreach (var dependency in context.Dependencies)
         {
             string primaryKey = Cache.Instance.GetTableMetadata(dependency.Type.Name).PrimaryKey;
             var dbContext = settings.DbContextFactory();
-            DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(dbContext, dependency.Type);
+            DynamicLinq dynamicLinq = new DynamicLinq(dbContext, dependency.Type);
             IQueryable query = dynamicLinq.Query
                 .Where($"{dependency.PropertyName} == @0", context.Id)
                 .Select($"new({primaryKey})");
-            List<dynamic> queryResults = await query.ToDynamicListAsync(cancellationToken: token);
-            await dbContext.DisposeAsync();
-        
+            List<dynamic> queryResults = await query.ToDynamicListAsync();
+
             foreach (dynamic queryResult in queryResults)
             {
                 Type resultType = queryResult.GetType();
@@ -136,18 +135,18 @@ public class DependencyFinder
                     value.Count++;
                 }
                 
-                if (dependency is { IsNullable: false, Dependencies: not null } && dependency.Dependencies.Any())
+                if (dependency is { Dependencies: not null } && dependency.Dependencies.Any())
                 {
                     await GetPostOrderTraversal(settings, new PostOrderTraversalContext()
                     {
-                        Dependencies = dependency.Dependencies,
                         Id = resultId,
                         Depth = context.Depth + 1,
+                        Dependencies = dependency.Dependencies,
                         RecordInfoDict = context.RecordInfoDict,
                     });    
                 }
             }
-        });
+        }
 
         return context.RecordInfoDict;
     }

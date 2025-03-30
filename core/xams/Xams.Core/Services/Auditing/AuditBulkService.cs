@@ -30,7 +30,7 @@ public class AuditBulkService : IBulkService
         if (auditUpdates || auditFieldUpdates)
         {
             var dataService = context.DataService;
-            var db = dataService.GetDbContext<BaseDbContext>();
+            var db = dataService.GetDbContext<IXamsDbContext>();
             await Queries.UpdateSystemRecord(db, "AuditLastRefresh", DateTime.UtcNow.ToString("O"));
             await AuditStartupService.CacheAuditRecords(db);
         }

@@ -6,6 +6,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Xams.Core.Attributes;
+using Xams.Core.Base;
 using Xams.Core.Dtos;
 using Xams.Core.Dtos.Data;
 
@@ -137,6 +138,7 @@ namespace Xams.Core.Utils
 
             return entity;
         }
+
         public static Response<object?> GetEntity(Input input, DataOperation dataOperation, out string errorMessage)
         {
             string tableName = input.tableName ?? string.Empty;
@@ -472,7 +474,6 @@ namespace Xams.Core.Utils
                 Entity = entity
             };
         }
-        
 
 
         public static DbContext? DbContext;
@@ -502,10 +503,10 @@ namespace Xams.Core.Utils
             {
                 return cachedResult;
             }
-
+            
             // Create an instance of the DbContext and look up the table info
             var result = LookupTableNameFromContext(entityType, contextType);
-
+            
             // Cache the result for future lookups
             TableNameCache[cacheKey] = result;
 
@@ -532,30 +533,63 @@ namespace Xams.Core.Utils
             {
                 DbContext = CreateDbContextInstance(contextType);
             }
-            
-            // Get the IEntityType from the model
+        
+            // Get the IEntityType from the model - try direct lookup first
             IEntityType entityTypeMetadata = DbContext.Model.FindEntityType(entityType);
-
+        
+            // If not found directly, try finding it through base or derived types
             if (entityTypeMetadata == null)
+            {
+                // Look for any entity type that is assignable from or to the requested type
+                entityTypeMetadata = DbContext.Model.GetEntityTypes()
+                    .FirstOrDefault(e =>
+                        // Is the model type derived from our requested type?
+                        entityType.IsAssignableFrom(e.ClrType) ||
+                        // Is our requested type derived from the model type?
+                        e.ClrType.IsAssignableFrom(entityType));
+        
+                if (entityTypeMetadata == null)
+                {
+                    // If still not found, look for a DbSet with a compatible generic type
+                    var dbSetProps = contextType.GetProperties()
+                        .Where(p =>
+                            p.PropertyType.IsGenericType &&
+                            p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>) &&
+                            (entityType.IsAssignableFrom(p.PropertyType.GetGenericArguments()[0]) ||
+                             p.PropertyType.GetGenericArguments()[0].IsAssignableFrom(entityType)))
+                        .ToList();
+        
+                    if (dbSetProps.Any())
+                    {
+                        var dbSetProp = dbSetProps.First();
+                        var dbSetEntityType = dbSetProp.PropertyType.GetGenericArguments()[0];
+                        entityTypeMetadata = DbContext.Model.FindEntityType(dbSetEntityType);
+                    }
+                }
+            }
+        
+            if (entityTypeMetadata == null)
+            {
                 throw new ArgumentException(
                     $"The type {entityType.Name} is not mapped as an entity in the provided DbContext.");
-
+            }
+        
             // Get the relational entity type annotation that contains table mapping info
             var relationalEntityType = entityTypeMetadata.GetAnnotations()
                 .FirstOrDefault(a => a.Name == "Relational:TableName");
-
+        
             // Check if this is mapped to a table or a view
             bool isView = entityTypeMetadata.GetAnnotations()
                 .Any(a => a.Name == "Relational:ViewName" && a.Value != null);
-
+        
             string tableName = null;
-
+        
             // If it's mapped to a view, get the view name
             if (isView)
             {
                 var viewAnnotation = entityTypeMetadata.GetAnnotations()
                     .FirstOrDefault(a => a.Name == "Relational:ViewName");
-
+        
                 tableName = viewAnnotation?.Value?.ToString();
             }
             // Otherwise get the table name
@@ -563,7 +597,7 @@ namespace Xams.Core.Utils
             {
                 // Try to get from the annotation value
                 tableName = relationalEntityType?.Value?.ToString();
-
+        
                 // If no explicit mapping is found, EF Core uses the DbSet property name or the class name
                 if (string.IsNullOrEmpty(tableName))
                 {
@@ -572,8 +606,10 @@ namespace Xams.Core.Utils
                         .Where(p =>
                             p.PropertyType.IsGenericType &&
                             p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>) &&
-                            p.PropertyType.GetGenericArguments()[0] == entityType);
-
+                            (p.PropertyType.GetGenericArguments()[0] == entityTypeMetadata.ClrType ||
+                             p.PropertyType.GetGenericArguments()[0].IsAssignableFrom(entityTypeMetadata.ClrType) ||
+                             entityTypeMetadata.ClrType.IsAssignableFrom(p.PropertyType.GetGenericArguments()[0])));
+        
                     if (dbSetProps.Any())
                     {
                         tableName = dbSetProps.First().Name;
@@ -581,29 +617,30 @@ namespace Xams.Core.Utils
                     else
                     {
                         // Fall back to the entity class name
-                        tableName = entityType.Name;
+                        tableName = entityTypeMetadata.ClrType.Name;
                     }
                 }
             }
-
+        
             // Get the schema - either explicit or default
             var schemaAnnotation = entityTypeMetadata.GetAnnotations()
                 .FirstOrDefault(a => a.Name == "Relational:Schema");
-
+        
             string schema = schemaAnnotation?.Value?.ToString();
-
+        
             // If no schema was explicitly set, check for default schema
             if (string.IsNullOrEmpty(schema))
             {
                 var defaultSchemaAnnotation = DbContext.Model.GetAnnotations()
                     .FirstOrDefault(a => a.Name == "Relational:DefaultSchema");
-
+        
                 schema = defaultSchemaAnnotation?.Value?.ToString() ?? "dbo"; // Default to dbo if no schema specified
             }
-
+        
             return (Schema: schema, TableName: tableName);
         }
-
+        
+        
         /// <summary>
         /// Creates an instance of the DbContext using reflection
         /// </summary>
@@ -618,27 +655,27 @@ namespace Xams.Core.Utils
                     // Create DbContextOptions using DbContextOptionsBuilder
                     var optionsBuilderType = typeof(DbContextOptionsBuilder<>).MakeGenericType(contextType);
                     var optionsBuilder = Activator.CreateInstance(optionsBuilderType);
-
+        
                     // Use UseInMemoryDatabase to create a functional context without real DB connection
                     var useInMemoryMethod = optionsBuilderType.GetMethod("UseInMemoryDatabase",
                         new[] { typeof(string) });
                     useInMemoryMethod.Invoke(optionsBuilder, new object[] { "TemporaryInMemoryDbForTableNameLookup" });
-
+        
                     // Get the Options property from the builder
                     var optionsProperty = optionsBuilderType.GetProperty("Options");
                     var options = optionsProperty.GetValue(optionsBuilder);
-
+        
                     // Create context with options
                     return (DbContext)Activator.CreateInstance(contextType, options);
                 }
-
+        
                 // Try to find a parameterless constructor as fallback
                 var defaultConstructor = contextType.GetConstructor(Type.EmptyTypes);
                 if (defaultConstructor != null)
                 {
                     return (DbContext)Activator.CreateInstance(contextType);
                 }
-
+        
                 throw new InvalidOperationException(
                     $"Could not create an instance of {contextType.Name}. " +
                     "Ensure it has either a parameterless constructor or a constructor that accepts DbContextOptions.");

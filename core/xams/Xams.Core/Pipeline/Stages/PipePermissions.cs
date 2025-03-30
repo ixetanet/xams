@@ -163,10 +163,10 @@ public class PipePermissions : BasePipelineStage
 
         if (owningUserId != null)
         {
-            Response<ReadOutput> owningUserResponse =
+            Response<object?> owningUserResponse =
                 await context.DataRepository.Find("User", owningUserId.Value, false);
 
-            var userRecord = owningUserResponse.Data?.results[0];
+            var userRecord = owningUserResponse.Data;
             if (userRecord == null)
             {
                 return new Response<T>()

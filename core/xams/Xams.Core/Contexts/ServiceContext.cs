@@ -66,7 +66,7 @@ namespace Xams.Core.Contexts
         public object GetId()
         {
             if (Entity == null) throw new Exception("Entity is null. Cannot get Id.");
-            return Entity.GetIdValue(Cache.Instance.GetTableMetadata(Entity.GetType().Name).Type);
+            return Entity.GetId();
         }
 
         public T GetEntity<T>() where T : class

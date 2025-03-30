@@ -25,7 +25,7 @@ public class TABLE_ImportTemplate : IServiceAction
         }
         
         string tableName = context.Parameters["tableName"].GetString()!;
-        var db = context.DataRepository.GetDbContext<BaseDbContext>();
+        var db = context.DataRepository.GetDbContext<IXamsDbContext>();
         var dbContextType = Cache.Instance.GetTableMetadata(tableName);
 
         if (dbContextType == null)

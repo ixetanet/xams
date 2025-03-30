@@ -25,7 +25,7 @@ public class TABLE_ImportData : IServiceAction
             return ServiceResult.Error($"Data Import requires an operation");
         }
         
-        var db = context.DataRepository.GetDbContext<BaseDbContext>();
+        var db = context.DataRepository.GetDbContext<IXamsDbContext>();
         string tableName = context.Parameters["tableName"].GetString()!;
         string operation = context.Parameters["operation"].GetString()!;
         
@@ -114,7 +114,7 @@ public class TABLE_ImportData : IServiceAction
                         errors.Add($"Invalid primary key value {primaryKeyValue} in row {row.RowNumber()}, column {row.Cell(primaryKeyColumn).Address}");
                         continue;
                     }
-                    DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(db, tableType);
+                    DynamicLinq dynamicLinq = new DynamicLinq(db, tableType);
                     record = (await dynamicLinq.Query.Where($"{tableMetadata.PrimaryKey} == @0", primaryKeyGuid)
                         .ToDynamicArrayAsync()).FirstOrDefault();
                     if (record != null)
@@ -191,7 +191,7 @@ public class TABLE_ImportData : IServiceAction
                             lookupType = nameProperty.PropertyType;
                         }
                         
-                        DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(db, lookupType);
+                        DynamicLinq dynamicLinq = new DynamicLinq(db, lookupType);
                         var lookupRecord = (await dynamicLinq.Query.Where($"{lookupType.Name}Id == @0", lookupId)
                             .ToDynamicListAsync()).FirstOrDefault();
                         if (lookupRecord == null)
@@ -245,7 +245,7 @@ public class TABLE_ImportData : IServiceAction
                     // If this is an "Option" add the option filter
                     UIOptionAttribute? uiOptionAttribute = idProperty.GetCustomAttribute(typeof(UIOptionAttribute)) as UIOptionAttribute;
                     
-                    DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(db, lookupType);
+                    DynamicLinq dynamicLinq = new DynamicLinq(db, lookupType);
                     IQueryable query = dynamicLinq.Query;
                     query = query.Where($"{lookupNameField} == @0", value);
                     if (uiOptionAttribute != null)

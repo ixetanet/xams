@@ -6,18 +6,18 @@ namespace Xams.Core.Repositories
 {
     public class MetadataRepository
     {
-        private Type _dataContextType = typeof(BaseDbContext);
-        private BaseDbContext? _dataContext;
+        private Type _dataContextType = typeof(IXamsDbContext);
+        private IXamsDbContext? _dataContext;
 
         public MetadataRepository(Type dataContext)
         {
             _dataContextType = dataContext;
-            _dataContext = (BaseDbContext?)Activator.CreateInstance(_dataContextType);
+            _dataContext = (IXamsDbContext?)Activator.CreateInstance(_dataContextType);
         }
 
-        public BaseDbContext? GetDataContext()
+        public IXamsDbContext? GetDataContext()
         {
-            return (BaseDbContext?)Activator.CreateInstance(_dataContextType);
+            return (IXamsDbContext?)Activator.CreateInstance(_dataContextType);
         }
 
         public async Task<Response<object?>> Metadata(MetadataInput metadataInput, Guid userId)

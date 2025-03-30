@@ -27,7 +27,7 @@ public class SettingService : IServiceLogic
             settingName = context.GetPreEntity<object>().GetValue<string?>("Name");
         }
         
-        var db = context.GetDbContext<BaseDbContext>();
+        var db = context.GetDbContext<IXamsDbContext>();
         string[] integerSettings =
         [
             JobStartupService.SettingName, AuditStartupService.AuditRetentionSetting,

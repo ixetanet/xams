@@ -2,23 +2,24 @@ using System.Collections.Concurrent;
 using System.Linq.Dynamic.Core;
 using System.Runtime.InteropServices.JavaScript;
 using Microsoft.EntityFrameworkCore;
+using Xams.Core.Base;
 
 namespace Xams.Core.Utils
 {
-    public class DynamicLinq<T> where T : DbContext
+    public class DynamicLinq
     {
         public string PrimaryKey { get; private set; } = null!;
         public IQueryable Query { get; private set; } = null!;
         public object DbSet { get; private set; } = null!;
         public Type TargetType { get; private set; }
     
-        public DynamicLinq(T db, Type entity)
+        public DynamicLinq(IXamsDbContext db, Type entity)
         {
             TargetType = entity;
             OnCreate(db);
         }
     
-        private void OnCreate(T db)
+        private void OnCreate(IXamsDbContext db)
         {
             var dbSetProperty = db.GetType()
                 .GetProperties()
@@ -35,12 +36,12 @@ namespace Xams.Core.Utils
             DbSet = dbSetProperty.GetValue(db)!;
             Query = (IQueryable)DbSet;
 
-            PrimaryKey = Cache.Instance.GetTableMetadata(EntityUtil.GetTableName(TargetType, db.GetType()).TableName).PrimaryKey;
+            PrimaryKey = TargetType.EntityMetadata().PrimaryKey;
         }
         
-        public static async Task<List<dynamic>> BatchRequest(T db, Type entity, List<object> ids, int batchSize = 500)
+        public static async Task<List<dynamic>> BatchRequest(IXamsDbContext db, Type entity, List<object> ids, int batchSize = 500)
         {
-            var dynamicLinq = new DynamicLinq<T>(db, entity);
+            var dynamicLinq = new DynamicLinq(db, entity);
             var query = dynamicLinq.Query;
             var idList = ids.ToList();
             var results = new List<object>();
@@ -48,7 +49,7 @@ namespace Xams.Core.Utils
             {
                 var batch = idList.Take(batchSize).ToArray();
                 idList = idList.Skip(batchSize).ToList();
-                query = query.WhereIdIn(batch, dynamicLinq.PrimaryKey);
+                query = query.Contains(batch, dynamicLinq.PrimaryKey);
                 results.AddRange(await query.ToDynamicListAsync());
             }
             return results;
@@ -62,7 +63,7 @@ namespace Xams.Core.Utils
         /// <param name="ids"></param>
         /// <param name="batchSize"></param>
         /// <returns></returns>
-        public static async Task<ConcurrentDictionary<object, dynamic>> BatchRequestThreaded(Func<T> dbFactory, Type entity, List<object> ids, int batchSize = 500)
+        public static async Task<ConcurrentDictionary<object, dynamic>> BatchRequestThreaded(Func<IXamsDbContext> dbFactory, Type entity, List<object> ids, int batchSize = 500)
         {
             var results = new ConcurrentDictionary<object, dynamic>();
             var idList = ids.ToList();
@@ -78,12 +79,12 @@ namespace Xams.Core.Utils
             await Parallel.ForEachAsync(batches, async (batch, token) =>
             {
                 var db = dbFactory();
-                var dLinq = new DynamicLinq<T>(db, entity);
-                var query = dLinq.Query.WhereIdIn(batch, dLinq.PrimaryKey);
+                var dLinq = new DynamicLinq(db, entity);
+                var query = dLinq.Query.Contains(batch, dLinq.PrimaryKey);
                 var entities = await query.ToDynamicListAsync(cancellationToken: token);
                 foreach (var ent in entities)
                 {
-                    results.TryAdd(((object)ent).GetIdValue(entity), ent);
+                    results.TryAdd(((object)ent).GetId(), ent);
                 }
             });
 
@@ -91,17 +92,17 @@ namespace Xams.Core.Utils
         }
         
         
-        public static async Task<dynamic?> Find(T db, Type entity, Guid id)
+        public static async Task<dynamic?> Find(IXamsDbContext db, Type entity, Guid id)
         {
-            var dynamicLinq = new DynamicLinq<T>(db, entity);
+            var dynamicLinq = new DynamicLinq(db, entity);
             var query = dynamicLinq.Query; 
             query = query.Where($"{dynamicLinq.PrimaryKey} == @0", id);
             return (await query.ToDynamicListAsync()).FirstOrDefault();
         }
         
-        public static async Task<List<dynamic>> FindAll(T db, Type entity)
+        public static async Task<List<dynamic>> FindAll(IXamsDbContext db, Type entity)
         {
-            var dynamicLinq = new DynamicLinq<T>(db, entity);
+            var dynamicLinq = new DynamicLinq(db, entity);
             return await dynamicLinq.Query.ToDynamicListAsync();
         }
     

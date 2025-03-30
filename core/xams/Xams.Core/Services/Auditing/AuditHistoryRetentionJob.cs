@@ -21,10 +21,10 @@ public class AuditHistoryRetentionJob : IServiceJob
         }
         
         Console.WriteLine("Deleting Audit History outside of retention period");
-        var db = context.GetDbContext<BaseDbContext>();
+        var db = context.GetDbContext<IXamsDbContext>();
         Type auditHistoryType = Cache.Instance.GetTableMetadata("AuditHistory").Type;
         
-        DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(db, auditHistoryType);
+        DynamicLinq dynamicLinq = new DynamicLinq(db, auditHistoryType);
         var query = dynamicLinq.Query.Where("CreatedDate < @0", DateTime.UtcNow.AddDays(-Cache.Instance.AuditHistoryRetentionDays));
         var results = await query.ToDynamicArrayAsync();
         

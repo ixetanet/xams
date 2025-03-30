@@ -160,7 +160,7 @@ public class BaseServiceContext(PipelineContext pipelineContext)
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public T GetDbContext<T>() where T : BaseDbContext
+    public T GetDbContext<T>() where T : IXamsDbContext
     {
         return DataRepository.GetDbContext<T>();
     }
@@ -172,7 +172,7 @@ public class BaseServiceContext(PipelineContext pipelineContext)
     /// </summary>
     /// <typeparam name="T">DbContext Type</typeparam>
     /// <returns></returns>
-    public T CreateNewDbContext<T>() where T : BaseDbContext
+    public T CreateNewDbContext<T>() where T : IXamsDbContext
     {
         return DataRepository.CreateNewDbContext<T>();
     }

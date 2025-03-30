@@ -33,15 +33,15 @@ namespace Xams.Core.Actions
                         FriendlyMessage = "Failed to parse file"
                     };
                 }
-                var dataContextUpsert = context.DataRepository.GetDbContext<BaseDbContext>();
+                var dataContextUpsert = context.DataRepository.GetDbContext<IXamsDbContext>();
                 foreach (var import in imports)
                 {
-                    var dataContext = context.DataRepository.GetDbContext<BaseDbContext>();
+                    var dataContext = context.DataRepository.GetDbContext<IXamsDbContext>();
                     dataContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                     var dbContextType = Cache.Instance.GetTableMetadata(import.tableName);
                     
                     // Retrieve all the id's from the table
-                    DynamicLinq<BaseDbContext> dynamicLinq = new DynamicLinq<BaseDbContext>(dataContext, dbContextType.Type);
+                    DynamicLinq dynamicLinq = new DynamicLinq(dataContext, dbContextType.Type);
                     IQueryable query = dynamicLinq.Query;
                     
                     // If TeamRole, UserRole, or TeamUser match on the joining tables instead of the Primary Key

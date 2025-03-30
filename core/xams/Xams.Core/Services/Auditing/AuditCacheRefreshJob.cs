@@ -19,7 +19,7 @@ public class AuditCacheRefreshJob : IServiceJob
         }
         
         Console.WriteLine("Refreshing Audit Records Cache");
-        await AuditStartupService.CacheAuditRecords(context.GetDbContext<BaseDbContext>());
+        await AuditStartupService.CacheAuditRecords(context.GetDbContext<IXamsDbContext>());
 
         return ServiceResult.Success();
     }

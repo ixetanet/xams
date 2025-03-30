@@ -38,13 +38,13 @@ public class ADMIN_TriggerJob : IServiceAction
         }
         
         var job = Cache.Instance.ServiceJobs[jobName];
-        var db = context.GetDbContext<BaseDbContext>();
+        var db = context.GetDbContext<IXamsDbContext>();
 
         // Execute on the first server alphabetically
         if (job.ExecuteJobOn is ExecuteJobOn.One && string.IsNullOrEmpty(job.ServerName))
         {
-            DynamicLinq<BaseDbContext> dLinq =
-                new DynamicLinq<BaseDbContext>(db, Cache.Instance.GetTableMetadata("Server").Type);
+            DynamicLinq dLinq =
+                new DynamicLinq(db, Cache.Instance.GetTableMetadata("Server").Type);
             IQueryable query = dLinq.Query;
             query = query.Take(1).OrderBy("Name asc").Where("LastPing > @0", DateTime.UtcNow.AddSeconds(-30));
             var server = (await query.ToDynamicListAsync()).FirstOrDefault();
@@ -62,8 +62,8 @@ public class ADMIN_TriggerJob : IServiceAction
         // Execute on a specific server
         else if (job.ExecuteJobOn is ExecuteJobOn.One && !string.IsNullOrEmpty(job.ServerName))
         {
-            DynamicLinq<BaseDbContext> dLinq =
-                new DynamicLinq<BaseDbContext>(db, Cache.Instance.GetTableMetadata("Server").Type);
+            DynamicLinq dLinq =
+                new DynamicLinq(db, Cache.Instance.GetTableMetadata("Server").Type);
             IQueryable query = dLinq.Query;
             query = query.Take(1).OrderBy("Name asc")
                 .Where("LastPing > @0", DateTime.UtcNow.AddSeconds(-30))
@@ -83,8 +83,8 @@ public class ADMIN_TriggerJob : IServiceAction
         // Execute on all servers
         else
         {
-            DynamicLinq<BaseDbContext> dLinq =
-                new DynamicLinq<BaseDbContext>(db, Cache.Instance.GetTableMetadata("Server").Type);
+            DynamicLinq dLinq =
+                new DynamicLinq(db, Cache.Instance.GetTableMetadata("Server").Type);
             IQueryable query = dLinq.Query;
             query = query.Where("LastPing > @0", DateTime.UtcNow.AddSeconds(-30));
             var servers = await query.ToDynamicListAsync();

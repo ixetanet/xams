@@ -522,7 +522,7 @@ namespace Xams.Core
             serverRecord["ServerId"] = cache.ServerId;
             serverRecord["LastPing"] = DateTime.UtcNow;
             var serverEntity = EntityUtil.DictionaryToEntity(cache.GetTableMetadata("Server").Type, serverRecord);
-            using (var db = dataService.GetDataRepository().CreateNewDbContext<BaseDbContext>())
+            using (var db = dataService.GetDataRepository().CreateNewDbContext())
             {
                 db.Add(serverEntity);
                 db.SaveChanges();
@@ -597,7 +597,11 @@ namespace Xams.Core
 
         public MetadataInfo GetTableMetadata(Type entityType)
         {
-            return TableTypeMetadata[entityType];
+            if (!TableTypeMetadata.TryGetValue(entityType, out var metadata))
+            {
+                throw new Exception($"Table {entityType.Name} not found in metadata");
+            }
+            return metadata;
         }
 
         private void ValidateSystemEntities()
@@ -623,11 +627,11 @@ namespace Xams.Core
                         throw new Exception($"Property {entityProperty.Name} not found in {entity.Name}");
                     }
 
-                    if (TableMetadata[entity.Name].Type.GetProperty(entityProperty.Name)!.PropertyType.Name !=
-                        entityProperty.Type)
-                    {
-                        throw new Exception($"Property {entityProperty.Name} type mismatch in {entity.Name}");
-                    }
+                    // if (TableMetadata[entity.Name].Type.GetProperty(entityProperty.Name)!.PropertyType.Name !=
+                    //     entityProperty.Type)
+                    // {
+                    //     throw new Exception($"Property {entityProperty.Name} type mismatch in {entity.Name}");
+                    // }
                 }
             }
         }
