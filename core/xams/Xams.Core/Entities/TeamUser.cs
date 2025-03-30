@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Xams.Core.Entities;
 
 [Table("TeamUser")]
-public class TeamUser<TUser, TTeam>
+public class TeamUser<TTeam, TUser>
 where TUser : User
 where TTeam : Team
 {
