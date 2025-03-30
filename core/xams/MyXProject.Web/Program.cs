@@ -56,9 +56,9 @@ else
 }
 
 builder.Services.AddSwaggerGen();
-
-builder.Services.AddHostedService<StartupService>();
-builder.Services.AddScoped<IDataService, DataService<DataContext>>();
+builder.Services.AddXamsServices<DataContext>();
+// builder.Services.AddHostedService<StartupService>();
+// builder.Services.AddScoped<IDataService, DataService<DataContext>>();
 
 var app = builder.Build();
 
@@ -78,6 +78,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.AddXamsApi();
 
 app.MapControllers();
 

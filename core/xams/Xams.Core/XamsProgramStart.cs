@@ -84,10 +84,10 @@ namespace Xams.Core
         }
 
         public static IEndpointRouteBuilder AddXamsApi(this WebApplication app,
-            Action<AddXamsApiOptions> options)
+            Action<AddXamsApiOptions>? options = null)
         {
             var opts = new AddXamsApiOptions();
-            options.Invoke(opts);
+            options?.Invoke(opts);
 
             if (opts.UseDashboard)
             {

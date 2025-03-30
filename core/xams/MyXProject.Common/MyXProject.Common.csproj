@@ -19,6 +19,10 @@
       <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.0.1" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Entities\" />
+    </ItemGroup>
+
 
 
 
