@@ -78,7 +78,7 @@ namespace Xams.Core
         public class AddXamsApiOptions
         {
             public bool UseDashboard { get; set; }
-            public string UrlPrefix { get; set; } = "xams";
+            public string UrlPath { get; set; } = "xams";
             public bool RequireAuthorization { get; set; } = false;
             public Func<HttpContext, Task<Guid>>? GetUserId { get; set; }
         }
@@ -93,12 +93,12 @@ namespace Xams.Core
             {
                 app.UseXamsDashboard(dashOptions =>
                 {
-                    dashOptions.Path = $"/{opts.UrlPrefix}";
+                    dashOptions.Path = $"/{opts.UrlPath}";
                     dashOptions.RequireAuthorization = opts.RequireAuthorization;
                 });
             }
 
-            var group = app.MapGroup(opts.UrlPrefix);
+            var group = app.MapGroup(opts.UrlPath);
 
             var permissions = group.MapPost("permissions",
                 async (IDataService dataService, [FromBody] PermissionsInput permissionsInput,
