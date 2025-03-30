@@ -57,8 +57,6 @@ else
 
 builder.Services.AddSwaggerGen();
 builder.Services.AddXamsServices<DataContext>();
-// builder.Services.AddHostedService<StartupService>();
-// builder.Services.AddScoped<IDataService, DataService<DataContext>>();
 
 var app = builder.Build();
 
