@@ -9,6 +9,11 @@ namespace Xams.Core.Base;
 
 public interface IXamsDbContext : IDisposable
 {
+    internal IQueryable<User> UsersBase { get; }
+    internal IQueryable<Role> RolesBase { get; }
+    internal IQueryable<Team> TeamsBase { get; }
+    internal IQueryable<Setting> SettingsBase { get; }
+
     public bool SaveChangesCalledWithPendingChanges();
     DatabaseFacade Database { get; }
     ChangeTracker ChangeTracker { get; }
