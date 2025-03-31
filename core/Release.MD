@@ -1,5 +1,13 @@
 # Release Notes
 
+## 1.0.7
+
+- Core entities now internally located
+- Xams.Core now able to query core entities
+- Create Api’s from Program.cs with .AddXamsApis()
+- Serve dashboard using AddXamsApis option
+- Add services from Program.cs with .AddXamsServices()
+
 ## 1.0.6
 
 - Support for numerical and custom keys
