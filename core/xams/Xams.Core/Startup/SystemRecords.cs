@@ -32,11 +32,11 @@ namespace Xams.Core.Startup
         
             DynamicLinq dynamicLinq = new DynamicLinq(xamsDbContext, baseDbContextType.Type);
             IQueryable query = dynamicLinq.Query;
-            query = query.Where("UserId == @0", SystemUserId);
+            query = query.Where("Id == @0", SystemUserId);
             if (query.ToDynamicList().Count == 0)
             {
                 Dictionary<string, dynamic> systemUser = new();
-                systemUser["UserId"] = SystemUserId;
+                systemUser["Id"] = SystemUserId;
                 systemUser["Name"] = "SYSTEM";
                 systemUser["CreatedDate"] = DateTime.UtcNow;
                 object entity = EntityUtil.DictionaryToEntity(baseDbContextType.Type, systemUser);
@@ -54,11 +54,11 @@ namespace Xams.Core.Startup
         
             DynamicLinq dynamicLinq = new DynamicLinq(xamsDbContext, baseDbContextType.Type);
             IQueryable query = dynamicLinq.Query;
-            query = query.Where("RoleId == @0", SystemAdministratorRoleId);
+            query = query.Where("Id == @0", SystemAdministratorRoleId);
             if (query.ToDynamicList().Count == 0)
             {
                 Dictionary<string, dynamic> systemRole = new();
-                systemRole["RoleId"] = SystemAdministratorRoleId;
+                systemRole["Id"] = SystemAdministratorRoleId;
                 systemRole["Name"] = "System Administrator";
                 systemRole["CreatedDate"] = DateTime.UtcNow;
                 object entity = EntityUtil.DictionaryToEntity(baseDbContextType.Type, systemRole);
@@ -241,6 +241,7 @@ namespace Xams.Core.Startup
                     systemRolePermission["CreatedDate"] = DateTime.UtcNow;
                     object entity = EntityUtil.DictionaryToEntity(rolePermissionMetadata.Type, systemRolePermission);
                     xamsDbContext.Add(entity);
+                    await xamsDbContext.SaveChangesAsync();
                 }
             }
         
@@ -257,14 +258,15 @@ namespace Xams.Core.Startup
             // Create system administrator role for system user
             DynamicLinq dynamicLinq = new DynamicLinq(xamsDbContext, baseDbContextType.Type);
             IQueryable query = dynamicLinq.Query;
-            query = query.Where("UserRoleId == @0", SystemUserRoleId);
+            // query = query.Where("UserRoleId == @0", SystemUserRoleId);
+            query = query.Where("UserId == @0 && RoleId == @1", SystemUserId, SystemAdministratorRoleId);
             if (query.ToDynamicList().Count == 0)
             {
                 Dictionary<string, dynamic> systemUserRole = new();
-                systemUserRole["UserRoleId"] = SystemUserRoleId;
+                // systemUserRole["UserRoleId"] = SystemUserRoleId;
                 systemUserRole["UserId"] = SystemUserId;
                 systemUserRole["RoleId"] = SystemAdministratorRoleId;
-                systemUserRole["CreatedDate"] = DateTime.UtcNow;
+                // systemUserRole["CreatedDate"] = DateTime.UtcNow;
                 object entity = EntityUtil.DictionaryToEntity(baseDbContextType.Type, systemUserRole);
                 xamsDbContext.Add(entity);
                 await xamsDbContext.SaveChangesAsync();

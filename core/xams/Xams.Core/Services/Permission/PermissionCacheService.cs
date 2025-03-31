@@ -33,8 +33,8 @@ public class PermissionCacheService : IBulkService
 
         // Only track\communicate changes that will affect permission assignments
         bool saveChanges = HandlePermission(context) ||
-                           HandleDelete(context, "Role", "RoleId") || // Handle role deletes
-                           HandleDelete(context, "User", "UserId") || // Handle user deletes
+                           HandleDelete(context, "Role", "Id") || // Handle role deletes
+                           HandleDelete(context, "User", "Id") || // Handle user deletes
                            HandleDelete(context, "Team", "TeamId") || // Handle team deletes
                            HandleEntity(context, "RolePermission", "RoleId") || // Refresh all permissions for this role
                            HandleEntity(context, "UserRole", "UserId") || // Refresh all roles for this user

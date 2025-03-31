@@ -62,9 +62,9 @@ public static class PermissionCache
         ConcurrentDictionary<Guid, User> users = new();
         if (userId != null)
         {
-            query = query.Where("UserId == @0", userId.Value);
+            query = query.Where("Id == @0", userId.Value);
         }
-        query = query.Select("new (UserId, CreatedDate)");
+        query = query.Select("new (Id, CreatedDate)");
         
         var results = await query.ToDynamicListAsync();
 
@@ -76,14 +76,14 @@ public static class PermissionCache
         
         foreach (var result in results)
         {
-            users[result.UserId] = new User { CreatedDate = result.CreatedDate };
-            if (!_userRoles.ContainsKey(result.UserId))
+            users[result.Id] = new User { CreatedDate = result.CreatedDate };
+            if (!_userRoles.ContainsKey(result.Id))
             {
-                _userRoles[result.UserId] = new List<Guid>();
+                _userRoles[result.Id] = new List<Guid>();
             }
-            if (!_userTeams.ContainsKey(result.UserId))
+            if (!_userTeams.ContainsKey(result.Id))
             {
-                _userTeams[result.UserId] = new List<Guid>();
+                _userTeams[result.Id] = new List<Guid>();
             }
         }
 

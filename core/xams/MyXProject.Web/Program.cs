@@ -77,7 +77,10 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.AddXamsApi();
+app.AddXamsApi(options =>
+{
+    options.UseDashboard = true;
+});
 
 app.MapControllers();
 

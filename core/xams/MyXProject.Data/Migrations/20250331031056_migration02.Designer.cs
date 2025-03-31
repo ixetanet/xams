@@ -11,8 +11,8 @@ using MyXProject.Data;
 namespace MyXProject.Data.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20240919001858_migration04")]
-    partial class migration04
+    [Migration("20250331031056_migration02")]
+    partial class migration02
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -20,7 +20,91 @@ namespace MyXProject.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.6");
 
-            modelBuilder.Entity("MyXProject.Common.Entities.Audit", b =>
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("AspNetRoleClaims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AspNetUserClaims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
+                {
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProviderKey")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProviderDisplayName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("LoginProvider", "ProviderKey");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AspNetUserLogins", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId", "LoginProvider", "Name");
+
+                    b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("Xams.Core.Entities.Audit", b =>
                 {
                     b.Property<Guid>("AuditId")
                         .ValueGeneratedOnAdd()
@@ -50,7 +134,7 @@ namespace MyXProject.Data.Migrations
                     b.ToTable("Audit");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.AuditField", b =>
+            modelBuilder.Entity("Xams.Core.Entities.AuditField", b =>
                 {
                     b.Property<Guid>("AuditFieldId")
                         .ValueGeneratedOnAdd()
@@ -79,7 +163,7 @@ namespace MyXProject.Data.Migrations
                     b.ToTable("AuditField");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.AuditHistory", b =>
+            modelBuilder.Entity("Xams.Core.Entities.AuditHistory", b =>
                 {
                     b.Property<Guid>("AuditHistoryId")
                         .ValueGeneratedOnAdd()
@@ -124,7 +208,7 @@ namespace MyXProject.Data.Migrations
                     b.ToTable("AuditHistory");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.AuditHistoryDetail", b =>
+            modelBuilder.Entity("Xams.Core.Entities.AuditHistoryDetail", b =>
                 {
                     b.Property<Guid>("AuditHistoryDetailId")
                         .ValueGeneratedOnAdd()
@@ -166,7 +250,7 @@ namespace MyXProject.Data.Migrations
                     b.ToTable("AuditHistoryDetail");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.Job", b =>
+            modelBuilder.Entity("Xams.Core.Entities.Job", b =>
                 {
                     b.Property<Guid>("JobId")
                         .ValueGeneratedOnAdd()
@@ -182,15 +266,8 @@ namespace MyXProject.Data.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("Ping")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Queue")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Status")
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Tag")
@@ -202,7 +279,7 @@ namespace MyXProject.Data.Migrations
                     b.ToTable("Job");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.JobHistory", b =>
+            modelBuilder.Entity("Xams.Core.Entities.JobHistory", b =>
                 {
                     b.Property<Guid>("JobHistoryId")
                         .ValueGeneratedOnAdd()
@@ -218,25 +295,39 @@ namespace MyXProject.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Message")
-                        .HasMaxLength(2000)
+                        .IsRequired()
+                        .HasMaxLength(4000)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
-                        .HasMaxLength(250)
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Ping")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ServerName")
+                        .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
-                        .HasMaxLength(250)
+                        .IsRequired()
+                        .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.HasKey("JobHistoryId");
 
                     b.HasIndex("JobId");
 
+                    b.HasIndex(new[] { "ServerName", "Ping" }, "IX_JobHistory_ServerName_Ping")
+                        .IsDescending(false, true);
+
                     b.ToTable("JobHistory");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.Option", b =>
+            modelBuilder.Entity("Xams.Core.Entities.Option", b =>
                 {
                     b.Property<Guid>("OptionId")
                         .ValueGeneratedOnAdd()
@@ -266,7 +357,7 @@ namespace MyXProject.Data.Migrations
                     b.ToTable("Option");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.Permission", b =>
+            modelBuilder.Entity("Xams.Core.Entities.Permission", b =>
                 {
                     b.Property<Guid>("PermissionId")
                         .ValueGeneratedOnAdd()
@@ -285,22 +376,41 @@ namespace MyXProject.Data.Migrations
                     b.ToTable("Permission");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.Role", b =>
+            modelBuilder.Entity("Xams.Core.Entities.Role", b =>
                 {
-                    b.Property<Guid>("RoleId")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Name")
-                        .HasMaxLength(250)
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
                         .HasColumnType("TEXT");
 
-                    b.HasKey("RoleId");
+                    b.Property<int>("Discriminator")
+                        .HasColumnType("INTEGER");
 
-                    b.ToTable("Role");
+                    b.Property<string>("Name")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NormalizedName")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Discriminator");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("RoleNameIndex");
+
+                    b.ToTable("Role", (string)null);
+
+                    b.HasDiscriminator<int>("Discriminator").HasValue(0);
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.RolePermission", b =>
+            modelBuilder.Entity("Xams.Core.Entities.RolePermission<Xams.Core.Entities.Role>", b =>
                 {
                     b.Property<Guid>("RolePermissionId")
                         .ValueGeneratedOnAdd()
@@ -321,11 +431,33 @@ namespace MyXProject.Data.Migrations
                     b.ToTable("RolePermission");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.Setting", b =>
+            modelBuilder.Entity("Xams.Core.Entities.Server", b =>
+                {
+                    b.Property<Guid>("ServerId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LastPing")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ServerId");
+
+                    b.ToTable("Server");
+                });
+
+            modelBuilder.Entity("Xams.Core.Entities.Setting", b =>
                 {
                     b.Property<Guid>("SettingId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Discriminator")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .HasMaxLength(250)
@@ -337,13 +469,20 @@ namespace MyXProject.Data.Migrations
 
                     b.HasKey("SettingId");
 
+                    b.HasIndex("Discriminator");
+
                     b.ToTable("Setting");
+
+                    b.HasDiscriminator<int>("Discriminator").HasValue(0);
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.System", b =>
+            modelBuilder.Entity("Xams.Core.Entities.System", b =>
                 {
                     b.Property<Guid>("SystemId")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DateTime")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
@@ -356,14 +495,19 @@ namespace MyXProject.Data.Migrations
 
                     b.HasKey("SystemId");
 
+                    b.HasIndex(new[] { "Name", "DateTime" }, "IX_System_Name_DateTime");
+
                     b.ToTable("System");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.Team", b =>
+            modelBuilder.Entity("Xams.Core.Entities.Team", b =>
                 {
                     b.Property<Guid>("TeamId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Discriminator")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .HasMaxLength(250)
@@ -371,10 +515,14 @@ namespace MyXProject.Data.Migrations
 
                     b.HasKey("TeamId");
 
+                    b.HasIndex("Discriminator");
+
                     b.ToTable("Team");
+
+                    b.HasDiscriminator<int>("Discriminator").HasValue(0);
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.TeamRole", b =>
+            modelBuilder.Entity("Xams.Core.Entities.TeamRole<Xams.Core.Entities.Team, Xams.Core.Entities.Role>", b =>
                 {
                     b.Property<Guid>("TeamRoleId")
                         .ValueGeneratedOnAdd()
@@ -395,7 +543,7 @@ namespace MyXProject.Data.Migrations
                     b.ToTable("TeamRole");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.TeamUser", b =>
+            modelBuilder.Entity("Xams.Core.Entities.TeamUser<Xams.Core.Entities.Team, Xams.Core.Entities.User>", b =>
                 {
                     b.Property<Guid>("TeamUserId")
                         .ValueGeneratedOnAdd()
@@ -416,48 +564,139 @@ namespace MyXProject.Data.Migrations
                     b.ToTable("TeamUser");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.User", b =>
+            modelBuilder.Entity("Xams.Core.Entities.User", b =>
                 {
-                    b.Property<Guid>("UserId")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Name")
-                        .HasMaxLength(250)
+                    b.Property<int>("Discriminator")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
-                    b.HasKey("UserId");
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("INTEGER");
 
-                    b.ToTable("User");
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Discriminator");
+
+                    b.HasIndex("NormalizedEmail")
+                        .HasDatabaseName("EmailIndex");
+
+                    b.HasIndex("NormalizedUserName")
+                        .IsUnique()
+                        .HasDatabaseName("UserNameIndex");
+
+                    b.ToTable("User", (string)null);
+
+                    b.HasDiscriminator<int>("Discriminator").HasValue(0);
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.UserRole", b =>
+            modelBuilder.Entity("Xams.Core.Entities.UserRole<Xams.Core.Entities.User, Xams.Core.Entities.Role>", b =>
                 {
-                    b.Property<Guid>("UserRoleId")
-                        .ValueGeneratedOnAdd()
+                    b.Property<Guid>("UserId")
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("RoleId")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("UserRoleId");
+                    b.HasKey("UserId", "RoleId");
 
                     b.HasIndex("RoleId");
 
-                    b.HasIndex("UserId");
-
-                    b.ToTable("UserRole");
+                    b.ToTable("UserRole", (string)null);
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.AuditField", b =>
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
-                    b.HasOne("MyXProject.Common.Entities.Audit", "Audit")
+                    b.HasOne("Xams.Core.Entities.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
+                {
+                    b.HasOne("Xams.Core.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
+                {
+                    b.HasOne("Xams.Core.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
+                {
+                    b.HasOne("Xams.Core.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Xams.Core.Entities.AuditField", b =>
+                {
+                    b.HasOne("Xams.Core.Entities.Audit", "Audit")
                         .WithMany("AuditFields")
                         .HasForeignKey("AuditId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -466,18 +705,18 @@ namespace MyXProject.Data.Migrations
                     b.Navigation("Audit");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.AuditHistory", b =>
+            modelBuilder.Entity("Xams.Core.Entities.AuditHistory", b =>
                 {
-                    b.HasOne("MyXProject.Common.Entities.User", "User")
+                    b.HasOne("Xams.Core.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId");
 
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.AuditHistoryDetail", b =>
+            modelBuilder.Entity("Xams.Core.Entities.AuditHistoryDetail", b =>
                 {
-                    b.HasOne("MyXProject.Common.Entities.AuditHistory", "AuditHistory")
+                    b.HasOne("Xams.Core.Entities.AuditHistory", "AuditHistory")
                         .WithMany()
                         .HasForeignKey("AuditHistoryId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -486,9 +725,9 @@ namespace MyXProject.Data.Migrations
                     b.Navigation("AuditHistory");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.JobHistory", b =>
+            modelBuilder.Entity("Xams.Core.Entities.JobHistory", b =>
                 {
-                    b.HasOne("MyXProject.Common.Entities.Job", "Job")
+                    b.HasOne("Xams.Core.Entities.Job", "Job")
                         .WithMany("JobHistories")
                         .HasForeignKey("JobId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -497,16 +736,16 @@ namespace MyXProject.Data.Migrations
                     b.Navigation("Job");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.RolePermission", b =>
+            modelBuilder.Entity("Xams.Core.Entities.RolePermission<Xams.Core.Entities.Role>", b =>
                 {
-                    b.HasOne("MyXProject.Common.Entities.Permission", "Permission")
+                    b.HasOne("Xams.Core.Entities.Permission", "Permission")
                         .WithMany()
                         .HasForeignKey("PermissionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MyXProject.Common.Entities.Role", "Role")
-                        .WithMany("RolePermissions")
+                    b.HasOne("Xams.Core.Entities.Role", "Role")
+                        .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -516,16 +755,16 @@ namespace MyXProject.Data.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.TeamRole", b =>
+            modelBuilder.Entity("Xams.Core.Entities.TeamRole<Xams.Core.Entities.Team, Xams.Core.Entities.Role>", b =>
                 {
-                    b.HasOne("MyXProject.Common.Entities.Role", "Role")
+                    b.HasOne("Xams.Core.Entities.Role", "Role")
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MyXProject.Common.Entities.Team", "Team")
-                        .WithMany("TeamRoles")
+                    b.HasOne("Xams.Core.Entities.Team", "Team")
+                        .WithMany()
                         .HasForeignKey("TeamId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -535,15 +774,15 @@ namespace MyXProject.Data.Migrations
                     b.Navigation("Team");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.TeamUser", b =>
+            modelBuilder.Entity("Xams.Core.Entities.TeamUser<Xams.Core.Entities.Team, Xams.Core.Entities.User>", b =>
                 {
-                    b.HasOne("MyXProject.Common.Entities.Team", "Team")
+                    b.HasOne("Xams.Core.Entities.Team", "Team")
                         .WithMany()
                         .HasForeignKey("TeamId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MyXProject.Common.Entities.User", "User")
+                    b.HasOne("Xams.Core.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -554,48 +793,29 @@ namespace MyXProject.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.UserRole", b =>
+            modelBuilder.Entity("Xams.Core.Entities.UserRole<Xams.Core.Entities.User, Xams.Core.Entities.Role>", b =>
                 {
-                    b.HasOne("MyXProject.Common.Entities.Role", "Role")
+                    b.HasOne("Xams.Core.Entities.Role", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MyXProject.Common.Entities.User", "User")
-                        .WithMany("UserRoles")
+                    b.HasOne("Xams.Core.Entities.User", null)
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Role");
-
-                    b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.Audit", b =>
+            modelBuilder.Entity("Xams.Core.Entities.Audit", b =>
                 {
                     b.Navigation("AuditFields");
                 });
 
-            modelBuilder.Entity("MyXProject.Common.Entities.Job", b =>
+            modelBuilder.Entity("Xams.Core.Entities.Job", b =>
                 {
                     b.Navigation("JobHistories");
-                });
-
-            modelBuilder.Entity("MyXProject.Common.Entities.Role", b =>
-                {
-                    b.Navigation("RolePermissions");
-                });
-
-            modelBuilder.Entity("MyXProject.Common.Entities.Team", b =>
-                {
-                    b.Navigation("TeamRoles");
-                });
-
-            modelBuilder.Entity("MyXProject.Common.Entities.User", b =>
-                {
-                    b.Navigation("UserRoles");
                 });
 #pragma warning restore 612, 618
         }

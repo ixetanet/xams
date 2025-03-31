@@ -80,10 +80,6 @@ namespace Xams.Core.Repositories
 
                 var batchResult = await query.ToDynamicListAsync();
                 results.AddRange(batchResult);
-                // string where = string.Join(" OR ", toProcess.Select(x => $"root_{tableName}Id == \"{x}\""));
-                // results.AddRange(await new Query(dataContext, fields ?? ["*"])
-                //     .From(tableName).Where(where)
-                //     .ToDynamicListAsync());
 
                 toProcess.Clear();
             }
@@ -251,6 +247,9 @@ namespace Xams.Core.Repositories
 
         public async Task<Response<object?>> Delete<T>(T? entity, bool preventSave)
         {
+            // var metadata = entity.EntityMetadata();
+            // var obj = await Find(metadata.TableName, entity.GetId(), preventSave);
+            // _dataContext!.Remove(obj.Data ?? throw new ArgumentNullException(nameof(entity)));
             _dataContext!.Remove(entity ?? throw new ArgumentNullException(nameof(entity)));
             if (!preventSave) await _dataContext.SaveChangesAsync();
 

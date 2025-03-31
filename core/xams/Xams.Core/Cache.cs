@@ -4,6 +4,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.Json;
+using DocumentFormat.OpenXml.Drawing.Diagrams;
+using Microsoft.EntityFrameworkCore;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
 using Xams.Core.Dtos.Data;
@@ -35,8 +37,11 @@ namespace Xams.Core
         public int JobHistoryRetentionDays { get; set; } = 30;
         public int AuditHistoryRetentionDays { get; set; } = 30;
 
-        internal static void Initialize(Type dbContext, IDataService dataService)
+        internal static void Initialize(IDataService dataService)
         {
+            var dbContext = dataService.GetDataRepository().CreateNewDbContext();
+            var dbContextType = dbContext.GetType();
+            
             Random rnd = new Random(DateTime.Now.Millisecond);
             var serverName = Environment.GetEnvironmentVariable("SERVER_NAME") ??
                              ServerNames[rnd.Next(0, ServerNames.Length)] + rnd.Next(0, 9999);
@@ -45,7 +50,7 @@ namespace Xams.Core
             Instance = cache;
 
             // Cache entity metadata
-            var props = dbContext.GetProperties();
+            var props = dbContextType.GetProperties();
             var nullabilityInfoContext = new NullabilityInfoContext();
             foreach (var prop in props)
             {
@@ -58,19 +63,28 @@ namespace Xams.Core
                 if (propType.GenericTypeArguments.Length > 0)
                 {
                     var entityType = propType.GetGenericArguments()[0];
-                    Instance.ValidateMetadata(entityType);
+                    Instance.ValidateMetadata(dbContext, entityType);
 
                     var tableAttribute = entityType.GetCustomAttribute<TableAttribute>();
                     if (tableAttribute == null)
                     {
-                        tableAttribute = new TableAttribute(EntityUtil.GetTableName(entityType, dbContext).TableName);
+                        tableAttribute = new TableAttribute(EntityUtil.GetTableName(entityType, dbContextType).TableName);
+                    }
+                    
+                    // In the case of a composite primary key, it won't return
+                    if (!TryFindPrimaryKeyProperties(dbContext, entityType, out var primaryKeyProperty))
+                    {
+                        continue;
+                    }
+
+                    if (primaryKeyProperty == null)
+                    {
+                        continue;
                     }
 
                     // Find the primary key property
-                    var primaryKeyProperty =
-                        FindPrimaryKeyProperty(entityType, tableAttribute.Name);
-                    var primaryKeyType = primaryKeyProperty.PropertyType;
-                    var primaryKeyName = primaryKeyProperty.Name;
+                    var primaryKeyType = primaryKeyProperty.First().PropertyType;
+                    var primaryKeyName = primaryKeyProperty.First().Name;
 
                     var tableMetadata = new MetadataInfo()
                     {
@@ -82,7 +96,7 @@ namespace Xams.Core
                                 EntityUtil.IsSystemEntity(tableAttribute.Name) ? "System" : ""),
                         TableName = tableAttribute.Name,
                         PrimaryKey = primaryKeyName,
-                        PrimaryKeyProperty = primaryKeyProperty,
+                        PrimaryKeyProperty = primaryKeyProperty.First(),
                         PrimaryKeyType = primaryKeyType,
                         NameProperty = entityType
                                            .GetProperties()
@@ -240,7 +254,7 @@ namespace Xams.Core
 
                     fields = fields.OrderBy(x => x.order).ToList();
 
-                    var tableName = EntityUtil.GetTableName(entityType, dbContext).TableName;
+                    var tableName = EntityUtil.GetTableName(entityType, dbContextType).TableName;
                     var metadataOutput = new MetadataOutput()
                     {
                         displayName = tableMetadata.DisplayNameAttribute?.Name ?? tableName,
@@ -262,8 +276,6 @@ namespace Xams.Core
                     }
                 }
             }
-
-            Instance.ValidateSystemEntities();
 
             var assemblies = AssemblyLoadContext.Default.Assemblies.ToList();
 
@@ -535,38 +547,38 @@ namespace Xams.Core
         }
 
         /// <summary>
-        /// Finds the primary key property of an entity type.
+        /// Finds the primary key properties of an entity type.
         /// </summary>
+        /// <param name="dbContext"></param>
         /// <param name="entityType">The entity type to find the primary key for.</param>
-        /// <param name="tableName">The table name from the TableAttribute.</param>
+        /// <param name="primaryKeyProperties"></param>
         /// <returns>The PropertyInfo of the primary key property.</returns>
-        private static PropertyInfo FindPrimaryKeyProperty(Type entityType, string tableName)
+        private static bool TryFindPrimaryKeyProperties(IXamsDbContext dbContext, Type entityType, out PropertyInfo[]? primaryKeyProperties)
         {
-            // First, look for properties with the [Key] attribute
-            var keyProperties = entityType.GetProperties()
-                .Where(p => p.GetCustomAttribute<KeyAttribute>() != null)
-                .ToList();
-
-            if (keyProperties.Count == 1)
+            var primaryKey = dbContext.Model.FindEntityType(entityType)?.FindPrimaryKey();
+            if (primaryKey == null)
             {
-                return keyProperties[0];
+                primaryKeyProperties = null;
+                return false;
             }
-
-            // If no [Key] attribute is found, look for properties named "Id" or "{TableName}Id"
-            var idProperty = entityType.GetProperty("Id");
-            if (idProperty != null)
+            
+            var properties = primaryKey.Properties;
+            if (properties.Count == 0)
             {
-                return idProperty;
+                primaryKeyProperties = null;
+                return false;
             }
-
-            var tableIdProperty = entityType.GetProperty($"{tableName}Id");
-            if (tableIdProperty != null)
-            {
-                return tableIdProperty;
-            }
-
-            // If no primary key is found, throw an exception
-            throw new Exception($"No primary key found for entity type {entityType.Name}");
+            primaryKeyProperties = properties
+                .Where(x => x.PropertyInfo != null)
+                .Select(x =>
+                {
+                    if (x.PropertyInfo == null)
+                    {
+                        throw new Exception($"Property not found");
+                    }
+                    return x.PropertyInfo;
+                }).ToArray();
+            return true;
         }
 
         internal List<MetadataInfo> GetTableMetadata()
@@ -609,39 +621,7 @@ namespace Xams.Core
             return metadata;
         }
 
-        private void ValidateSystemEntities()
-        {
-            List<Entity>? entities = JsonSerializer.Deserialize<List<Entity>>(SystemEntities.JsonValidationSchema);
-
-            if (entities == null)
-            {
-                throw new Exception($"Failed to load system entities json metadata");
-            }
-
-            foreach (var entity in entities)
-            {
-                if (!TableMetadata.ContainsKey(entity.Name))
-                {
-                    throw new Exception($"System Entity {entity.Name} not found in metadata");
-                }
-
-                foreach (var entityProperty in entity.Properties)
-                {
-                    if (TableMetadata[entity.Name].Type.GetProperty(entityProperty.Name) == null)
-                    {
-                        throw new Exception($"Property {entityProperty.Name} not found in {entity.Name}");
-                    }
-
-                    // if (TableMetadata[entity.Name].Type.GetProperty(entityProperty.Name)!.PropertyType.Name !=
-                    //     entityProperty.Type)
-                    // {
-                    //     throw new Exception($"Property {entityProperty.Name} type mismatch in {entity.Name}");
-                    // }
-                }
-            }
-        }
-
-        private void ValidateMetadata(Type tableType)
+        private void ValidateMetadata(IXamsDbContext dbContext, Type tableType)
         {
             List<string> errors = new();
 
@@ -669,14 +649,9 @@ namespace Xams.Core
             }
 
             // Check for primary key
-            try
+            if (!TryFindPrimaryKeyProperties(dbContext, tableType, out var primaryKeyProperty))
             {
-                var primaryKeyProperty = FindPrimaryKeyProperty(tableType, tableAttribute?.Name ?? tableType.Name);
-                // No need to validate the type of the primary key anymore
-            }
-            catch (Exception ex)
-            {
-                errors.Add(ex.Message);
+                errors.Add($"Unable to find primary key property for {tableAttribute?.Name ?? tableType.Name}");
             }
 
             var nameAttrProp = tableType.GetProperties()

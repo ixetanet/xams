@@ -104,7 +104,7 @@ public class DependencyFinder
         
         foreach (var dependency in context.Dependencies)
         {
-            string primaryKey = Cache.Instance.GetTableMetadata(dependency.Type.Name).PrimaryKey;
+            string primaryKey = dependency.Type.EntityMetadata().PrimaryKey; 
             var dbContext = settings.DbContextFactory();
             DynamicLinq dynamicLinq = new DynamicLinq(dbContext, dependency.Type);
             IQueryable query = dynamicLinq.Query

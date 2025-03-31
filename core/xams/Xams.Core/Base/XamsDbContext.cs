@@ -1,4 +1,6 @@
 using System.Data.Common;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -12,20 +14,20 @@ namespace Xams.Core.Base
     public class XamsDbContext : XamsDbContext<User>
     {
     }
-
+    
     public class XamsDbContext<TUser> : XamsDbContext<TUser, Team>
         where TUser : User,
         new()
     {
     }
-
+    
     public class XamsDbContext<TUser, TTeam> : XamsDbContext<TUser, TTeam, Role>
         where TUser : User 
         where TTeam : Team,
         new()
     {
     }
-
+    
     public class XamsDbContext<TUser, TTeam, TRole> : XamsDbContext<TUser, TTeam, TRole, Setting>
         where TUser : User
         where TTeam : Team 
@@ -34,7 +36,9 @@ namespace Xams.Core.Base
     {
     }
 
-    public class XamsDbContext<TUser, TTeam, TRole, TSetting> : DbContext, IXamsDbContext
+    public class XamsDbContext<TUser, TTeam, TRole, TSetting> : IdentityDbContext<TUser, TRole, Guid, 
+            IdentityUserClaim<Guid>, UserRole<TUser, TRole>, IdentityUserLogin<Guid>, 
+            IdentityRoleClaim<Guid>, IdentityUserToken<Guid>>, IXamsDbContext
         where TUser : User
         where TTeam : Team
         where TRole : Role
@@ -59,14 +63,14 @@ namespace Xams.Core.Base
         public IQueryable<AuditHistory> AuditHistoriesBase => Set<AuditHistory>().IgnoreQueryFilters();
         public IQueryable<AuditHistoryDetail> AuditHistoryDetailsBase => Set<AuditHistoryDetail>().IgnoreQueryFilters();
 
-        public DbSet<TUser> Users { get; set; } = null!;
-        public DbSet<TRole> Roles { get; set; } = null!;
+        // public DbSet<TUser> Users { get; set; } = null!;
+        // public DbSet<TRole> Roles { get; set; } = null!;
         public DbSet<Permission> Permissions { get; set; } = null!;
         public DbSet<TTeam> Teams { get; set; } = null!;
         public DbSet<TeamUser<TTeam, TUser>> TeamUsers { get; set; } = null!;
         public DbSet<TeamRole<TTeam, TRole>> TeamRoles { get; set; } = null!;
         public DbSet<RolePermission<TRole>> RolePermissions { get; set; } = null!;
-        public DbSet<UserRole<TUser, TRole>> UserRoles { get; set; } = null!;
+        // public DbSet<UserRole<TUser, TRole>> UserRoles { get; set; } = null!;
         public DbSet<Option> Options { get; set; } = null!;
         public DbSet<TSetting> Settings { get; set; } = null!;
         public DbSet<Xams.Core.Entities.System> Systems { get; set; } = null!;
@@ -79,7 +83,6 @@ namespace Xams.Core.Base
         public DbSet<AuditHistoryDetail> AuditHistoryDetails { get; set; }
 
         internal bool SaveChangesCalledWithPendingChanges { get; private set; }
-        internal DbContextOptionsBuilder? OptionsBuilder { get; set; } = null!;
         
         public XamsDbContext()
         {
@@ -94,16 +97,15 @@ namespace Xams.Core.Base
             Default = 0,
             Extended = 1
         }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            base.OnConfiguring(optionsBuilder);
-            OptionsBuilder = optionsBuilder;
-        }
+        
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            
+            modelBuilder.Entity<TUser>().ToTable("User");
+            modelBuilder.Entity<TRole>().ToTable("Role");
+            modelBuilder.Entity<UserRole<TUser, TRole>>().ToTable("UserRole");
             
             var userDiscriminator = modelBuilder.Entity<User>() 
                 .HasDiscriminator(x => x.Discriminator)
@@ -173,7 +175,12 @@ namespace Xams.Core.Base
             ChangeTracker.Clear();
             return result;
         }
-        
+
+        public override EntityEntry Remove(object entity)
+        {
+            return base.Remove(entity);
+        }
+
 
         /// <summary>
         /// Returns the current database provider.
@@ -191,22 +198,22 @@ namespace Xams.Core.Base
 
             if (providerName == "Microsoft.EntityFrameworkCore.SqlServer")
             {
-                return DbProvider.SQLServer;
+                return DbProvider.SqlServer;
             }
 
             if (providerName == "Microsoft.EntityFrameworkCore.Sqlite")
             {
-                return DbProvider.SQLite;
+                return DbProvider.SqLite;
             }
 
             if (providerName == "Pomelo.EntityFrameworkCore.MySql")
             {
-                return DbProvider.MySQL;
+                return DbProvider.MySql;
             }
 
             if (providerName == "MySql.EntityFrameworkCore")
             {
-                return DbProvider.MySQL;
+                return DbProvider.MySql;
             }
 
 
@@ -286,9 +293,9 @@ namespace Xams.Core.Base
 
     public enum DbProvider
     {
-        MySQL,
-        SQLServer,
-        SQLite,
+        MySql,
+        SqlServer,
+        SqLite,
         Postgres
     }
 }
