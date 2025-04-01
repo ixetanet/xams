@@ -9,22 +9,9 @@ Entity definitions need to follow certain rules in order to work with Xams. {{ c
 
 ## Entity Rules
 
-1. The Table name (specified with the Table attribute) and must match the name of the class.
-2. The Primary Key must be a Guid and take the shape of TableName + Id ie: WidgetId.
-3. Every entity must have either a string Name field or a string field with the attribute UIName.
-4. Composite Primary Keys are not allowed.
-5. See [React Data Types](/react_guide#react-data-types) for fields types that are compaitabile with the React components.
-
-```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
-// Table attribute is required
-[Table("Widget")] // Table attribute matches class name
-public class Widget
-{
-    // Primary key is table name + Id and of type Guid
-    public Guid WidgetId { get; set; }
-    public string? Name { get; set; } // Name field or string field with UILookupName is required
-}
-```
+1. Entities should have either a string Name field or a string field with the attribute UIName for lookup fields.
+2. Composite Primary Keys are not supported.
+3. See [React Data Types](/react_guide#react-data-types) for fields types that are compaitabile with the React components.
 
 ## Cascade Delete
 
