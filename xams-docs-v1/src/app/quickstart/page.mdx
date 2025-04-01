@@ -12,7 +12,7 @@ export const metadata = {
 This guide will get you up and running with Xams and covers the following: {{ className: 'lead' }}
 
 - Creating a Xams Api project {{ className: 'lead' }}
-- Creating a Xams NextJS \ React project {{ className: 'lead' }}
+- Creating a Xams React project {{ className: 'lead' }}
 - Creating tables {{ className: 'lead' }}
 - Displaying and creating records from a datatable {{ className: 'lead' }}
 - Writing service logic {{ className: 'lead' }}
@@ -31,72 +31,60 @@ Ensure you have version 8+ of the Entity Framework Core tools installed.
 dotnet tool install --global dotnet-ef
 ```
 
-## Install Xams CLI
-
-Install the Xams CLI if you haven't installed it yet.
-
-```cmd {{ title: 'Terminal' }}
-dotnet tool install --global Xams.Cli --version 1.0.4
-```
 
 ## Create Api Project
 
-1.  Create the directory you want your project to live in.
-2.  Open the command prompt or terminal in the directory.
-3.  Execute the Xams CLI. Choose `Create Api Project`.
+1. In your c# IDE of choice create a new ASP.NET web based project. 
+2. Install the required nuget packages.
 
-<CodeGroup title="Terminal" tag="" label="">
-            ```bash {{ title: 'Windows' }}
-            xams-cli
-            ```
+```cmd {{ title: 'Terminal' }}
+dotnet add package Xams.Core
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite --version 8.0.6
+dotnet add package Microsoft.EntityFrameworkCore.Design --version 8.0.6
+```
 
-            ```js {{ title: 'MacOS' }}
-            export PATH="$PATH:$HOME/.dotnet/tools" && xams-cli
-            ```
+3. Create a new DbContext that inherits from XamsDbContext.
 
-</CodeGroup>
-4. Enter the name of your project. All of the c# project will be prefixed with this name.
-5. Open the solution in your IDE of choice. The projects contained in this solution are:
+```c# {{ title: 'Project' }}
+public class DataContext : XamsDbContext
+{
+    protected override void OnConfiguring(DbContextOptionsBuilder options)
+    {
+        var folder = Environment.SpecialFolder.LocalApplicationData;
+        var path = Environment.GetFolderPath(folder);
+        var dbPath = Path.Join(path, "app.db");
+        options.UseSqlite($"Data Source={dbPath}");
+    }
+}
+```
+4. Add the Xams services and provide the DbContext.
 
-- <b>Project.Common</b>: Classes shared across projects including Entities
-- <b>Project.Data</b>: Entity Framework migrations as well as the DbContext
-- <b>Project.Services</b>: All service layer logic
-- <b>Project.Web</b>: The api endpoints
+```c# {{ title: 'Program.cs' }}
+builder.Services.AddXamsServices<DataContext>();
+```
 
-8. The project is configured to use SQLite by default. Run the following commands in the Project.Data folder to create the first migration and update the database.
+5. Add the Xams Api's and enable the dashboard.
 
-```cmd {{ title: 'Terminal - / Project.Data ' }}
+```c# {{ title: 'Program.cs' }}
+// app.UseAuthentication();
+// app.UseAuthorization();
+
+app.AddXamsApi(options =>
+{
+    options.UseDashboard = true;
+});
+```
+
+6. Create and run the migration.
+
+```cmd {{ title: 'Terminal' }}
 dotnet ef migrations add migration01
 dotnet ef database update
 ```
 
-9. Run the project using HTTPS. The project will launch the `Admin Dashboard` automatically. It may take a moment to start.
+9. Run the project and navigate to the below path.
 
-## Create NextJS Project
-
-1. Open the command prompt or terminal in the directory to create the React \ NextJS project.
-2. Execute the Xams CLI. Choose `Create React \ NextJS Project`.
-
-<CodeGroup title="Terminal" tag="" label="">
-            ```bash {{ title: 'Windows' }}
-            xams-cli
-            ```
-
-            ```js {{ title: 'MacOS' }}
-            export PATH="$PATH:$HOME/.dotnet/tools" && xams-cli
-            ```
-
-</CodeGroup>
-
-3. Enter the name of your web app. A folder with the name of your web app will be created and includes all of the web app files.
-4. Open the folder in your code editor of choice.
-5. In the directory of the web app execute the following code.
-
-```cmd {{ title: 'Terminal' }}
-npm install && npm run dev
-```
-
-8. With the Api running, open the NextJS project in the browser (http://localhost:3000?userid=f8a43b04-4752-4fda-a89f-62bebcd8240c)
+[http://localhost/xams/admin?userid=f8a43b04-4752-4fda-a89f-62bebcd8240c](http://localhost:port/xams/admin?userid=f8a43b04-4752-4fda-a89f-62bebcd8240c)
 
 <Note>
   A new Xams project isn't configured with Authentication or Authorization but
@@ -105,10 +93,58 @@ npm install && npm run dev
   f8a43b04-4752-4fda-a89f-62bebcd8240c.
 </Note>
 
+## Create React project
+
+1. Create a new react project using [Vite](https://vite.dev/) or [NextJS](https://nextjs.org/)
+2. Install the Xams npm package and its dependencies.
+
+```cmd {{ title: 'Terminal' }}
+npm install dayjs@^1.11.13
+npm install @mantine/core@^7.16.2 @mantine/dates@^7.16.2 @mantine/hooks@^7.16.2 @mantine/tiptap@^7.16.2 @tabler/icons-react@^2.40.0 @tiptap/extension-highlight@^2.1.12 @tiptap/extension-link@^2.11.3 @tiptap/extension-subscript@^2.1.12 @tiptap/extension-superscript@^2.1.12 @tiptap/extension-text-align@^2.1.12 @tiptap/extension-underline@^2.1.12 @tiptap/pm@^2.11.3 @tiptap/react@^2.11.3 @tiptap/starter-kit@^2.11.3 dayjs@^1.11.13 react-virtualized-auto-sizer@^1.0.22 react-window@^1.8.10 uuid@^9.0.0 zustand@^4.4.0 --legacy-peer-deps
+npm install @ixeta/xams
+```
+
+3. Configure the root component with the MantineProvider and Xams providers.
+
+```tsx {{ title: 'NextJs - _app.tsx' }}
+import "@/styles/globals.css";
+import type { AppProps } from "next/app";
+import "@mantine/core/styles.css";
+import "@mantine/dates/styles.css";
+import { MantineProvider } from "@mantine/core";
+import {
+  AppContextProvider,
+  AuthContextProvider,
+  getQueryParam,
+} from "@ixeta/xams";
+import "@ixeta/xams/dist/styles.css";
+import "@ixeta/xams/dist/global.css";
+import { useRouter } from "next/router";
+
+export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+  const userId = getQueryParam("userId", router.asPath);
+  return (
+    <MantineProvider>
+      <AuthContextProvider
+        apiUrl={"https://localhost:8000"} // <- change to your api
+        headers={{
+          UserId: userId as string, // <- provide userid from query string in development
+        }}
+      >
+        <AppContextProvider>
+          <Component {...pageProps} />
+        </AppContextProvider>
+      </AuthContextProvider>
+    </MantineProvider>
+  );
+}
+```
+
 ## Create an Entity
 
 1. In the "Common" project create a new class file in the Entities folder and name it "Widget.cs"
-2. Paste the below code in the file.
+
 
 ```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
 [Table("Widget")]
@@ -125,27 +161,10 @@ public class Widget
 3. Add the Widget class to the DataContext class.
 
 ```c# {{ title: 'Project.Data / DataContext.cs' }}
-public class DataContext : BaseDbContext
+public class DataContext : XamsDbContext
 {
-    public DbSet<User> Users { get; set; }
-    public DbSet<Role> Roles { get; set; }
-    public DbSet<Permission> Permissions { get; set; }
-    public DbSet<RolePermission> RolePermissions { get; set; }
-    public DbSet<Team> Teams { get; set; }
-    public DbSet<TeamUser> TeamUsers { get; set; }
-    public DbSet<TeamRole> TeamRoles { get; set; }
-    public DbSet<UserRole> UserRoles { get; set; }
-    public DbSet<Option> Options { get; set; }
-    public DbSet<Setting> Settings { get; set; }
-    public DbSet<Common.Entities.System> Systems { get; set; }
-    public DbSet<Job> Jobs { get; set; }
-    public DbSet<JobHistory> JobHistories { get; set; }
-    public DbSet<Audit> Audits { get; set; }
-    public DbSet<AuditField> AuditFields { get; set; }
-    public DbSet<AuditHistory> AuditHistories { get; set; }
-    public DbSet<AuditHistoryDetail> AuditHistoryDetails { get; set; }
-
-    public DbSet<Widget> Widgets { get; set; } // <-- Add this
+    public DbSet<Widget> Widgets { get; set; } 
+    ...
 }
 ```
 
