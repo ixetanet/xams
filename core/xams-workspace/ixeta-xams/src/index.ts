@@ -41,6 +41,7 @@ export {
 } from "./apiurls";
 export * from "./api/TablesResponse";
 export * from "./api/ReadRequest";
+export * from "./api/ReadResponse";
 export * from "./utils/Query";
 export type { useAuthRequestType as useAuthRequestType } from "./hooks/useAuthRequest";
 export type { useFormBuilderType as useFormBuilderType } from "./hooks/useFormBuilder";

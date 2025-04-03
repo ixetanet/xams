@@ -15,6 +15,7 @@ import AdminDashJobs from "./nav/AdminDashJobs";
 import AdminDashSettings from "./nav/AdminDashSettings";
 import AdminDashAudit from "./nav/AdminDashAudit";
 import AdminDashServers from "./nav/AdminDashServers";
+import AdminDashDevelopment from "./nav/AdminDashDevelopment";
 
 const EmptyTableInfo = {
   tableName: "",
@@ -83,12 +84,15 @@ export const useAdminDashContext = () => {
   return context;
 };
 
+type Access = {
+  Dashboard: boolean;
+  Development: boolean;
+};
+
 const AdminDashboard = (props: AdminDashboardProps) => {
   const authRequest = useAuthRequest();
   const [opened, { toggle }] = useDisclosure();
-  const [hasAccess, setHasAccess] = React.useState<boolean | undefined>(
-    undefined
-  );
+  const [access, setAccess] = React.useState<Access | undefined>(undefined);
   const [activeComponent, setActiveComponent] = React.useState<
     | {
         component: React.ReactNode;
@@ -115,12 +119,22 @@ const AdminDashboard = (props: AdminDashboardProps) => {
   };
 
   const getPermissions = async () => {
-    if (!(await authRequest.hasAllPermissions(["ACCESS_ADMIN_DASHBOARD"]))) {
-      setHasAccess(false);
+    const dashReq = authRequest.hasAllPermissions(["ACCESS_ADMIN_DASHBOARD"]);
+    const devReq = authRequest.hasAllPermissions(["ACCESS_ADMIN_DEVELOPMENT"]);
+    const [dashResp, devResp] = await Promise.all([dashReq, devReq]);
+
+    if (!dashResp) {
+      setAccess({
+        Dashboard: false,
+        Development: false,
+      });
       return;
     }
 
-    setHasAccess(true);
+    setAccess({
+      Dashboard: dashResp,
+      Development: devResp,
+    });
 
     let canExport = false;
     let canImport = false;
@@ -146,7 +160,7 @@ const AdminDashboard = (props: AdminDashboardProps) => {
     getTables();
   }, []);
 
-  if (hasAccess === undefined) {
+  if (access?.Dashboard === undefined) {
     return (
       <div className="w-full h-full flex justify-center items-center">
         <Loader />
@@ -154,7 +168,7 @@ const AdminDashboard = (props: AdminDashboardProps) => {
     );
   }
 
-  if (!hasAccess) {
+  if (!access.Dashboard) {
     return (
       <div className="w-full h-full flex justify-center items-center">
         You don&apos;t have permission to view this page. Please contact your
@@ -192,6 +206,14 @@ const AdminDashboard = (props: AdminDashboardProps) => {
       order: 700,
       navLink: <AdminDashServers />,
     },
+    ...(access.Development === true
+      ? [
+          {
+            order: 800,
+            navLink: <AdminDashDevelopment />,
+          },
+        ]
+      : []),
   ] as NavItem[];
 
   if (props.addMenuItems !== undefined) {

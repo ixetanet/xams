@@ -1,3 +1,4 @@
+export const API_DATA_WHOAMI = `/xams/WhoAmI`;
 export const API_DATA_PERMISSIONS = `/xams/Permissions`;
 export const API_DATA_METADATA = `/xams/MetaData`;
 export const API_DATA_CREATE = `/xams/Create`;

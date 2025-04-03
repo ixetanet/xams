@@ -12,6 +12,7 @@ import {
   API_DATA_PERMISSIONS,
   API_DATA_UPSERT,
   API_DATA_BULK,
+  API_DATA_WHOAMI,
 } from "../apiurls";
 import { ReadRequest } from "../api/ReadRequest";
 import { MetadataResponse } from "../api/MetadataResponse";
@@ -178,6 +179,18 @@ const useAuthRequest = (props?: useAuthRequestProps) => {
         response: undefined,
       } as ApiResponse<T>;
     }
+  };
+
+  const apiWhoAmI = async <T,>() => {
+    const resp = await makeRequest<T>({
+      url: API_DATA_WHOAMI,
+      method: "GET",
+    });
+    if (resp.succeeded === true) {
+      const userData = resp.data as any;
+      return userData;
+    }
+    return null;
   };
 
   const apiHasAllPermissions = async (permissions: string[]) => {
@@ -412,6 +425,7 @@ const useAuthRequest = (props?: useAuthRequestProps) => {
   return useMemo(
     () => ({
       execute: makeRequest,
+      whoAmI: apiWhoAmI,
       hasAllPermissions: apiHasAllPermissions,
       hasAnyPermissions: apiHasAnyPermissions,
       tables: apiTables,

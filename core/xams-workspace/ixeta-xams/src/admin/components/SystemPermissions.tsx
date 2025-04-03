@@ -52,7 +52,7 @@ const SystemPermissions = (props: SystemPermissionsProps) => {
         !(
           permission.Name.startsWith("ACTION_ADMIN") ||
           permission.Name.startsWith("ACTION_TABLE") ||
-          permission.Name == "ACCESS_ADMIN_DASHBOARD"
+          permission.Name.startsWith("ACCESS_ADMIN")
         )
       ) {
         continue;

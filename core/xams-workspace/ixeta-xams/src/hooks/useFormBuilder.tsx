@@ -320,6 +320,13 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
     field: string,
     value: string | boolean | null | undefined | number
   ) => {
+    const mField = state.metadata?.fields.find((x) => x.name === field);
+    if (mField == null) {
+      throw new Error(`Field ${field} doesn't exist on ${state.tableName}`);
+    }
+    if (!mField.isNullable && value === null) {
+      throw new Error(`Field ${field} cannot be null`);
+    }
     dispatch({
       type: "SET_FIELD_VALUE",
       payload: {
@@ -685,9 +692,9 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
       : "CREATE") as "UPDATE" | "CREATE",
     stateType: state.type,
     tableName: props.tableName,
-    reload: (reloadDataTables: boolean = true) => {
+    reload: async (reloadDataTables: boolean = true) => {
       if (state.metadata && state.snapshot) {
-        onLoad({
+        await onLoad({
           id: (state as any).snapshot[state.metadata.primaryKey],
           refresh: true,
           refreshDatatables: reloadDataTables,
