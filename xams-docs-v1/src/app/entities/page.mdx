@@ -51,3 +51,8 @@ public class Widget : BaseRecord
     public Address Address { get; set; }
 }
 ```
+
+<Note>
+  When a user deletes a record, delete permissions are checked only on the record being deleted—not on any dependent records removed through cascading.
+This behavior is consistent with how enterprise CRM systems operate.
+</Note>
