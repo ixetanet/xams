@@ -34,13 +34,13 @@ dotnet tool install --global dotnet-ef
 
 ## Create Api Project
 
-1. In your c# IDE of choice create a new ASP.NET web based project. 
+1. In your c# IDE of choice create a new ASP.NET web based project using .NET 8
 2. Install the required nuget packages.
 
 ```cmd {{ title: 'Terminal' }}
 dotnet add package Xams.Core
-dotnet add package Microsoft.EntityFrameworkCore.Sqlite --version 8.0.6
-dotnet add package Microsoft.EntityFrameworkCore.Design --version 8.0.6
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite --version 8.0.14
+dotnet add package Microsoft.EntityFrameworkCore.Design --version 8.0.14
 ```
 
 3. Create a new DbContext that inherits from XamsDbContext.
