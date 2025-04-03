@@ -145,7 +145,7 @@ import { useRouter } from "next/router";
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const userId = getQueryParam("userId", router.asPath);
+  const userId = getQueryParam("userid", router.asPath);
   return (
     <MantineProvider>
       <AuthContextProvider
