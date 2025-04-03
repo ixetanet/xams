@@ -93,6 +93,28 @@ dotnet ef database update
   f8a43b04-4752-4fda-a89f-62bebcd8240c.
 </Note>
 
+10. Enable CORS to allow the client application to connect
+
+```c# {{ title: 'Program.cs' }}
+string corsPolicy = "_myAllowOrigins";
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddCors(x => x.AddPolicy(corsPolicy, builder =>
+    {
+        builder.AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    }));
+}
+```
+
+```c# {{ title: 'Program.cs' }}
+var app = builder.Build();
+app.UseCors(corsPolicy);
+```
+
+
 ## Create React project
 
 1. Create a new react project using [Vite](https://vite.dev/) or [NextJS](https://nextjs.org/)
