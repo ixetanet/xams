@@ -204,12 +204,20 @@ public class QueryFactory
         {
             // Get all fields on the table
             List<string> rootFields = new();
-            var properties = Cache.Instance.GetTableMetadata(readInput.tableName).Type.GetEntityProperties();
+            var metadata = Cache.Instance.GetTableMetadata(readInput.tableName);
+            var properties = metadata.Type.GetEntityProperties();
             foreach (var property in properties)
             {
                 // Ignore the hidden fields
                 if (Attribute.GetCustomAttribute(property, typeof(UIHideAttribute)) != null)
                     continue;
+
+                // Skip discriminators
+                var modelEntity = _dbContext.Model.FindEntityType(metadata.Type);
+                if (modelEntity != null && !string.IsNullOrEmpty(modelEntity.GetDiscriminatorPropertyName())
+                    && modelEntity.GetDiscriminatorPropertyName() == property.Name)
+                    continue; 
+                
 
                 rootFields.Add(property.Name);
             }
@@ -226,11 +234,18 @@ public class QueryFactory
                 {
                     // Get all fields on the table
                     List<string> joinFields = new();
-                    var properties = Cache.Instance.GetTableMetadata(join.toTable).Type.GetEntityProperties();
+                    var metadata = Cache.Instance.GetTableMetadata(join.toTable);
+                    var properties = metadata.Type.GetEntityProperties();
                     foreach (var property in properties)
                     {
                         // Ignore the hidden fields
                         if (Attribute.GetCustomAttribute(property, typeof(UIHideAttribute)) != null)
+                            continue;
+                        
+                        // Skip discriminators
+                        var modelEntity = _dbContext.Model.FindEntityType(metadata.Type);
+                        if (modelEntity != null && !string.IsNullOrEmpty(modelEntity.GetDiscriminatorPropertyName())
+                                                && modelEntity.GetDiscriminatorPropertyName() == property.Name)
                             continue;
 
                         joinFields.Add(property.Name);
@@ -935,6 +950,7 @@ public class QueryFactory
 
     private static bool Validate(ReadInput readInput)
     {
+        
         if (readInput.fields.Length > 0 && readInput.fields[0] != "*")
         {
             foreach (var field in readInput.fields)

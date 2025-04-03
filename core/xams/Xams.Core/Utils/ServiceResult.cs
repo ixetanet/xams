@@ -22,16 +22,6 @@ namespace Xams.Core.Utils
             };
         }
         
-        public static Response<object?> Success(string friendlyMessage)
-        {
-            return new Response<object?>()
-            {
-                Succeeded = true,
-                FriendlyMessage = friendlyMessage,
-                Data = friendlyMessage
-            };
-        }
-
         public static Response<object?> Success(FileData fileData)
         {
             return new Response<object?>()
@@ -51,12 +41,23 @@ namespace Xams.Core.Utils
             };
         }
     
-        public static Response<object?> Error(string message, object? data = null)
+        public static Response<object?> Error(string friendlyMessage, object? data = null)
         {
             return new Response<object?>()
             {
                 Succeeded = false,
-                FriendlyMessage = message,
+                FriendlyMessage = friendlyMessage,
+                Data = data
+            };
+        }
+        
+        public static Response<object?> Error(string friendlyMessage, string logMessage, object? data = null)
+        {
+            return new Response<object?>()
+            {
+                Succeeded = false,
+                FriendlyMessage = friendlyMessage,
+                LogMessage = logMessage,
                 Data = data
             };
         }

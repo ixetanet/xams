@@ -154,6 +154,7 @@ namespace Xams.Core.Startup
         
             // Other Permissions
             permissionNames.Add($"ACCESS_ADMIN_DASHBOARD");
+            permissionNames.Add($"ACCESS_ADMIN_DEVELOPMENT");
             
             foreach (var permissionName in permissionNames)
             {
@@ -218,7 +219,7 @@ namespace Xams.Core.Startup
             foreach (var permission in permissions)
             {
                 string permissionName = (String)permissionNameProp.GetValue(permission);
-                string[] otherPermissions = { "ACCESS_ADMIN_DASHBOARD" };
+                string[] otherPermissions = { "ACCESS_ADMIN_DASHBOARD", "ACCESS_ADMIN_DEVELOPMENT" };
                 if (!(permissionName.StartsWith("ACTION_") || 
                       permissionName.StartsWith("JOB_") || 
                       permissionName.EndsWith("_SYSTEM") || 

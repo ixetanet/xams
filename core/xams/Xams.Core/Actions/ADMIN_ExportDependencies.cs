@@ -4,6 +4,7 @@ using Xams.Core.Base;
 using Xams.Core.Contexts;
 using Xams.Core.Dtos;
 using Xams.Core.Interfaces;
+using Xams.Core.Utils;
 
 namespace Xams.Core.Actions
 {
@@ -68,7 +69,7 @@ namespace Xams.Core.Actions
                     {
                         dependencies.Add(new Dependent()
                         {
-                            Name = targetType.Name,
+                            Name = targetType.Metadata().TableName,
                             Optional = isOptional
                         });
                     }
@@ -77,7 +78,7 @@ namespace Xams.Core.Actions
                 // graph[entityType.Name] = dependencies;
                 graph.Add(new DependencyInfo()
                 {
-                    Name = entityType.Name,
+                    Name = entityType.Metadata().TableName,
                     Dependencies = dependencies
                 });
             }

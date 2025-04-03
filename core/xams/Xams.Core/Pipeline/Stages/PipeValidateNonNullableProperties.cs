@@ -1,6 +1,7 @@
 using System.Reflection;
 using Xams.Core.Base;
 using Xams.Core.Dtos;
+using Xams.Core.Utils;
 
 namespace Xams.Core.Pipeline.Stages;
 
@@ -33,7 +34,7 @@ public class PipeValidateNonNullableProperties : BasePipelineStage
         foreach (var property in properties)
         {
             // Ignore primary key
-            if (property.Name == $"{context.TableName}Id")
+            if (context.Entity.Metadata().PrimaryKeyProperty == property)
             {
                 continue;
             }

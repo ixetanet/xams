@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using System.Linq.Dynamic.Core;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using Xams.Core.Attributes;
 using Xams.Core.Base;
 
 namespace Xams.Core.Utils;
@@ -29,6 +31,7 @@ public class DependencyFinder
                         Type = entityType,
                         PropertyName = property.Name,
                         IsNullable = property.PropertyType.IsGenericType && property.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>),
+                        IsCascadeDelete = property.GetCustomAttribute<CascadeDeleteAttribute>() != null,
                         Dependencies = new List<Dependency>(), // Initialized for potential nested dependencies
                         Parent = parent
                     };
@@ -178,6 +181,7 @@ public class Dependency
     public Type Type { get; set; } = null!;
     public string PropertyName { get; set; } = null!;
     public bool IsNullable { get; set; }
+    public bool IsCascadeDelete { get; set; }
     public Dependency? Parent { get; set; }
     public List<Dependency>? Dependencies { get; set; }
 }

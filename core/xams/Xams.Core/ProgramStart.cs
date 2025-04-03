@@ -18,7 +18,7 @@ using Xams.Core.Utils;
 
 namespace Xams.Core
 {
-    public static class XamsProgramStart
+    public static class ProgramStart
     {
         public static IServiceCollection AddXamsServices<TDataContext>(this IServiceCollection services)
             where TDataContext : XamsDbContext,
@@ -99,6 +99,19 @@ namespace Xams.Core
             }
 
             var group = app.MapGroup(opts.UrlPath);
+            
+            var whoAmI = group.MapGet("whoami",
+                async (IDataService dataService, HttpContext httpContext) =>
+                {
+                    Guid userId = await (opts.GetUserId?.Invoke(httpContext) ?? GetUserId(httpContext));
+                    var result = await dataService.WhoAmI(userId);
+                    return ToApiResponse(result);
+                });
+            if (opts.RequireAuthorization)
+            {
+                whoAmI.RequireAuthorization();
+            }
+
 
             var permissions = group.MapPost("permissions",
                 async (IDataService dataService, [FromBody] PermissionsInput permissionsInput,

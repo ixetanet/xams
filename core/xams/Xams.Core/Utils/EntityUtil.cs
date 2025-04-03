@@ -351,8 +351,7 @@ namespace Xams.Core.Utils
                 }
 
                 // Get the metadata for this type to find the primary key
-                var tableMetadata = Cache.Instance.GetTableMetadata(GetTableName(type,
-                    DbContext?.GetType() ?? throw new Exception("DbContext not yet initialized")).TableName);
+                var tableMetadata = type.Metadata(); 
                 var primaryKeyName = tableMetadata.PrimaryKey;
                 var primaryKeyProperty = tableMetadata.PrimaryKeyProperty;
                 var primaryKeyType = tableMetadata.PrimaryKeyType;
@@ -691,8 +690,8 @@ namespace Xams.Core.Utils
         {
             if (new[]
                 {
-                    "Option", "Permission", "Role", "RolePermission", "Team",
-                    "TeamRole", "TeamUser", "User", "UserRole", "Setting", "Job", "JobHistory", "Audit", "AuditField",
+                    "Option", "Permission", "Role", "RolePermission`1", "Team",
+                    "TeamRole`2", "TeamUser`2", "User", "UserRole`2", "Setting", "Job", "JobHistory", "Audit", "AuditField",
                     "AuditHistory", "AuditHistoryDetail", "System", "Server"
                 }.Contains(tableName))
             {

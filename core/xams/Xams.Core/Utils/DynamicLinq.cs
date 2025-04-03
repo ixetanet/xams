@@ -36,7 +36,7 @@ namespace Xams.Core.Utils
             DbSet = dbSetProperty.GetValue(db)!;
             Query = (IQueryable)DbSet;
 
-            PrimaryKey = TargetType.EntityMetadata().PrimaryKey;
+            PrimaryKey = TargetType.Metadata().PrimaryKey;
         }
         
         public static async Task<List<dynamic>> BatchRequest(IXamsDbContext db, Type entity, List<object> ids, int batchSize = 500)

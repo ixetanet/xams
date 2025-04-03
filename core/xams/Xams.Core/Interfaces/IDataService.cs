@@ -15,6 +15,8 @@ namespace Xams.Core.Interfaces
         public DataRepository GetDataRepository();
         public MetadataRepository GetMetadataRepository();
         public SecurityRepository GetSecurityRepository();
+        
+        Task<Response<object?>> WhoAmI(Guid userId);
         Task<Response<ReadOutput>> Read(Guid userId, ReadInput input, PipelineContext? parent = null);
         Task<Response<object?>> Create(Guid userId, BatchInput createInput);
 

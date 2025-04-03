@@ -8,7 +8,7 @@ public class User
 {
     public Guid UserId { get; set; }
     [MaxLength(100)]
-    public string? Name { get; set; } = null!;
+    public string? Name { get; set; } 
     public DateTime CreatedDate { get; set; }
     
     public int Discriminator { get; set; }

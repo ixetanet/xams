@@ -103,39 +103,29 @@ namespace Xams.Core.Services
         {
             return _securityRepository;
         }
-        
+
+        public async Task<Response<object?>> WhoAmI(Guid userId)
+        {
+            var result = await Read(userId, new ReadInput
+            {
+                id = userId,
+                tableName = typeof(TUser).Metadata().TableName,
+                fields = ["*"]
+            });
+            return new Response<object?>()
+            {
+                Succeeded = result.Data != null && result.Data.results.Count != 0,
+                Data = result.Data == null || result.Data.results.Count == 0 ? null : result.Data.results[0]
+            };
+        }
+
         /// <summary>
         /// Return false if the entity has already been tracked for deletion
         /// </summary>
-        /// <param name="entity"></param>
-        /// <param name="id"></param>
+        /// <param name="userId"></param>
+        /// <param name="readInput"></param>
+        /// <param name="parent"></param>
         /// <returns></returns>
-        public bool TrackDelete(string entity, object id)
-        {
-            if (!_deletes.ContainsKey(entity))
-            {
-                _deletes.Add(entity, new HashSet<dynamic>());
-            }
-            if (!_deletes[entity].Contains(id))
-            {
-                _deletes[entity].Add(id);
-                return true;
-            }
-
-            return false;
-        }
-
-        public bool TrackingDelete(string entity, object id)
-        {
-            if (!(id is Guid guidId))
-            {
-                // For now, we only track Guid IDs
-                return false;
-            }
-            
-            return _deletes.ContainsKey(entity) && _deletes[entity].Contains(guidId);
-        }
-
         public async Task<Response<ReadOutput>> Read(Guid userId, ReadInput readInput, PipelineContext? parent = null)
         {
             try
@@ -181,7 +171,7 @@ namespace Xams.Core.Services
             }
             catch (Exception e)
             {
-                Logger.LogError(e, "Read Failed: {Message}", e.Message);
+                Logger.LogError(e, "ExecutionId {executionId} Read Failed UserId {userId}: {Message}", ExecutionId, userId, e.Message);
                 return new Response<ReadOutput>()
                 {
                     Succeeded = false,
@@ -372,7 +362,7 @@ namespace Xams.Core.Services
             }
             catch (Exception e)
             {
-                Logger.LogError(e, "Action Failed: {Message}", e.Message);
+                Logger.LogError(e, "ExecutionId {executionId} Action Failed UserId {userId}: {Message}", ExecutionId, userId, e.Message);
                 await _dataRepository.RollbackTransaction();
                 return new Response<object?>()
                 {
@@ -417,6 +407,32 @@ namespace Xams.Core.Services
             }
 
             return ServiceResult.Success();
+        }
+        
+        public bool TrackDelete(string entity, object id)
+        {
+            if (!_deletes.ContainsKey(entity))
+            {
+                _deletes.Add(entity, new HashSet<dynamic>());
+            }
+            if (!_deletes[entity].Contains(id))
+            {
+                _deletes[entity].Add(id);
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool TrackingDelete(string entity, object id)
+        {
+            if (!(id is Guid guidId))
+            {
+                // For now, we only track Guid IDs
+                return false;
+            }
+            
+            return _deletes.ContainsKey(entity) && _deletes[entity].Contains(guidId);
         }
 
         /// <summary>
@@ -729,7 +745,7 @@ namespace Xams.Core.Services
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Operation Failed: {Message}", ex.Message);
+                Logger.LogError(ex, "ExecutionId {executionId} Operation Failed UserId {userId}: {Message}", ExecutionId, userId, ex.Message);
                 await _dataRepository.RollbackTransaction();
                 throw;
             }
@@ -861,7 +877,7 @@ namespace Xams.Core.Services
                 }
                 catch (Exception e)
                 {
-                    Logger.LogError(e, "Bulk ServiceLogic Failed: {Message}", e.Message);
+                    Logger.LogError(e, "ExecutionId {executionId} Bulk ServiceLogic Failed UserId {userId}: {Message}", ExecutionId, userId, e.Message);
                     return ServiceResult.Error(e.Message);
                 }
             }
@@ -872,7 +888,7 @@ namespace Xams.Core.Services
         private async Task<Response<object?>> ExecutePipeline(PipelineContext pipelineContext)
         {
             // Save might be prevented in case we want to proxy the create\read\update\delete to another service
-            pipelineContext.IsProxy = pipelineContext.Entity?.EntityMetadata().IsProxy  ?? false;
+            pipelineContext.IsProxy = pipelineContext.Entity?.Metadata().IsProxy  ?? false;
 
             pipelineContext.DataService = this;
             pipelineContext.DataRepository = _dataRepository;

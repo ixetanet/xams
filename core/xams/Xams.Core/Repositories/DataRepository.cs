@@ -28,6 +28,13 @@ namespace Xams.Core.Repositories
                            throw new ArgumentNullException();
             _dataContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             _nullabilityInfoContext = new();
+            
+            // If using Sqlite enable WAL to prevent concurrency deadlocks
+            if (_dataContext.Database.ProviderName?.Contains("Sqlite") == true)
+            {
+                _dataContext.ExecuteRawSql("PRAGMA journal_mode=WAL;");
+                _dataContext.ExecuteRawSql("PRAGMA busy_timeout=5000;");
+            }
         }
 
         public TDbContext GetDbContext<TDbContext>() where TDbContext : IXamsDbContext
@@ -50,6 +57,13 @@ namespace Xams.Core.Repositories
             var dbContext = ((T)Activator.CreateInstance(_dataContextType)!);
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             _dbContexts.Add(dbContext);
+            
+            // If using Sqlite enable WAL to prevent concurrency deadlocks
+            if (dbContext.Database.ProviderName?.Contains("Sqlite") == true)
+            {
+                dbContext.ExecuteRawSql("PRAGMA journal_mode=WAL;");
+                dbContext.ExecuteRawSql("PRAGMA busy_timeout=5000;");
+            }
             return dbContext;
         }
         

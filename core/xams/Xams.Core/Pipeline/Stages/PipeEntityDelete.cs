@@ -103,8 +103,8 @@ public class PipeEntityDelete : BasePipelineStage
                 // Save when we reach an entity with post operating service logic or the end of the batch
                 bool preventSave = !tableMetadata.HasPostOpServiceLogic;
 
-                // If the reference is nullable, skip as this record will be updated
-                if (dependency.IsNullable)
+                // If the reference is nullable and not set to cascade delete, skip as this record will be updated
+                if (dependency is { IsNullable: true, IsCascadeDelete: false })
                 {
                     pipelineDependencies.Add(id, new PipelineDependency()
                     {
@@ -136,7 +136,7 @@ public class PipeEntityDelete : BasePipelineStage
                 var newPipelineContext = new PipelineContext()
                 {
                     Parent = context, // TODO: Might want to make this the parent pipeline context that's causing the delete
-                    TableName = EntityUtil.GetTableName(dependency.Type, EntityUtil.DbContext?.GetType() ?? throw new Exception("DbContext not yet initialized")).TableName,
+                    TableName = dependency.Type.Metadata().TableName,
                     UserId = context.UserId,
                     Entity = pipelineEntity,
                     InputParameters = context.InputParameters,
@@ -193,7 +193,7 @@ public class PipeEntityDelete : BasePipelineStage
 
                 // If the reference is nullable, update the record to null
                 // and If we plan to delete the entity, don't update the reference
-                if (dependency.IsNullable && !context.DataService.TrackingDelete(dependency.Type.Name, id))
+                if (dependency is { IsNullable: true, IsCascadeDelete: false } && !context.DataService.TrackingDelete(dependency.Type.Name, id))
                 {
                     var entity = await dbContext.FindAsync(dependency.Type, id);
                     if (entity == null)
