@@ -15,31 +15,39 @@ Entity definitions need to follow certain rules in order to work with Xams. {{ c
 
 ## Cascade Delete
 
-If a relationship is defined as non-nullable, it becomes required and will be deleted if the related record is removed. To prevent cascade deletion, the relationship can be made nullable.
+Configure cascade delete using the nullable operator `?` and the `CascadeDelete` attribute.
 
-You can still make the field required by using the [UIRequired](/attributes#ui-required) attribute.
 
 ```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
 [Table("Widget")]
 public class Widget : BaseRecord
 {
     public Guid WidgetId { get; set; }
-    // Name is required
+
+    // Name is not nullable and required
     public string Name { get; set; }
 
-    // Company is required, cascade delete will delete this record
+    // Company is not nullable making it required 
+    // Deleting the Company deletes this record
     public Guid CompanyId { get; set; }
     public Department Company { get; set; }
 
-    // Manufacturer is nullable, cascade delete will set this to null
+    // Manufacturer is nullable making it optional
+    // Deleting the Manufacturer sets this to null
     public Guid? ManufacturerId { get; set; }
     public Manufacturer? Manufacturer { get; set; }
 
-    // Contact is nullable, cascade delete will set this to null
-    // but upon create & update it's always required
+    // Contact is nullable but the UIRequired attribute makes it required
+    // Deleting the contact sets this to null
     [UIRequired]
     public Guid? ContactId { get; set; }
     public Contact Contact { get; set; }
 
+    // Address is nullable making it optional
+    // The CascadeDelete attribute deletes this
+    // record when the Address is deleted
+    [CascadeDelete]
+    public Guid? AddressId { get; set; }
+    public Address Address { get; set; }
 }
 ```
