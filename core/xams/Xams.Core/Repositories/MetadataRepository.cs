@@ -100,47 +100,44 @@ namespace Xams.Core.Repositories
             }
             
             string? tag = metadataInput.parameters.ContainsKey("tag") ? metadataInput.parameters["tag"].GetString() : null;
-            using (var db = GetDataContext())
+            List<TablesOutput> tables = new List<TablesOutput>();
+            if (tag != null)
             {
-                List<TablesOutput> tables = new List<TablesOutput>();
-                if (tag != null)
-                {
-                    tables = Cache.Instance.GetTableMetadata()
-                        .Where(x => x.DisplayNameAttribute.Tag == tag)
-                        .Select(x => new TablesOutput()
-                        {
-                            tableName = x.TableName,
-                            displayName = x.DisplayNameAttribute?.Name ?? x.TableName,
-                            tag = x.DisplayNameAttribute?.Tag ?? ""
-                        }).ToList();
-                }
-                else
-                {
-                    tables = Cache.Instance.GetTableMetadata()
-                        .Select(x => new TablesOutput()
-                        {
-                            tableName = x.TableName,
-                            displayName = x.DisplayNameAttribute?.Name ?? x.TableName,
-                            tag = x.DisplayNameAttribute?.Tag ?? ""
-                        }).ToList();
-                }
-
-                // Only return tables the user has read access to
-                string[] permissions = await PermissionCache.GetUserPermissions(userId);
-                List<TablesOutput> filteredTables = new List<TablesOutput>();
-                foreach (var table in tables)
-                {
-                    if (permissions.Any(x => x.StartsWith($"TABLE_{table.tableName}_READ_")))
+                tables = Cache.Instance.GetTableMetadata()
+                    .Where(x => x.DisplayNameAttribute.Tag == tag)
+                    .Select(x => new TablesOutput()
                     {
-                        filteredTables.Add(table);
-                    }
-                }
-
-                Response<object?> results = new Response<object?>();
-                results.Data = filteredTables.OrderBy(x => x.tableName).ToArray();
-                results.Succeeded = true;
-                return results;
+                        tableName = x.TableName,
+                        displayName = x.DisplayNameAttribute?.Name ?? x.TableName,
+                        tag = x.DisplayNameAttribute?.Tag ?? ""
+                    }).ToList();
             }
+            else
+            {
+                tables = Cache.Instance.GetTableMetadata()
+                    .Select(x => new TablesOutput()
+                    {
+                        tableName = x.TableName,
+                        displayName = x.DisplayNameAttribute?.Name ?? x.TableName,
+                        tag = x.DisplayNameAttribute?.Tag ?? ""
+                    }).ToList();
+            }
+
+            // Only return tables the user has read access to
+            string[] permissions = await PermissionCache.GetUserPermissions(userId);
+            List<TablesOutput> filteredTables = new List<TablesOutput>();
+            foreach (var table in tables)
+            {
+                if (permissions.Any(x => x.StartsWith($"TABLE_{table.tableName}_READ_")))
+                {
+                    filteredTables.Add(table);
+                }
+            }
+
+            Response<object?> results = new Response<object?>();
+            results.Data = filteredTables.OrderBy(x => x.tableName).ToArray();
+            results.Succeeded = true;
+            return results;
         }
         
     

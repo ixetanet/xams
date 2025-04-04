@@ -92,7 +92,7 @@ namespace Xams.Core
                             entityType.GetCustomAttribute<UIDisplayNameAttribute>()
                             ??
                             new UIDisplayNameAttribute(tableName,
-                                EntityUtil.IsSystemEntity(tableName) ? "System" : ""),
+                                EntityUtil.IsSystemEntity(entityType) ? "System" : ""),
                         TableName = tableName,
                         PrimaryKey = primaryKeyName,
                         PrimaryKeyProperty = primaryKeyProperty.First(),
@@ -696,7 +696,7 @@ namespace Xams.Core
             var nameAttrProp = tableType.GetProperties()
                 .FirstOrDefault(x => x.GetCustomAttribute<UINameAttribute>() != null);
 
-            if (!EntityUtil.IsSystemEntity(tableType.Name))
+            if (!EntityUtil.IsSystemEntity(tableType))
             {
                 if (nameAttrProp != null)
                 {
