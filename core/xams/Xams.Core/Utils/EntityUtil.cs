@@ -686,67 +686,20 @@ namespace Xams.Core.Utils
                     $"Error creating DbContext instance of type {contextType.Name}.", ex);
             }
         }
-
-        private static Type[] _systemTypes = [
-        typeof(Option), typeof(Permission), typeof(Role), typeof(RolePermission<Role>), typeof(Team),
-        typeof(TeamRole<Team, Role>), typeof(TeamUser<Team, User>), typeof(User), typeof(UserRole<User, Role>),
-        typeof(Setting), typeof(Job), typeof(JobHistory), typeof(Audit), typeof(AuditField), typeof(AuditHistory),
-        typeof(AuditHistoryDetail), typeof(Entities.System), typeof(Setting), typeof(Server)
-        ]; 
+        
+        private static readonly string[] SystemEntities =
+        [
+            "Option", "Permission", "Role", "RolePermission`1", "Team",
+            "TeamRole`2", "TeamUser`2", "User", "UserRole`2", "Setting", "Job", "JobHistory", "Audit", "AuditField",
+            "AuditHistory", "AuditHistoryDetail", "System", "Server"
+        ];
         public static bool IsSystemEntity(Type entityType)
         {
-            if (_systemTypes.Contains(entityType) || _systemTypes.Contains(entityType.BaseType))
+            if (SystemEntities.Contains(entityType.Name) || SystemEntities.Contains(entityType.BaseType?.Name))
             {
                 return true;
             }
-            
-            if (entityType.Name == "RolePermission`1")
-            {
-                var hasRoleGeneric = entityType.GenericTypeArguments
-                    .FirstOrDefault(x => x == typeof(Role) || x.BaseType == typeof(Role)) != null;
-                if (hasRoleGeneric)
-                {
-                    return true;
-                }
-            }
 
-            if (entityType.Name == "TeamRole`2")
-            {
-                var hasTeamGeneric = entityType.GenericTypeArguments
-                    .FirstOrDefault(x => x == typeof(Team) || x.BaseType == typeof(Team)) != null;
-                var hasRoleGeneric = entityType.GenericTypeArguments
-                    .FirstOrDefault(x => x == typeof(Role) || x.BaseType == typeof(Role)) != null;
-                if (hasTeamGeneric && hasRoleGeneric)
-                {
-                    return true;
-                }
-            }
-
-            if (entityType.Name == "TeamUser`2")
-            {
-                var hasTeamGeneric = entityType.GenericTypeArguments
-                    .FirstOrDefault(x => x == typeof(Team) || x.BaseType == typeof(Team)) != null;
-                var hasUserGeneric = entityType.GenericTypeArguments
-                    .FirstOrDefault(x => x == typeof(User) || x.BaseType == typeof(User)) != null;
-                if (hasTeamGeneric && hasUserGeneric)
-                {
-                    return true;
-                }
-            }
-
-            if (entityType.Name == "UserRole`2")
-            {
-                var hasUserGeneric = entityType.GenericTypeArguments
-                    .FirstOrDefault(x => x == typeof(User) || x.BaseType == typeof(User)) != null;
-                var  hasRoleGeneric = entityType.GenericTypeArguments
-                    .FirstOrDefault(x => x == typeof(Role) || x.BaseType == typeof(Role)) != null;
-                if (hasRoleGeneric && hasUserGeneric)
-                {
-                    return true;
-                }
-            }
-            
-            
             return false;
         }
 
