@@ -124,19 +124,25 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
     if (ctx.props.formMaxWidth != null) {
       return `${ctx.props.formMaxWidth}rem`;
     }
+
     if (ctx.state.metadata !== undefined) {
       const fields = ctx.state.metadata.fields.filter(
         (field) =>
-          ctx.props.formFields === undefined ||
-          ctx.props.formFields.includes(field.name)
+          ctx.state.metadata?.primaryKey !== field.name &&
+          (ctx.props.formFields === undefined ||
+            ctx.props.formFields.includes(field.name))
       );
       if (fields.length <= 3) {
-        const size = (fields.length / 3) * 72;
+        let size = (fields.length / 3) * 72;
         if (
           ctx.props.formMaxWidth !== undefined &&
           size < ctx.props.formMaxWidth
         ) {
           return `${ctx.props.formMaxWidth}rem`;
+        }
+        // minimum size
+        if (ctx.props.formMinWidth != null) {
+          return `${ctx.props.formMinWidth}rem`;
         }
         return `${size}rem`;
       }
@@ -149,11 +155,13 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
 
   const calculateSpan = () => {
     if (ctx.state.metadata !== undefined) {
-      const fields = ctx.state.metadata.fields.filter(
-        (field) =>
-          ctx.props.formFields === undefined ||
-          ctx.props.formFields.includes(field.name)
-      );
+      const fields = ctx.state.metadata.fields
+        .filter((field) => field.name !== ctx.state.metadata?.primaryKey)
+        .filter(
+          (field) =>
+            ctx.props.formFields === undefined ||
+            ctx.props.formFields.includes(field.name)
+        );
       if (fields.length <= 3) {
         return 12 / fields.length;
       }
@@ -236,7 +244,9 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
             : ctx.state.metadata !== undefined &&
               (ctx.props.formFields !== undefined
                 ? ctx.props.formFields
-                : ctx.state.metadata.fields
+                : ctx.state.metadata.fields.filter(
+                    (f) => f.name !== ctx.state.metadata?.primaryKey
+                  )
               ).map((field, i) => {
                 if (i % 3 === 0) {
                   return (
@@ -244,9 +254,11 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
                       {ctx.state.metadata !== undefined &&
                         (ctx.props.formFields !== undefined
                           ? ctx.props.formFields
-                          : ctx.state.metadata?.fields.map(
-                              (field) => field.name
-                            )
+                          : ctx.state.metadata?.fields
+                              .filter(
+                                (f) => f.name !== ctx.state.metadata?.primaryKey
+                              )
+                              .map((field) => field.name)
                         )
                           ?.slice(i, i + 3)
                           .map((fieldName, j) => {

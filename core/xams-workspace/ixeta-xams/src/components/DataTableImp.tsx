@@ -19,7 +19,6 @@ import {
   datatableReducer,
 } from "../reducers/datatableReducer";
 import {
-  DataTableField,
   DataTableFieldInfo,
   DataTableProps,
   DataTableRef,
@@ -60,7 +59,6 @@ const DataTable = forwardRef(
       id: id,
     });
     const refreshingRef = useRef(false);
-
     const stateRef = useRef(state);
 
     if (props.fields != null && props.columnWidths != null) {
@@ -122,8 +120,12 @@ const DataTable = forwardRef(
         return;
       }
 
-      const fields =
+      let fields =
         props.fields ?? metadata.fields.map((f) => f.name).slice(0, 7);
+      // Fields the user has selected to show
+      if (state.visibleFields != null && state.visibleFields?.length > 0) {
+        fields = state.visibleFields;
+      }
 
       const dataResp = await getData({
         ...getDataOptions,
@@ -196,7 +198,7 @@ const DataTable = forwardRef(
         state.metadata ??
         (await authRequest.metadata(props.tableName));
 
-      const fields = (props.fields?.filter(
+      const fields = ((state.visibleFields ?? props.fields)?.filter(
         (f) => typeof f === "string" && !f.includes(".") // Exclude joined fields
       ) ??
         options?.fields?.filter(
@@ -238,8 +240,11 @@ const DataTable = forwardRef(
       }
 
       // If deactivate instead of delete is enabled, add the IsActive field to the fields
-      if (props.deleteBehavior === "Deactivate") {
-        if (fields.find((f) => f === "IsActive") === undefined) {
+      if (props.canDeactivate) {
+        if (
+          fields.find((f) => f === "IsActive") === undefined &&
+          metadata?.fields.find((f) => f.name === "IsActive") !== undefined
+        ) {
           fields.push("IsActive");
         }
       }
@@ -262,7 +267,8 @@ const DataTable = forwardRef(
                 ? ""
                 : options.searchValue ?? state.searchValue ?? "",
           },
-          ...(props.showActiveSwitch === true
+          ...(props.showActiveSwitch === true &&
+          metadata.fields.find((f) => f.name === "IsActive")
             ? [
                 {
                   field: "IsActive",
@@ -313,7 +319,7 @@ const DataTable = forwardRef(
           showLoading: showLoading,
           searchField: stateRef.current.searchField as string,
           searchValue: stateRef.current.searchValue as string,
-          orderBy: orderBy, //stateRef.current.data?.orderBy ?? [],
+          orderBy: orderBy,
           active: stateRef.current.activeSwitch === "Active" ? true : false,
           setData: true,
         });
@@ -327,8 +333,27 @@ const DataTable = forwardRef(
       return `100%`;
     };
     const getFields = (): DataTableFieldInfo[] => {
+      if (state.visibleFields != null) {
+        let results = state.visibleFields
+          .map((f, i) => {
+            const mField = state.metadata?.fields.find((x) => x.name === f);
+            if (mField == null) {
+              return null;
+            }
+            return {
+              displayName: mField?.displayName,
+              metadataField: mField,
+              body: null,
+              width: `100%`,
+              alias: "",
+            };
+          })
+          .filter(isNotNull);
+        return results;
+      }
       if (props.fields != null && state.metadata != null) {
         let results = props.fields
+          .filter((f) => f !== state.metadata?.primaryKey)
           .map((f, i) => {
             if (typeof f === "string") {
               let fieldName = f;
@@ -372,6 +397,7 @@ const DataTable = forwardRef(
       }
       if (props.fields == null && state.metadata != null) {
         let results = state.metadata?.fields
+          .filter((f) => f.name !== state.metadata?.primaryKey)
           .map((f, i) => {
             if (i <= 6) {
               return {
@@ -486,7 +512,7 @@ const DataTable = forwardRef(
       if (props.tableName !== undefined) {
         onLoad();
       }
-    }, [props.tableName, props.disabledMessage]);
+    }, [props.tableName, props.disabledMessage, state.visibleFields]);
 
     useEffect(() => {
       if (props.refreshInterval != null) {

@@ -11,6 +11,7 @@ namespace Xams.Core.Interfaces
 {
     public interface IDataService
     {
+        internal IServiceProvider ServiceProvider { get; }
         public Guid GetExecutionId();
         public DataRepository GetDataRepository();
         public MetadataRepository GetMetadataRepository();

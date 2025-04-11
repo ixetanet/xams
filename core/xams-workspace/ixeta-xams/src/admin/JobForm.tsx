@@ -21,6 +21,10 @@ const JobForm = (props: JobFormProps) => {
     });
     await authRequest.action("ADMIN_TriggerJob", {
       jobName: props.formBuilder.snapshot?.Name,
+      // parameters: {
+      //   JobId: props.formBuilder.snapshot?.JobId,
+      //   JobName: props.formBuilder.snapshot?.Name,
+      // },
     });
     setIsLoading(false);
   };

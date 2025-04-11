@@ -22,6 +22,11 @@ import DataGridValidation from "./datagrid/DataGridValidation";
 
 export interface DataGridRef {
   reset: () => void;
+  activeCell?: CellLocation;
+  setActiveCell: (cell: CellLocation) => void;
+  isEditing?: boolean;
+  editValue?: string;
+  setEditValue: (value: string) => void;
 }
 
 const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
@@ -30,7 +35,8 @@ const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
   );
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
-  const [isShiftKeyPressed, setIsShiftKeyPressed] = useState(false);
+  const shiftKeyPressed = useRef(false);
+  const ctrlPressed = useRef(false);
   const divRef = useRef<HTMLDivElement>(null);
 
   const staticColumnStaticRows = useRef<VariableSizeGrid>(null);
@@ -83,7 +89,10 @@ const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
   const onKeyDown = (w: Window, e?: KeyboardEvent, value?: string) => {
     if (props.editable === false) return;
     if (e?.key === "Shift") {
-      setIsShiftKeyPressed(true);
+      shiftKeyPressed.current = true;
+    }
+    if (e?.key === "Control") {
+      ctrlPressed.current = true;
     }
     if (keyPressed) return;
     if (e === undefined) {
@@ -145,7 +154,7 @@ const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
         onCancelEdit();
       } else if (e.key === "Tab") {
         onEndEdit();
-        if (isShiftKeyPressed) {
+        if (shiftKeyPressed.current) {
           if (activeCell.col === 0) return;
           setActiveCell({
             row: activeCell.row,
@@ -160,7 +169,9 @@ const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
         }
         e.stopPropagation();
       } else {
-        onStartEdit(e);
+        if (!ctrlPressed.current) {
+          onStartEdit(e);
+        }
       }
     }
   };
@@ -211,7 +222,10 @@ const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
     };
     const keyUpEvent = (e: KeyboardEvent) => {
       if (e.key === "Shift") {
-        setIsShiftKeyPressed(false);
+        shiftKeyPressed.current = false;
+      }
+      if (e.key === "Control") {
+        ctrlPressed.current = false;
       }
     };
 
@@ -222,7 +236,7 @@ const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
       window.removeEventListener("keydown", keyDownEvent);
       window.removeEventListener("keyup", keyUpEvent);
     };
-  }, [activeCell, isEditing, editValue, isShiftKeyPressed]);
+  }, [activeCell, isEditing, editValue]);
 
   const handleClickOutside = (event: any) => {
     if (divRef.current && !divRef.current.contains(event.target)) {
@@ -240,6 +254,15 @@ const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
   useImperativeHandle(ref, () => ({
     reset: () => {
       reset();
+    },
+    activeCell: activeCell,
+    setActiveCell: (cell: CellLocation) => {
+      setActiveCell(cell);
+    },
+    isEditing: isEditing,
+    editValue: editValue,
+    setEditValue: (value: string) => {
+      setEditValue(value);
     },
   }));
 

@@ -136,6 +136,8 @@ const RolePermissions = (props: RolePermissionsProps) => {
     onLoad();
   }, []);
 
+  props.formBuilder.onPreSaveRef.current = onSave;
+
   return (
     <div className="w-full flex flex-col gap-4">
       <Field name="Name"></Field>
@@ -296,7 +298,7 @@ const RolePermissions = (props: RolePermissionsProps) => {
           )}
         </div>
         <div>
-          <SaveButton onPreSave={onSave}></SaveButton>
+          <SaveButton></SaveButton>
         </div>
       </div>
     </div>

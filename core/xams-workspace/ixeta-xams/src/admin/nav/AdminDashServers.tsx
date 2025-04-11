@@ -31,6 +31,7 @@ const AdminDashServers = () => {
                     canDelete={false}
                     canCreate={false}
                     canUpdate={false}
+                    refreshInterval={1000}
                     formAppendButton={(formbuilder) => {
                       return (
                         <>

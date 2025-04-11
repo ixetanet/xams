@@ -24,20 +24,12 @@
   position: sticky
 }
 
-.-left-0 {
-  left: -0px
-}
-
 .-left-0\.5 {
   left: -0.125rem
 }
 
 .-right-1 {
   right: -0.25rem
-}
-
-.-top-0 {
-  top: -0px
 }
 
 .-top-0\.5 {
@@ -124,6 +116,10 @@
   height: 0.25rem
 }
 
+.h-2 {
+  height: 0.5rem
+}
+
 .h-4 {
   height: 1rem
 }
@@ -158,6 +154,14 @@
 
 .h-full {
   height: 100%
+}
+
+.h-10 {
+  height: 2.5rem
+}
+
+.max-h-\[80vh\] {
+  max-height: 80vh
 }
 
 .w-1 {
@@ -341,10 +345,6 @@
   background-color: rgb(220 38 38 / var(--tw-bg-opacity))
 }
 
-.p-0 {
-  padding: 0px
-}
-
 .p-0\.5 {
   padding: 0.125rem
 }
@@ -371,14 +371,14 @@
   padding-right: 0.5rem
 }
 
-.py-0 {
-  padding-top: 0px;
-  padding-bottom: 0px
-}
-
 .py-0\.5 {
   padding-top: 0.125rem;
   padding-bottom: 0.125rem
+}
+
+.py-1 {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem
 }
 
 .py-2 {
@@ -388,10 +388,6 @@
 
 .pl-2 {
   padding-left: 0.5rem
-}
-
-.pr-0 {
-  padding-right: 0px
 }
 
 .pr-0\.5 {

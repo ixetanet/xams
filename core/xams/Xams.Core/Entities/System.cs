@@ -11,7 +11,7 @@ public class System
     public Guid SystemId { get; set; }
     [MaxLength(250)]
     public string? Name { get; set; }
-    [MaxLength(250)]
+    [MaxLength(2000)]
     public string? Value { get; set; }
     public DateTime? DateTime { get; set; }
 }

@@ -29,7 +29,7 @@ public class AuditNameService : IServiceLogic
         {
             var db = context.GetDbContext<IXamsDbContext>();
             var entity = context.GetEntity<object>();
-            string name = entity.GetNameFieldValue(metadata.Type) ?? "";
+            string name = entity.GetNameFieldValue() ?? "";
             object id = entity.GetId();
             // On change of the Name attribute of an entity update it's name on all of the audit history records
             string schema = db.Model.FindEntityType(entity.GetType())?.GetSchema() ?? string.Empty;

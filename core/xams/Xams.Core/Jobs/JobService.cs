@@ -1,4 +1,5 @@
 using System.Linq.Dynamic.Core;
+using System.Text.Json;
 using System.Timers;
 using Microsoft.Extensions.DependencyInjection;
 using Xams.Core.Base;
@@ -116,15 +117,28 @@ public class JobService
             DynamicLinq dLinqJobs =
                 new DynamicLinq(xamsDbContext, jobMetadata.Type);
             IQueryable query = dLinqJobs.Query;
-            string jobName = systemRecord.Value;
-            query = query.Where("Name == @0", jobName);
+            var options = JsonSerializer.Deserialize<JobOptions>((string)systemRecord.Value);
+            if (options == null)
+            {
+                throw new Exception("Failed to deserialize job options");
+            }
+            query = query.Where("Name == @0", options.JobName);
             // Get all jobs every execution because the job might have been activated\deactivated
             var jobRecord = query.ToDynamicList().FirstOrDefault();
             if (jobRecord == null)
             {
                 continue;
             }
-            var job = new Job(jobRecord);
+
+            var parameters = new Dictionary<string, JsonElement>();
+            if (options.Parameters != null)
+            {
+                parameters = ((JsonElement)options.Parameters)
+                    .EnumerateObject()
+                    .ToDictionary(prop => prop.Name, prop => prop.Value);    
+            }
+            
+            var job = new Job(jobRecord, parameters, options.JobHistoryId);
             await job.Execute(scope, true);
         }
         
@@ -159,7 +173,7 @@ public class JobService
         IQueryable query = dLinqJobs.Query;
         // Get all jobs every execution because the job might have been actived\deactivated
         var dynamicJobs = query.ToDynamicList();
-        var jobs = dynamicJobs.Select(x => new Job(x)).ToList();
+        var jobs = dynamicJobs.Select(x => new Job(x, new Dictionary<string, JsonElement>())).ToList();
                 
         // Get the default server to execute jobs that should only run on 1 server, where a specific
         // server hasn't been specified

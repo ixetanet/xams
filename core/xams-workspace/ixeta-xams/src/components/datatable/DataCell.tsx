@@ -5,6 +5,7 @@ import { IconCheck, IconCircleOff, IconTrash } from "@tabler/icons-react";
 import {
   MantineColorShade,
   Table,
+  Tooltip,
   useMantineColorScheme,
   useMantineTheme,
 } from "@mantine/core";
@@ -35,6 +36,15 @@ const DataCell = (props: DataCellProps) => {
       : theme.colors[theme.primaryColor][
           theme.primaryShade as MantineColorShade
         ];
+
+  const showDelete =
+    props.record["_ui_info_"]["canDelete"] === true &&
+    (ctx.props.canDelete === undefined || ctx.props.canDelete === true);
+
+  const showDeactivate =
+    props.record["_ui_info_"]["canUpdate"] === true &&
+    ctx.state.metadata?.fields.find((f) => f.name === "IsActive") != null &&
+    ctx.props.canDeactivate === true;
 
   const getDataValue = (fieldType: string, value: any) => {
     if (fieldType === "Boolean") {
@@ -67,44 +77,41 @@ const DataCell = (props: DataCellProps) => {
   const onDelete = async (record: any) => {
     const id = record[ctx.state.metadata?.primaryKey ?? ""];
     if (
-      ctx.props.deleteBehavior === "Delete" ||
-      ctx.props.deleteBehavior == null
+      ctx.props.confirmDelete === undefined ||
+      ctx.props.confirmDelete === true
     ) {
-      if (
-        ctx.props.confirmDelete === undefined ||
-        ctx.props.confirmDelete === true
-      ) {
-        let title = "Confirm";
-        let message = "Are you sure you want to delete this record?";
-        let showPrompt = true;
-        if (ctx.props.deleteConfirmation != null) {
-          const deletePrompt = await ctx.props.deleteConfirmation(record);
-          title = deletePrompt.title ?? title;
-          message = deletePrompt.message ?? message;
-          showPrompt =
-            deletePrompt.showPrompt === undefined
-              ? true
-              : deletePrompt.showPrompt;
-        }
-        if (!showPrompt) {
-          await deleteRecord(record, ctx.props.tableName, id);
-        } else {
-          appContext?.showConfirm(
-            message,
-            async () => {
-              await deleteRecord(record, ctx.props.tableName, id);
-            },
-            () => {},
-            title
-          );
-        }
-      } else {
-        await deleteRecord(record, ctx.props.tableName, id);
+      let title = "Confirm";
+      let message = "Are you sure you want to delete this record?";
+      let showPrompt = true;
+      if (ctx.props.deleteConfirmation != null) {
+        const deletePrompt = await ctx.props.deleteConfirmation(record);
+        title = deletePrompt.title ?? title;
+        message = deletePrompt.message ?? message;
+        showPrompt =
+          deletePrompt.showPrompt === undefined
+            ? true
+            : deletePrompt.showPrompt;
       }
+      if (!showPrompt) {
+        await deleteRecord(record, ctx.props.tableName, id);
+      } else {
+        appContext?.showConfirm(
+          message,
+          async () => {
+            await deleteRecord(record, ctx.props.tableName, id);
+          },
+          () => {},
+          title
+        );
+      }
+    } else {
+      await deleteRecord(record, ctx.props.tableName, id);
     }
-    if (ctx.props.deleteBehavior === "Deactivate") {
-      updateRecord(ctx.props.tableName, id, !isActive);
-    }
+  };
+
+  const onDeactivate = async (record: any) => {
+    const id = record[ctx.state.metadata?.primaryKey ?? ""];
+    await updateRecord(ctx.props.tableName, id, !isActive);
   };
 
   const updateRecord = async (
@@ -133,17 +140,13 @@ const DataCell = (props: DataCellProps) => {
     await ctx.refresh();
   };
 
-  const deleteJsx = (record: any) => {
+  const ActionBox = ({ children }: { children: React.ReactElement }) => {
     return (
       <div
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(record);
-        }}
         className={`absolute right-0 top-0 bottom-0 flex items-center cursor-pointer xams_delete`}
       >
         <div
-          className="flex items-center p-0.5 rounded"
+          className="flex items-center p-0.5 rounded gap-1"
           style={{
             backgroundColor:
               colorScheme === "dark"
@@ -155,16 +158,53 @@ const DataCell = (props: DataCellProps) => {
                   ],
           }}
         >
-          {ctx.props.deleteBehavior == null ||
-          ctx.props.deleteBehavior === "Delete" ? (
-            <IconTrash size={26} strokeWidth={2} color={iconColor} />
-          ) : isActive ? (
-            <IconCircleOff size={26} strokeWidth={2} color={iconColor} />
-          ) : (
-            <IconCheck size={26} strokeWidth={2} color={iconColor} />
-          )}
+          {children}
         </div>
       </div>
+    );
+  };
+
+  const Delete = ({ record }: { record: any }) => {
+    return (
+      <Tooltip label="Delete" withArrow>
+        <IconTrash
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(record);
+          }}
+          size={26}
+          strokeWidth={2}
+          color={iconColor}
+        />
+      </Tooltip>
+    );
+  };
+
+  const Deactivate = ({ record }: { record: any }) => {
+    return isActive ? (
+      <Tooltip label="Deactivate" withArrow>
+        <IconCircleOff
+          onClick={(e) => {
+            e.stopPropagation();
+            onDeactivate(record);
+          }}
+          size={26}
+          strokeWidth={2}
+          color={iconColor}
+        />
+      </Tooltip>
+    ) : (
+      <Tooltip label="Activate" withArrow>
+        <IconCheck
+          onClick={(e) => {
+            e.stopPropagation();
+            onDeactivate(record);
+          }}
+          size={26}
+          strokeWidth={2}
+          color={iconColor}
+        />
+      </Tooltip>
     );
   };
 
@@ -204,10 +244,14 @@ const DataCell = (props: DataCellProps) => {
       {props.fieldInfo.body != null
         ? props.fieldInfo.body(props.record, ctx.refHandle)
         : cellValue}
-
-      {props.record["_ui_info_"]["canDelete"] === true &&
-        (ctx.props.canDelete === undefined || ctx.props.canDelete === true) &&
-        deleteJsx(props.record)}
+      {(showDeactivate || showDelete) && (
+        <ActionBox>
+          <>
+            {showDeactivate && <Deactivate record={props.record} />}
+            {showDelete && <Delete record={props.record} />}
+          </>
+        </ActionBox>
+      )}
     </Table.Td>
   );
 };

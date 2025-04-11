@@ -13,6 +13,7 @@ namespace Xams.Core.Attributes
     [Flags]
     public enum LogicStage
     {
+        PreValidation = 1,
         PreOperation = 2,
         PostOperation = 4,
     }

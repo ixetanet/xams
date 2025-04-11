@@ -1,5 +1,28 @@
 # Release Notes
 
+## 1.0.8
+
+- Added whoami endpoint
+- Added Development tab in dashboard
+- Added Types in development tab to generate typescript types
+- Added addUserIdUrlParam client utility method
+- Added service logic & actions works with dependency injection
+- Added lookups search on description
+- Added display attributes for BaseEntity fields
+- Added formMinSize to DataTable
+- Added select columns on datatable
+- Added ExecuteJob to BaseServiceContext
+- Added Job Parameters
+- Fixed data export
+- Fixed data import uses scheduled jobs to handle larger imports
+- Fixed hide discriminator columns from tables\reads
+- Fixed sqlite concurrency deadlocks
+- Fixed sqlite null non-nullable fields
+- Fixed return primary key as field in metadata
+- Fixed FormContainer uses form
+- Fixed admin dash shows Active\Inactive switch by default
+- Moved Post\Pre save events to FormContainer
+
 ## 1.0.7
 
 - Core entities now internally located

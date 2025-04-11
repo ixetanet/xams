@@ -1,4 +1,4 @@
-import { Button } from "@mantine/core";
+import { Button, MantineSize } from "@mantine/core";
 import React, {
   forwardRef,
   useCallback,
@@ -25,9 +25,10 @@ interface SaveButtonProps {
     | "subtle"
     | "gradient";
   className?: string;
-  onPreValidate?: PreSaveEvent;
-  onPreSave?: PreSaveEvent; // If returns false, save will be cancelled
-  onPostSave?: PostSaveEvent;
+  // onPreValidate?: PreSaveEvent;
+  // onPreSave?: PreSaveEvent; // If returns false, save will be cancelled
+  // onPostSave?: PostSaveEvent;
+  size?: MantineSize;
 }
 
 const SaveButton = (props: SaveButtonProps) => {
@@ -41,10 +42,12 @@ const SaveButton = (props: SaveButtonProps) => {
 
   return (
     <Button
+      type="submit"
       className={props.className}
-      onClick={() =>
-        formBuilder.save(props.onPreValidate, props.onPreSave, props.onPostSave)
-      }
+      size={props.size}
+      // onClick={() =>
+      //   formBuilder.save(props.onPreValidate, props.onPreSave, props.onPostSave)
+      // }
       variant={props.varient}
     >
       {props.label !== undefined ? props.label : ""}

@@ -1,20 +1,20 @@
-import { Button, Menu, Text } from "@mantine/core";
+import { Button, Menu } from "@mantine/core";
 import {
   IconTableExport,
   IconFileImport,
   IconDotsVertical,
-  IconMessageCircle,
   IconFileExport,
+  IconColumns,
 } from "@tabler/icons-react";
 import React, { useEffect, useState } from "react";
 import useColor from "../../hooks/useColor";
 import usePermissionStore from "../../stores/usePermissionStore";
 import { useDataTableContext } from "../DataTableImp";
 import useAuthRequest from "../../hooks/useAuthRequest";
-import { API_DATA_ACTION } from "../../apiurls";
 import DataTableImportData from "./DataTableImportData";
 import { useDisclosure } from "@mantine/hooks";
 import { ReadRequest } from "../../api/ReadRequest";
+import DataTableColumns from "./DataTableColumns";
 
 interface ShowOptions {
   Import: boolean;
@@ -22,7 +22,6 @@ interface ShowOptions {
 }
 
 const DataTableOptions = () => {
-  const [show, setShow] = useState<boolean>(false);
   const [visibleOptions, setVisibleOptions] = useState<ShowOptions | undefined>(
     undefined
   );
@@ -31,6 +30,7 @@ const DataTableOptions = () => {
   const ctx = useDataTableContext();
   const permissionStore = usePermissionStore();
   const [importDataOpened, importDataDisclosure] = useDisclosure(false);
+  const [columnsOpened, columnsDisclosure] = useDisclosure(false);
 
   const getPermissions = async () => {
     const permissions = await permissionStore.getPermissions(authRequest, [
@@ -70,10 +70,6 @@ const DataTableOptions = () => {
       Import: canImport,
       Export: canExport,
     });
-
-    if (ctx.props.disabledMessage == null && (canImport || canExport)) {
-      setShow(true);
-    }
   };
 
   const downloadImportTemplate = async () => {
@@ -110,15 +106,7 @@ const DataTableOptions = () => {
     }
   }, [visibleOptions, ctx.state.isLoadingData]);
 
-  useEffect(() => {
-    if (ctx.props.disabledMessage == null) {
-      if (visibleOptions?.Import || visibleOptions?.Export) {
-        setShow(true);
-      }
-    }
-  }, [ctx.props.disabledMessage]);
-
-  if (!show || ctx.state.metadata == null) {
+  if (ctx.props.disabledMessage || ctx.state.metadata == null) {
     return <></>;
   }
 
@@ -128,6 +116,12 @@ const DataTableOptions = () => {
         opened={importDataOpened}
         close={importDataDisclosure.close}
       />
+      {ctx.state.metadata != null && (
+        <DataTableColumns
+          opened={columnsOpened}
+          close={columnsDisclosure.close}
+        />
+      )}
       <Menu shadow="md" width={200}>
         <Menu.Target>
           <Button
@@ -144,6 +138,13 @@ const DataTableOptions = () => {
         </Menu.Target>
 
         <Menu.Dropdown>
+          <Menu.Label>View</Menu.Label>
+          <Menu.Item
+            onClick={columnsDisclosure.open}
+            leftSection={<IconColumns size={14} />}
+          >
+            Columns
+          </Menu.Item>
           {(visibleOptions?.Import || visibleOptions?.Export) && (
             <Menu.Label>Data</Menu.Label>
           )}

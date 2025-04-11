@@ -5,12 +5,14 @@ export interface AuthContextProviderProps {
   apiUrl: string;
   headers?: { [key: string]: string };
   children?: any;
+  withCredentials?: boolean;
 }
 
 export type AuthContextShape = {
   onUnauthorized?: () => void;
   apiUrl: string;
   headers?: { [key: string]: string };
+  withCredentials?: boolean;
 };
 
 export const AuthContext = React.createContext<AuthContextShape | null>(null);
@@ -34,16 +36,17 @@ const AuthContextProvider = (props: AuthContextProviderProps) => {
     }
   }
 
-  const value = useMemo(
-    () => ({
-      onUnauthorized: props.onUnauthorized,
-      apiUrl: props.apiUrl,
-      headers: props.headers,
-    }),
-    [props.apiUrl, headersString]
-  );
   return (
-    <AuthContext.Provider value={value}>{props.children}</AuthContext.Provider>
+    <AuthContext.Provider
+      value={{
+        onUnauthorized: props.onUnauthorized,
+        apiUrl: props.apiUrl,
+        headers: props.headers,
+        withCredentials: props.withCredentials,
+      }}
+    >
+      {props.children}
+    </AuthContext.Provider>
   );
 };
 

@@ -18,7 +18,8 @@ export type DataTableTypes =
   | "SET_METADATA"
   | "SET_DATA"
   | "OPEN_FORM"
-  | "CLOSE_FORM";
+  | "CLOSE_FORM"
+  | "SET_VISIBLE_FIELDS";
 
 export interface DataTableState {
   type: DataTableTypes;
@@ -35,6 +36,7 @@ export interface DataTableState {
   activeSwitch?: string | null;
   editRecordId?: string | null;
   formTableName?: string; // This is only set when the form is open to prevent loading without a table name and id
+  visibleFields?: string[]; // When the user has selected specific fields to show
 }
 
 interface TypeInitialLoad {
@@ -73,6 +75,10 @@ interface TypeOpenForm {
   editRecordId: string | null;
 }
 
+interface TypeVisibleFields {
+  visibleFields: string[];
+}
+
 const emptyReadResponse = {
   pages: 0,
   currentPage: 1,
@@ -81,6 +87,7 @@ const emptyReadResponse = {
   tableName: "",
   maxResults: 10,
   results: [],
+  parameters: {},
 } as ReadResponse<any>;
 
 export const dataTableInitState = {
@@ -102,10 +109,11 @@ export const dataTableInitState = {
   searchValue: "",
   activeSwitch: null,
   editRecordId: null,
+  visibleFields: undefined,
 } as DataTableState;
 
 export interface DataTableAction {
-  type: string;
+  type: DataTableTypes;
   payload?:
     | DataTableState
     | TypeInitialLoad
@@ -115,7 +123,8 @@ export interface DataTableAction {
     | TypeActiveSwitch
     | TypeSetMetadata
     | TypeSetData
-    | TypeOpenForm;
+    | TypeOpenForm
+    | TypeVisibleFields;
 }
 
 export const datatableReducer = (
@@ -128,6 +137,7 @@ export const datatableReducer = (
       return {
         ...dataTableInitState,
         isLoadingData: true,
+        visibleFields: state.visibleFields, // Keep the visible fields
         type: "START_INITIAL_LOAD",
       };
     case "MISSING_READ_PERMISSIONS":
@@ -155,6 +165,7 @@ export const datatableReducer = (
         // change to type OPEN_FORM to open the form
         editRecordId: state.editRecordId,
         type: state.editRecordId ? "OPEN_FORM" : "INITIAL_LOAD_COMPLETE",
+        visibleFields: state.visibleFields,
       };
     case "SET_IS_LOADING":
       return {
@@ -216,6 +227,13 @@ export const datatableReducer = (
         editRecordId: undefined,
         formTableName: undefined,
         type: "CLOSE_FORM",
+      };
+
+    case "SET_VISIBLE_FIELDS":
+      return {
+        ...state,
+        visibleFields: (action.payload as TypeVisibleFields).visibleFields,
+        type: "SET_VISIBLE_FIELDS",
       };
   }
 

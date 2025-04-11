@@ -54,7 +54,7 @@ const ActionPermissions = (props: ActionPermissionProps) => {
       if (permission.Name.startsWith("ACTION_TABLE")) {
         continue;
       }
-      if (permission.Name == "ACCESS_ADMIN_DASHBOARD") {
+      if (permission.Name.startsWith("ACCESS_ADMIN")) {
         continue;
       }
 

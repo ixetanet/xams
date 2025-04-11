@@ -70,7 +70,6 @@ namespace Xams.Core
 
                     var discriminatorPropertyName = dbContext.Model.FindEntityType(entityType)?.GetDiscriminatorPropertyName();
                     
-                    // In the case of a composite primary key, it won't return
                     if (!TryFindPrimaryKeyProperties(dbContext, entityType, out var primaryKeyProperty))
                     {
                         continue;
@@ -111,6 +110,19 @@ namespace Xams.Core
                     {
                         cache.TableTypeMetadata.TryAdd(entityType.BaseType, tableMetadata);
                     }
+                    
+                    // Table Required fields
+                    var tableRequiredFields = entityType.GetCustomAttribute<UIRequiredAttribute>()?.Fields ?? [];
+                    var tableReadOnlyFields = entityType.GetCustomAttribute<UIReadOnlyAttribute>()?.Fields ?? [];
+                    var tableRecommendedFields = entityType.GetCustomAttribute<UIRecommendedAttribute>()?.Fields ?? [];
+
+                    var owningUserDisplayName = entityType.GetCustomAttribute<UIDisplayNameOwningUserAttribute>();
+                    var owningTeamDisplayName = entityType.GetCustomAttribute<UIDisplayNameOwningTeamAttribute>();
+                    var createdDateDisplayName = entityType.GetCustomAttribute<UIDisplayNameCreatedDateAttribute>();
+                    var updatedDateDisplayName = entityType.GetCustomAttribute<UIDisplayNameUpdatedDateAttribute>();
+                    var isActiveDisplayName = entityType.GetCustomAttribute<UIDisplayNameIsActiveAttribute>();
+                    var createdByDisplayName = entityType.GetCustomAttribute<UIDisplayNameCreatedByAttribute>();
+                    var updatedByDisplayName = entityType.GetCustomAttribute<UIDisplayNameUpdatedByAttribute>();
 
                     // Get Metadata Output for the metadata endpoint
                     var properties = tableMetadata.Type.GetProperties();
@@ -119,9 +131,6 @@ namespace Xams.Core
                     {
                         // Skip ICollection
                         if (!property.IsValidEntityProperty())
-                            continue;
-                        // Ignore the Primary Key field
-                        if (property.Name == primaryKeyName)
                             continue;
 
                         // Ignore the hidden fields
@@ -225,6 +234,37 @@ namespace Xams.Core
                             }
                         }
 
+                        string displayName = displayNameAttribute.Name;
+
+                        if (property.Name == "OwningUserId" && owningUserDisplayName != null)
+                        {
+                            displayName = owningUserDisplayName.DisplayName;
+                        }
+                        if (property.Name == "OwningTeamId" && owningTeamDisplayName != null)
+                        {
+                            displayName = owningTeamDisplayName.DisplayName;
+                        }
+                        if (property.Name == "CreatedDate" && createdDateDisplayName != null)
+                        {
+                            displayName = createdDateDisplayName.DisplayName;
+                        }
+                        if (property.Name == "UpdatedDate" && updatedDateDisplayName != null)
+                        {
+                            displayName = updatedDateDisplayName.DisplayName;
+                        }
+                        if (property.Name == "IsActive" && isActiveDisplayName != null)
+                        {
+                            displayName = isActiveDisplayName.DisplayName;
+                        }
+                        if (property.Name == "CreatedById" && createdByDisplayName != null)
+                        {
+                            displayName = createdByDisplayName.DisplayName;
+                        }
+                        if (property.Name == "UpdatedById" && updatedByDisplayName != null)
+                        {
+                            displayName = updatedByDisplayName.DisplayName;
+                        }
+
                         bool isNullable;
                         if (property.PropertyType != typeof(string))
                         {
@@ -239,7 +279,7 @@ namespace Xams.Core
                         fields.Add(new MetadataField()
                         {
                             name = property.Name,
-                            displayName = displayNameAttribute.Name,
+                            displayName = displayName,
                             type = fieldType,
                             characterLimit = characterLimitAttribute?.Limit,
                             order = layoutAttribute.Order,
@@ -249,9 +289,9 @@ namespace Xams.Core
                             lookupTableDescriptionField = lookuptableDescriptionField,
                             dateFormat = dateFormatAttribute?.DateFormat,
                             isNullable = isNullable,
-                            isRequired = requiredAttribute != null,
-                            isRecommended = recommendedAttribute != null,
-                            isReadOnly = readOnlyAttribute != null,
+                            isRequired = requiredAttribute != null || tableRequiredFields.Contains(property.Name),
+                            isRecommended = recommendedAttribute != null || tableRecommendedFields.Contains(property.Name),
+                            isReadOnly = readOnlyAttribute != null || tableReadOnlyFields.Contains(property.Name),
                             option = optionAttribute?.Name ?? "",
                             numberRange = numberRangeAttribute != null
                                 ? $"{numberRangeAttribute.Min}-{numberRangeAttribute.Max}"
@@ -515,6 +555,7 @@ namespace Xams.Core
 
                     JobServerAttribute? jobServerAttribute = type.GetCustomAttribute<JobServerAttribute>();
                     JobTimeZone? jobDaylightSavingsAttribute = type.GetCustomAttribute<JobTimeZone>();
+                    JobInitialStateAttribute? jobStateAttribute = type.GetCustomAttribute<JobInitialStateAttribute>();
 
                     if (jobDaylightSavingsAttribute != null && !IsValidTimeZone(jobDaylightSavingsAttribute.TimeZone))
                     {
@@ -527,6 +568,7 @@ namespace Xams.Core
                         ServiceJobAttribute = serviceJobAttribute,
                         Type = type,
                         ExecuteJobOn = jobServerAttribute?.ExecuteJobOn ?? ExecuteJobOn.All,
+                        State = jobStateAttribute?.State ?? JobState.Active,
                         ServerName = jobServerAttribute?.ServerName ?? string.Empty,
                         TimeZone = jobDaylightSavingsAttribute?.TimeZone ?? string.Empty,
                     };
@@ -844,6 +886,7 @@ namespace Xams.Core
             public ServiceJobAttribute ServiceJobAttribute { get; internal set; } = null!;
             public Type? Type { get; internal set; }
             public ExecuteJobOn ExecuteJobOn { get; internal set; } = ExecuteJobOn.All;
+            public JobState State { get; internal set; }
             public string? ServerName { get; internal set; }
 
             public string? TimeZone { get; internal set; }

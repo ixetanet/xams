@@ -130,8 +130,8 @@ internal class AuditHistoryBulkService : IBulkService
             context.DataOperation is DataOperation.Create or DataOperation.Update or DataOperation.Delete)
         {
             name = context.DataOperation is DataOperation.Delete
-                ? context.GetPreEntity<object>().GetNameFieldValue(entityMetadata.Type)
-                : entity.GetNameFieldValue(entityMetadata.Type);
+                ? context.GetPreEntity<object>().GetNameFieldValue()
+                : entity.GetNameFieldValue();
             // Get the ID value - this could be any type, not just Guid
             id = entity.GetId();
         }
@@ -200,7 +200,7 @@ internal class AuditHistoryBulkService : IBulkService
                         var query = dynamicLinq.Query.Where($"{lookupType.Name}Id == @0", lookupIdValue);
                         var lookupEntity = (await query.ToDynamicListAsync()).FirstOrDefault() ??
                                            throw new InvalidOperationException("Lookup entity not found.");
-                        auditHistoryDetail["NewValue"] = ((object)lookupEntity).GetNameFieldValue(lookupType);
+                        auditHistoryDetail["NewValue"] = ((object)lookupEntity).GetNameFieldValue();
                         auditHistoryDetail["EntityName"] = lookupType.Name;
                         auditHistoryDetail["NewValueId"] = entity.GetValue(entityProperty.Name);
                     }
@@ -248,7 +248,7 @@ internal class AuditHistoryBulkService : IBulkService
                         var query = dynamicLinq.Query.Where($"{lookupType.Name}Id == @0", newLookupIdValue);
                         var lookupEntity = (await query.ToDynamicListAsync()).FirstOrDefault() ??
                                            throw new InvalidOperationException("Lookup entity not found.");
-                        auditHistoryDetail["NewValue"] = ((object)lookupEntity).GetNameFieldValue(lookupType);
+                        auditHistoryDetail["NewValue"] = ((object)lookupEntity).GetNameFieldValue();
                         auditHistoryDetail["NewValueId"] = entity.GetValue(entityProperty.Name);
                         auditHistoryDetail["EntityName"] = lookupType.Name;
                     }
@@ -259,7 +259,7 @@ internal class AuditHistoryBulkService : IBulkService
                         var query = dynamicLinq.Query.Where($"{lookupType.Name}Id == @0", oldLookupIdValue);
                         var lookupEntity = (await query.ToDynamicListAsync()).FirstOrDefault() ??
                                            throw new InvalidOperationException("Lookup entity not found.");
-                        auditHistoryDetail["OldValue"] = ((object)lookupEntity).GetNameFieldValue(lookupType);
+                        auditHistoryDetail["OldValue"] = ((object)lookupEntity).GetNameFieldValue();
                         auditHistoryDetail["OldValueId"] = preEntity.GetValue(entityProperty.Name);
                         auditHistoryDetail["EntityName"] = lookupType.Name;
                     }
@@ -304,7 +304,7 @@ internal class AuditHistoryBulkService : IBulkService
                         var query = dynamicLinq.Query.Where($"{lookupType.Name}Id == @0", lookupIdValue);
                         var lookupEntity = (await query.ToDynamicListAsync()).FirstOrDefault() ??
                                            throw new InvalidOperationException("Lookup entity not found.");
-                        auditHistoryDetail["OldValue"] = ((object)lookupEntity).GetNameFieldValue(lookupType);
+                        auditHistoryDetail["OldValue"] = ((object)lookupEntity).GetNameFieldValue();
                         auditHistoryDetail["EntityName"] = lookupType.Name;
                         auditHistoryDetail["OldValueId"] = preEntity.GetValue(entityProperty.Name);
                     }

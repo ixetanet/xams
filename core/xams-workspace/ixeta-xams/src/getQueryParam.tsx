@@ -6,3 +6,18 @@ export function getQueryParam(name: string, url = window.location.href) {
   if (!results[2]) return "";
   return decodeURIComponent(results[2].replace(/\+/g, " "));
 }
+
+export function addUserIdUrlParam(currentUrl: string, destinationUrl: string) {
+  const userId = getQueryParam("userid", currentUrl);
+  if (userId != null) {
+    let userIdPart = `userid=${userId}`;
+    if (destinationUrl.includes("?")) {
+      userIdPart = `&${userIdPart}`;
+    } else {
+      userIdPart = `?${userIdPart}`;
+    }
+    return destinationUrl + userIdPart;
+  } else {
+    return destinationUrl;
+  }
+}

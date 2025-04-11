@@ -63,7 +63,8 @@ const TableShell = (props: TableShellProps) => {
   const showActiveSwitch =
     ctx.props.showActiveSwitch === true &&
     ctx.state.permissions.read !== "NONE" &&
-    ctx.props.disabledMessage === undefined
+    ctx.props.disabledMessage === undefined &&
+    ctx.state.metadata?.fields.find((f) => f.name === "IsActive") != null
       ? true
       : false;
 

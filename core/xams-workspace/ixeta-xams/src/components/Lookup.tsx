@@ -1,7 +1,15 @@
 import { API_DATA_READ } from "../apiurls";
 import { MetadataField, MetadataResponse } from "../api/MetadataResponse";
 import useAuthRequest from "../hooks/useAuthRequest";
-import { Avatar, Group, Select, SelectProps, Text } from "@mantine/core";
+import {
+  Avatar,
+  ComboboxItem,
+  Group,
+  OptionsFilter,
+  Select,
+  SelectProps,
+  Text,
+} from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import React, {
   Ref,
@@ -42,6 +50,7 @@ interface LookupProps {
   error?: string;
   className?: string;
   disabled?: boolean;
+  size?: string;
 }
 
 interface ItemProps extends React.ComponentPropsWithoutRef<"div"> {
@@ -76,21 +85,6 @@ const renderSelectOption: SelectProps["renderOption"] = ({
   );
 };
 
-const SelectItem = forwardRef<HTMLDivElement, ItemProps>(
-  ({ image, label, description, ...others }: ItemProps, ref) => (
-    <div ref={ref} {...others}>
-      <Group>
-        <div>
-          <Text size="sm">{label}</Text>
-          <Text size="xs" opacity={0.65}>
-            {description}
-          </Text>
-        </div>
-      </Group>
-    </div>
-  )
-);
-
 const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const authRequest = useAuthRequest();
@@ -101,7 +95,7 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
     props.defaultLabelValue !== undefined ? [props.defaultLabelValue] : []
   );
   const [searchValue, setSearchValue] = React.useState<string | null>(null);
-  const [debouncedSearchValue] = useDebouncedValue(searchValue, 300, {
+  const [debouncedSearchValue] = useDebouncedValue(searchValue, 200, {
     leading: true,
   });
   useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
@@ -137,14 +131,35 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
       ],
       filters: [
         {
-          field:
-            props.metaDataField.lookupTableNameField ??
-            props.metaDataField.lookupPrimaryKeyField,
-          operator: "contains",
-          value:
-            selectedItem != null && selectedItem.label === debouncedSearchValue
-              ? ""
-              : debouncedSearchValue,
+          logicalOperator: "OR",
+          filters: [
+            // search on Name field
+            {
+              field:
+                props.metaDataField.lookupTableNameField ??
+                props.metaDataField.lookupPrimaryKeyField,
+              operator: "contains",
+              value:
+                selectedItem != null &&
+                selectedItem.label === debouncedSearchValue
+                  ? ""
+                  : debouncedSearchValue,
+            },
+            // search on description field
+            ...(props.metaDataField.lookupTableDescriptionField != null
+              ? [
+                  {
+                    field: props.metaDataField.lookupTableDescriptionField,
+                    operator: "contains",
+                    value:
+                      selectedItem != null &&
+                      selectedItem.label === debouncedSearchValue
+                        ? ""
+                        : debouncedSearchValue,
+                  },
+                ]
+              : [{}]),
+          ],
         },
         ...(props.query?.filters ?? []),
         ...(props.metaDataField.option !== ""
@@ -166,6 +181,7 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
 
     if (!readResp || !readResp.succeeded) return;
     let results = readResp.data.results.map((d: any) => ({
+      // Append the description field to the value so it can be used in the search
       value: `${d[props.metaDataField.lookupPrimaryKeyField]}`,
       label:
         d[
@@ -212,6 +228,12 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
     setData(results);
   };
 
+  // Override the default filter function to return all options
+  // This allows for description fields to be used in search
+  const optionsFilter: OptionsFilter = ({ options, search }) => {
+    return options;
+  };
+
   useEffect(() => {
     if (
       debouncedSearchValue !== null &&
@@ -253,13 +275,12 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
     if (typeof item.value === "number") {
       item.value = `${item.value}`;
     }
-
-    // Exclude duplicates
   }
 
   return (
     <Select
       label={props.label}
+      size={props.size}
       data={data}
       className={props.className}
       renderOption={
@@ -292,6 +313,11 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
       withAsterisk={props.required}
       error={props.error}
       disabled={props.disabled}
+      filter={
+        props.metaDataField.lookupTableDescriptionField != null
+          ? optionsFilter
+          : undefined
+      }
     ></Select>
   );
 });

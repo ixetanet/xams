@@ -1,6 +1,6 @@
 import { ReadOrderBy } from "./ReadRequest";
 
-export interface ReadResponse<T> {
+export type ReadResponse<T, U = any> = {
   pages: number;
   currentPage: number;
   totalResults: number;
@@ -8,4 +8,5 @@ export interface ReadResponse<T> {
   tableName: string;
   orderBy?: ReadOrderBy[];
   results: T[];
-}
+  parameters: U;
+};

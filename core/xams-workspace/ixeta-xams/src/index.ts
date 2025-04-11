@@ -20,6 +20,7 @@ export { default as DataTable } from "./components/DataTable";
 export { default as DataTableSelectable } from "./components/DataTableSelectable";
 export * from "./components/datatable/DataTableTypes";
 export { default as DataGrid } from "./components/DataGrid";
+export type { DataGridRef as DataGridRef } from "./components/DataGrid";
 export * from "./components/datagrid/DataGridTypes";
 export { default as FormContainer } from "./components/FormContainer";
 export { default as Field } from "./components/Field";
@@ -28,7 +29,10 @@ export { default as ToggleMode } from "./components/ToggleMode";
 export { default as useAuthStore } from "./stores/useAuthStore";
 export { default as useColor } from "./hooks/useColor";
 export * from "./stores/usePermissionStore";
-export { getQueryParam } from "./getQueryParam";
+export {
+  getQueryParam,
+  addUserIdUrlParam as getUserIdUrlPart,
+} from "./getQueryParam";
 export {
   API_DATA_PERMISSIONS,
   API_DATA_ACTION,

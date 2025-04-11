@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
@@ -20,7 +21,7 @@ namespace Xams.Core.Services
         where TDbContext : XamsDbContext,
         new()
     {
-        public DataService(ILogger<DataService<TDbContext, User, Team, Role, Setting>> logger) : base(logger) 
+        public DataService(ILogger<DataService<TDbContext, User, Team, Role, Setting>> logger, IServiceProvider serviceProvider) : base(logger, serviceProvider) 
         {
         }
     }
@@ -30,7 +31,7 @@ namespace Xams.Core.Services
         where TUser : User,
         new()
     {
-        public DataService(ILogger<DataService<TDbContext, TUser, Team, Role, Setting>> logger) : base(logger) 
+        public DataService(ILogger<DataService<TDbContext, TUser, Team, Role, Setting>> logger, IServiceProvider serviceProvider) : base(logger, serviceProvider) 
         {
         }
     }
@@ -41,7 +42,7 @@ namespace Xams.Core.Services
         where TTeam : Team,
         new()
     {
-        public DataService(ILogger<DataService<TDbContext, TUser, TTeam, Role, Setting>> logger) : base(logger) 
+        public DataService(ILogger<DataService<TDbContext, TUser, TTeam, Role, Setting>> logger, IServiceProvider serviceProvider) : base(logger, serviceProvider) 
         {
         }
     }
@@ -53,7 +54,7 @@ namespace Xams.Core.Services
         where TRole : Role,
         new()
     {
-        public DataService(ILogger<DataService<TDbContext, TUser, TTeam, TRole, Setting>> logger) : base(logger) 
+        public DataService(ILogger<DataService<TDbContext, TUser, TTeam, TRole, Setting>> logger, IServiceProvider serviceProvider) : base(logger, serviceProvider) 
         {
         }
     }
@@ -72,11 +73,13 @@ namespace Xams.Core.Services
         private readonly SecurityRepository _securityRepository = new();
         private readonly Dictionary<string, HashSet<dynamic>> _deletes = new();
         private List<ServiceContext> ServiceContexts { get; set; } = new();
-        internal ILogger Logger { get; private set; }
+        internal ILogger Logger { get; }
+        public IServiceProvider ServiceProvider { get;  }
         
-        public DataService(ILogger<DataService<TDbContext, TUser, TTeam, TRole, TSetting>> logger)
+        public DataService(ILogger<DataService<TDbContext, TUser, TTeam, TRole, TSetting>> logger, IServiceProvider serviceProvider)
         {
             Logger = logger;
+            ServiceProvider = serviceProvider;
         }
 
         public ILogger GetLogger()
@@ -115,6 +118,8 @@ namespace Xams.Core.Services
             return new Response<object?>()
             {
                 Succeeded = result.Data != null && result.Data.results.Count != 0,
+                FriendlyMessage = result.FriendlyMessage,
+                LogMessage = result.LogMessage,
                 Data = result.Data == null || result.Data.results.Count == 0 ? null : result.Data.results[0]
             };
         }
@@ -304,7 +309,7 @@ namespace Xams.Core.Services
 
             Type actionType = action.Type;
 
-            var instance = Activator.CreateInstance(actionType);
+            var instance = ActivatorUtilities.CreateInstance(ServiceProvider, actionType);
             var executeMethod = actionType.GetMethod("Execute");
             if (executeMethod == null)
             {

@@ -1,11 +1,11 @@
-using System.Linq.Dynamic.Core;
+using System.Text.Json;
 using Xams.Core.Attributes;
-using Xams.Core.Base;
 using Xams.Core.Contexts;
 using Xams.Core.Dtos;
 using Xams.Core.Interfaces;
 using Xams.Core.Jobs;
 using Xams.Core.Utils;
+// ReSharper disable InconsistentNaming
 
 namespace Xams.Core.Actions;
 
@@ -14,11 +14,6 @@ public class ADMIN_TriggerJob : IServiceAction
 {
     public async Task<Response<object?>> Execute(ActionServiceContext context)
     {
-        if (context.Parameters == null)
-        {
-            return ServiceResult.Error($"Missing parameters");
-        }
-
         if (!context.Parameters.ContainsKey("jobName"))
         {
             return ServiceResult.Error($"Missing parameter jobName");
@@ -36,71 +31,20 @@ public class ADMIN_TriggerJob : IServiceAction
         {
             return ServiceResult.Error($"Job {jobName} not found");
         }
-        
-        var job = Cache.Instance.ServiceJobs[jobName];
-        var db = context.GetDbContext<IXamsDbContext>();
 
-        // Execute on the first server alphabetically
-        if (job.ExecuteJobOn is ExecuteJobOn.One && string.IsNullOrEmpty(job.ServerName))
+        JsonElement? parameters = null;
+        if (context.Parameters.ContainsKey("parameters"))
         {
-            DynamicLinq dLinq =
-                new DynamicLinq(db, Cache.Instance.GetTableMetadata("Server").Type);
-            IQueryable query = dLinq.Query;
-            query = query.Take(1).OrderBy("Name asc").Where("LastPing > @0", DateTime.UtcNow.AddSeconds(-30));
-            var server = (await query.ToDynamicListAsync()).FirstOrDefault();
-            if (server == null)
-            {
-                return ServiceResult.Error($"Server {job.ServerName} not found");
-            }
-
-            var system = new Dictionary<string, dynamic>();
-            system["Name"] = $"EXECUTE_JOB_{server.Name}";
-            system["Value"] = jobName;
-            system["DateTime"] = DateTime.UtcNow;
-            db.Add(EntityUtil.DictionaryToEntity(Cache.Instance.GetTableMetadata("System").Type, system));
+            parameters = context.Parameters["parameters"];
         }
-        // Execute on a specific server
-        else if (job.ExecuteJobOn is ExecuteJobOn.One && !string.IsNullOrEmpty(job.ServerName))
-        {
-            DynamicLinq dLinq =
-                new DynamicLinq(db, Cache.Instance.GetTableMetadata("Server").Type);
-            IQueryable query = dLinq.Query;
-            query = query.Take(1).OrderBy("Name asc")
-                .Where("LastPing > @0", DateTime.UtcNow.AddSeconds(-30))
-                .Where("Name == @0", job.ServerName);
-            var server = (await query.ToDynamicListAsync()).FirstOrDefault();
-            if (server == null)
-            {
-                return ServiceResult.Error($"Server {job.ServerName} not found");
-            }
             
-            var system = new Dictionary<string, dynamic>();
-            system["Name"] = $"EXECUTE_JOB_{server.Name}";
-            system["Value"] = jobName;
-            system["DateTime"] = DateTime.UtcNow;
-            db.Add(EntityUtil.DictionaryToEntity(Cache.Instance.GetTableMetadata("System").Type, system));
-        }
-        // Execute on all servers
-        else
+        var jobOptions = new JobOptions
         {
-            DynamicLinq dLinq =
-                new DynamicLinq(db, Cache.Instance.GetTableMetadata("Server").Type);
-            IQueryable query = dLinq.Query;
-            query = query.Where("LastPing > @0", DateTime.UtcNow.AddSeconds(-30));
-            var servers = await query.ToDynamicListAsync();
-            var serversDistinct = servers.Select(x => x.Name).Distinct();
-
-            foreach (var serverName in serversDistinct)
-            {
-                var system = new Dictionary<string, dynamic>();
-                system["Name"] = $"EXECUTE_JOB_{serverName}";
-                system["Value"] = jobName;
-                system["DateTime"] = DateTime.UtcNow;
-                db.Add(EntityUtil.DictionaryToEntity(Cache.Instance.GetTableMetadata("System").Type, system));    
-            }
-        }
+            JobName = jobName,
+            Parameters = parameters,
+        };
         
-        await db.SaveChangesAsync();
+        await context.ExecuteJob(jobOptions);
 
         return ServiceResult.Success();
     }

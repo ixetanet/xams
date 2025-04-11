@@ -8,6 +8,7 @@ export type FormBuilderType =
   | "SET_FIELD_VALUE"
   | "SET_IS_LOADING"
   | "SUBMIT_COMPLETE"
+  | "SUBMIT_COMPLETE_LOADING"
   | "SUBMIT_CANCELLED"
   | "SET_VALIDATION_MESSAGES"
   | "SET_VALIDATION_MESSAGE"
@@ -175,6 +176,14 @@ export const formbuilderReducer = <T,>(
       return {
         ...state,
         isLoading: false,
+        isSubmitted: true,
+        validationMessages: [],
+        dirtyFields: [],
+        type: "SUBMIT_COMPLETE",
+      };
+    case "SUBMIT_COMPLETE_LOADING":
+      return {
+        ...state,
         isSubmitted: true,
         validationMessages: [],
         dirtyFields: [],

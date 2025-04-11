@@ -1,8 +1,12 @@
+using System.Linq.Dynamic.Core;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Xams.Core.Attributes;
 using Xams.Core.Interfaces;
+using Xams.Core.Jobs;
 using Xams.Core.Pipeline;
 using Xams.Core.Repositories;
+using Xams.Core.Utils;
 
 namespace Xams.Core.Base;
 
@@ -203,5 +207,135 @@ public class BaseServiceContext(PipelineContext pipelineContext)
         }
 
         return await PermissionCache.GetUserPermissions(userId, permissions);
+    }
+
+    /// <summary>
+    /// Execute Job. Does not wait for the job to complete.
+    /// </summary>
+    /// <param name="jobOptions"></param>
+    /// <exception cref="Exception"></exception>
+    /// <returns>JobHistoryId</returns>
+    public async Task<Guid> ExecuteJob(JobOptions jobOptions)
+    {
+        if (jobOptions.JobHistoryId == null)
+        {
+            jobOptions.JobHistoryId = Guid.NewGuid();
+        }
+        
+        if (jobOptions.Parameters == null)
+        {
+            jobOptions.Parameters = new object();
+        }
+        // Ensure parameters are always a Dictionary<string, JsonElement>
+        if (jobOptions.Parameters is not Dictionary<string, JsonElement>)
+        {
+            var json = JsonSerializer.Serialize(jobOptions.Parameters);
+            var doc = JsonDocument.Parse(json);
+            jobOptions.Parameters =  doc.RootElement.EnumerateObject()
+                .ToDictionary(prop => prop.Name, prop => prop.Value);
+        }
+        
+        var jobServer = jobOptions.JobServer;
+        var job = Cache.Instance.ServiceJobs[jobOptions.JobName];
+
+        if (!string.IsNullOrEmpty(jobServer) && jobServer == "*")
+        {
+            await ExecuteJobOnAllServers(jobOptions);
+            return jobOptions.JobHistoryId.Value;
+        }
+
+        if (!string.IsNullOrEmpty(jobServer))
+        {
+            await ExecuteJobOnServer(jobOptions);
+            return jobOptions.JobHistoryId.Value;
+        }
+
+        // These execute based on the rules set using Job attributes
+        // Execute on the first server alphabetically
+        if (job.ExecuteJobOn is ExecuteJobOn.One && string.IsNullOrEmpty(job.ServerName))
+        {
+            await ExecuteJobOnFirstServer(jobOptions);
+        }
+        // Execute on a specific server
+        else if (job.ExecuteJobOn is ExecuteJobOn.One && !string.IsNullOrEmpty(job.ServerName))
+        {
+            await ExecuteJobOnServer(jobOptions);
+        }
+        // Execute on all servers
+        else
+        {
+            await ExecuteJobOnAllServers(jobOptions);
+        }
+        
+        return jobOptions.JobHistoryId.Value;
+    }
+
+    private async Task ExecuteJobOnAllServers(JobOptions options)
+    {
+        var db = GetDbContext<IXamsDbContext>();
+        DynamicLinq dLinq =
+            new DynamicLinq(db, Cache.Instance.GetTableMetadata("Server").Type);
+        IQueryable query = dLinq.Query;
+        query = query.Where("LastPing > @0", DateTime.UtcNow.AddSeconds(-30));
+        var servers = await query.ToDynamicListAsync();
+        var serversDistinct = servers.Select(x => x.Name).Distinct();
+
+        foreach (var serverName in serversDistinct)
+        {
+            var system = new Dictionary<string, dynamic>();
+            system["Name"] = $"EXECUTE_JOB_{serverName}";
+            system["Value"] = JsonSerializer.Serialize(options);
+            system["DateTime"] = DateTime.UtcNow;
+            db.Add(EntityUtil.DictionaryToEntity(Cache.Instance.GetTableMetadata("System").Type, system));    
+        }
+        
+        await db.SaveChangesAsync();
+    }
+
+    private async Task ExecuteJobOnServer(JobOptions options)
+    {
+        var db = GetDbContext<IXamsDbContext>();
+        DynamicLinq dLinq =
+            new DynamicLinq(db, Cache.Instance.GetTableMetadata("Server").Type);
+        IQueryable query = dLinq.Query;
+        query = query.Take(1).OrderBy("Name asc")
+            .Where("LastPing > @0", DateTime.UtcNow.AddSeconds(-30))
+            .Where("Name == @0", options.JobServer);
+        var server = (await query.ToDynamicListAsync()).FirstOrDefault();
+        if (server == null)
+        {
+            throw new Exception($"Server {options.JobServer} not found");
+        }
+            
+        var system = new Dictionary<string, dynamic>();
+        system["Name"] = $"EXECUTE_JOB_{server.Name}";
+        system["Value"] = JsonSerializer.Serialize(options);
+        system["DateTime"] = DateTime.UtcNow;
+        db.Add(EntityUtil.DictionaryToEntity(Cache.Instance.GetTableMetadata("System").Type, system));
+        
+        await db.SaveChangesAsync();
+    }
+
+    private async Task ExecuteJobOnFirstServer(JobOptions options)
+    {
+        var job = Cache.Instance.ServiceJobs[options.JobName];
+        var db = GetDbContext<IXamsDbContext>();
+        DynamicLinq dLinq =
+            new DynamicLinq(db, Cache.Instance.GetTableMetadata("Server").Type);
+        IQueryable query = dLinq.Query;
+        query = query.Take(1).OrderBy("Name asc").Where("LastPing > @0", DateTime.UtcNow.AddSeconds(-30));
+        var server = (await query.ToDynamicListAsync()).FirstOrDefault();
+        if (server == null)
+        {
+            throw new Exception($"Server {job.ServerName} not found");
+        }
+
+        var system = new Dictionary<string, dynamic>();
+        system["Name"] = $"EXECUTE_JOB_{server.Name}";
+        system["Value"] = JsonSerializer.Serialize(options);
+        system["DateTime"] = DateTime.UtcNow;
+        db.Add(EntityUtil.DictionaryToEntity(Cache.Instance.GetTableMetadata("System").Type, system));
+        
+        await db.SaveChangesAsync();
     }
 }

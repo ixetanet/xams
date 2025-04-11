@@ -1,5 +1,11 @@
 import React from "react";
-import { Checkbox, TextInput, Textarea, Tooltip } from "@mantine/core";
+import {
+  Checkbox,
+  MantineSize,
+  TextInput,
+  Textarea,
+  Tooltip,
+} from "@mantine/core";
 import { DateInput } from "@mantine/dates";
 import useLookupStore, { LookupStoreInfo } from "../stores/useLookupStore";
 import { LookupQuery } from "../reducers/formbuilderReducer";
@@ -35,6 +41,7 @@ interface FieldProps {
   readOnly?: boolean;
   required?: boolean;
   allowNegative?: boolean;
+  size?: MantineSize;
 }
 
 const Field = (props: FieldProps) => {
@@ -298,6 +305,7 @@ const Field = (props: FieldProps) => {
       {field.type === "Lookup" && (
         <Lookup
           label={<Label field={field}></Label>}
+          size={props.size}
           className={
             formContext.formBuilder.canRead.canRead === false ? "invisible" : ""
           }
@@ -370,6 +378,7 @@ const Field = (props: FieldProps) => {
       )}
       {field.type === "String" && props.varient === "textarea" && (
         <Textarea
+          size={props.size}
           styles={{
             root: {
               height: "100%",
@@ -431,6 +440,7 @@ const Field = (props: FieldProps) => {
         formContext.formBuilder.data[field.name] != null && (
           <TextInput
             label={<Label field={field} />}
+            size={props.size}
             ref={
               props.focus === true
                 ? formContext.formBuilder.firstInputRef
@@ -467,7 +477,9 @@ const Field = (props: FieldProps) => {
               ? formContext.formBuilder.firstInputRef
               : undefined
           }
+          size={props.size}
           label={<Label field={field} />}
+          // size={props.size}
           {...(field.dateFormat != null && field.dateFormat !== ""
             ? { valueFormat: field.dateFormat }
             : {})}
@@ -527,6 +539,7 @@ const Field = (props: FieldProps) => {
                   : undefined
               }
               label={<Label field={field} />}
+              size={props.size}
               checked={
                 formContext.formBuilder.data !== undefined &&
                 formContext.formBuilder.data[field.name] !== undefined &&

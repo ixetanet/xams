@@ -24,7 +24,6 @@ public class ADMIN_GetTypes : IServiceAction
             var tableName = key.Key;
             var metadata = key.Value;
             sb.AppendLine($"export type {tableName} = {{");
-            sb.AppendLine($"\t{metadata.PrimaryKey}: {GetPrimaryKeyType(metadata.PrimaryKeyType)}");
             foreach (var field in metadata.MetadataOutput.fields)
             {
                 var nullable = field.isNullable ? "?" : string.Empty;

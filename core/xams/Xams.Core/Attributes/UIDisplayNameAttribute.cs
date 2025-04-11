@@ -9,5 +9,16 @@ namespace Xams.Core.Attributes
             this.Name = name;
             this.Tag = tag;
         }
+
+        public UIDisplayNameAttribute(Field[] fields)
+        {
+            
+        }
+    }
+
+    public struct Field()
+    {
+        public string Name { get; set; }
+        public string DisplayName { get; set; }
     }
 }

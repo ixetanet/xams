@@ -43,14 +43,20 @@ public class Job
         set => Entity.Tag = value!;
     }
     
+    private Dictionary<string, JsonElement> Parameters { get; } 
+    
     public dynamic Entity { get; }
     
     public Cache.ServiceJobInfo ServiceJobInfo { get; set; }
+    
+    private Guid? JobHistoryId { get; }
 
-    public Job(dynamic jobObject)
+    public Job(dynamic jobObject, Dictionary<string, JsonElement> parameters, Guid? jobHistoryId = null)
     {
         Entity = jobObject;
         ServiceJobInfo = Cache.Instance.ServiceJobs[jobObject.Name];
+        Parameters = parameters;
+        JobHistoryId = jobHistoryId;
     }
 
     public async Task<Response<object?>> Execute(IServiceScope? scope, bool force = false)
@@ -97,7 +103,7 @@ public class Job
         
         IXamsDbContext xamsDbContext = dataService.GetDataRepository().CreateNewDbContext();
         
-        Guid jobHistoryId = Guid.NewGuid();
+        Guid jobHistoryId = JobHistoryId ?? Guid.NewGuid();
         Type jobHistoryType = Cache.Instance.GetTableMetadata("JobHistory").Type;
         JobPing? jobPing = null;
         try
@@ -242,12 +248,13 @@ public class Job
             var pipelineContext = new PipelineContext()
             {
                 UserId = SystemRecords.SystemUserId,
+                InputParameters = Parameters,
                 OutputParameters = new Dictionary<string, JsonElement>(),
                 SystemParameters = new SystemParameters(),
                 DataService = jobDataService,
                 DataRepository = jobDataService.GetDataRepository(),
                 MetadataRepository = jobDataService.GetMetadataRepository(),
-                SecurityRepository = jobDataService.GetSecurityRepository()
+                SecurityRepository = jobDataService.GetSecurityRepository(),
             };
             
             Response<object?> jobResponse = await ((Task<Response<object?>>)methodInfo.Invoke(serviceJobInstance,

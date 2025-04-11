@@ -1,5 +1,9 @@
 import React, { useEffect } from "react";
-import { useFormBuilderType } from "../hooks/useFormBuilder";
+import {
+  PostSaveEvent,
+  PreSaveEvent,
+  useFormBuilderType,
+} from "../hooks/useFormBuilder";
 import { Loader } from "@mantine/core";
 import FormContextProvider from "../contexts/FormContext";
 
@@ -8,6 +12,9 @@ interface FormContainerProps {
   className?: string;
   children?: any;
   showLoading?: boolean;
+  onPreValidate?: PreSaveEvent;
+  onPreSave?: PreSaveEvent; // If returns false, save will be cancelled
+  onPostSave?: PostSaveEvent;
 }
 
 const FormContainer = (props: FormContainerProps) => {
@@ -20,7 +27,9 @@ const FormContainer = (props: FormContainerProps) => {
       props.formBuilder.metadata !== undefined &&
       props.formBuilder.data !== undefined
     ) {
-      for (const metadataField of props.formBuilder.metadata.fields) {
+      for (const metadataField of props.formBuilder.metadata.fields.filter(
+        (f) => f.name !== props.formBuilder.metadata?.primaryKey
+      )) {
         if (props.formBuilder.data[metadataField.name] === undefined) {
           console.warn(
             "No data for field: " +
@@ -34,11 +43,21 @@ const FormContainer = (props: FormContainerProps) => {
     return false;
   };
 
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    props.formBuilder.save(
+      props.onPreValidate,
+      props.onPreSave,
+      props.onPostSave
+    );
+  };
+
   const isLoading = getIsLoading() || props.showLoading === true;
 
   return (
     <FormContextProvider formBuilder={props.formBuilder}>
-      <div
+      <form
+        onSubmit={onSubmit}
         className={`${
           isLoading ||
           props.showLoading === true ||
@@ -48,6 +67,16 @@ const FormContainer = (props: FormContainerProps) => {
             : ``
         } ${props.className}`}
       >
+        {/* <div
+        className={`${
+          isLoading ||
+          props.showLoading === true ||
+          !props.formBuilder.canRead.canRead ||
+          !props.formBuilder.canCreate
+            ? `relative overflow-hidden`
+            : ``
+        } ${props.className}`}
+      > */}
         {isLoading && (
           <div
             className="absolute w-full h-full flex justify-center items-center"
@@ -93,7 +122,8 @@ const FormContainer = (props: FormContainerProps) => {
         >
           {props.children}
         </div>
-      </div>
+        {/* </div> */}
+      </form>
     </FormContextProvider>
   );
 };

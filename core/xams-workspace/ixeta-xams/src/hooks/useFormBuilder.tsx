@@ -20,10 +20,13 @@ export type SaveEventResponse = {
   parameters?: any;
 };
 
-type FBEvent = {
-  eventName: string;
-  callback: Function | ((...arg: any[]) => Promise<boolean>);
-};
+export type PreSaveEvent = (submissionData: any) => Promise<SaveEventResponse>;
+
+export type PostSaveEvent = (
+  operation: "CREATE" | "UPDATE" | "FAILED",
+  id: string,
+  data: any
+) => void;
 
 interface useFormBuilderProps {
   tableName: string;
@@ -35,13 +38,11 @@ interface useFormBuilderProps {
   lookupQueries?: LookupQuery[];
   canUpdate?: boolean;
   canCreate?: boolean;
-  onPreSave?: (submissionData: any) => Promise<SaveEventResponse>; // If returns false, save will be cancelled
-  onPostSave?: (
-    operation: "CREATE" | "UPDATE" | "FAILED",
-    id: string,
-    data: any
-  ) => Promise<void>;
+  onPreValidate?: PreSaveEvent;
+  onPreSave?: PreSaveEvent; // If returns false, save will be cancelled
+  onPostSave?: PostSaveEvent;
   forceShowLoading?: boolean; // If true, loading will be displayed until setShowLoading(false) is called
+  keepLoadingOnSuccess?: boolean; // If true, loading will be displayed until setShowLoading(false) is called
 }
 
 type OnLoadOptions = {
@@ -50,14 +51,6 @@ type OnLoadOptions = {
   refreshDatatables: boolean;
   forceShowLoading?: boolean;
 };
-
-export type PreSaveEvent = (submissionData: any) => Promise<SaveEventResponse>;
-
-export type PostSaveEvent = (
-  operation: "CREATE" | "UPDATE" | "FAILED",
-  id: string,
-  data: any
-) => void;
 
 const useFormBuilder = <T,>(props: useFormBuilderProps) => {
   const authRequest = useAuthRequest();
@@ -70,14 +63,19 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
     getFormBuilderInitState<T>()
   );
   const [snapshotQueue, setSnapshotQueue] = useState<any[]>([]);
+  const onPreValidateRef = useRef<PreSaveEvent | null>(null);
+  const onPreSaveRef = useRef<PreSaveEvent | null>(null);
+  const onPostSaveRef = useRef<PostSaveEvent | null>(null);
+
   let childDataTables: DataTableRef[] = [];
-  let eventListeners: FBEvent[] = [];
   let requiredFields: string[] = [];
 
   const onLoad = async (options: OnLoadOptions) => {
     if (props.tableName == null || props.tableName === "") {
       return;
     }
+
+    console.log("LOADING FORM: " + props.tableName);
 
     if (!options.refresh) {
       dispatch({
@@ -105,8 +103,6 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
     let canCreate = false;
     if ((props.snapshot == null && options.id != null) || options.refresh) {
       // Get metadata to find the primary key
-      const metadata = await authRequest.metadata(props.tableName);
-
       const dataResp = await authRequest.read<T>({
         tableName: props.tableName,
         fields: ["*"],
@@ -236,6 +232,7 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
         value: field.isNullable ? "" : 0,
       }));
     const stringDefaults = metadata?.fields
+      .filter((field) => field.name !== metadata.primaryKey)
       .filter((field) => ["String", "Guid", "Char"].includes(field.type))
       .map((field) => ({
         field: field.name,
@@ -386,28 +383,17 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
 
     let parameters = {} as any;
 
-    if (preValidate != null) {
-      const preResult = await preValidate(submissionData);
-      if (!preResult.continue) {
-        return;
+    const preValidateEvents = [
+      props.onPreValidate,
+      preValidate,
+      onPreValidateRef.current,
+    ];
+    for (const preValidateEvent of preValidateEvents) {
+      if (preValidateEvent == null) {
+        continue;
       }
-      // Append to parameters
-      parameters = {
-        ...parameters,
-        ...preResult.parameters,
-      };
-    }
-    if (!onValidate()) {
-      return;
-    }
-    dispatch({
-      type: "SET_IS_LOADING",
-    });
-
-    // Call the onPreSave event
-    if (props.onPreSave != null) {
-      const preSaveResult = await props.onPreSave(submissionData);
-      if (preSaveResult.continue === false) {
+      const preValidateResult = await preValidateEvent(submissionData);
+      if (preValidateResult.continue === false) {
         dispatch({
           type: "SUBMIT_CANCELLED",
         });
@@ -416,34 +402,24 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
       // Append to parameters
       parameters = {
         ...parameters,
-        ...preSaveResult.parameters,
+        ...preValidateResult.parameters,
       };
     }
-    // for (let saveEvent of state.eventListeners) {
-    //   if (saveEvent.event === "PRE_SAVE") {
-    //     const result = await saveEvent.callback(submissionData, parameters);
-    //     if (result === false) {
-    //       dispatch({
-    //         type: "SUBMIT_CANCELLED",
-    //       });
-    //       return;
-    //     }
-    //   }
-    // }
-    for (let event of eventListeners) {
-      if (event.eventName === "PRE_SAVE") {
-        const result = await event.callback(submissionData, parameters);
-        if (result === false) {
-          dispatch({
-            type: "SUBMIT_CANCELLED",
-          });
-          return;
-        }
-      }
-    }
+    // End of onPreValidate event
 
-    if (preSaveEvent != null) {
-      const preSaveResult = await preSaveEvent(submissionData);
+    if (!onValidate()) {
+      return;
+    }
+    dispatch({
+      type: "SET_IS_LOADING",
+    });
+
+    const preSaveEvents = [props.onPreSave, preSaveEvent, onPreSaveRef.current];
+    for (const saveEvent of preSaveEvents) {
+      if (saveEvent == null) {
+        continue;
+      }
+      const preSaveResult = await saveEvent(submissionData);
       if (preSaveResult.continue === false) {
         dispatch({
           type: "SUBMIT_CANCELLED",
@@ -469,47 +445,43 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
       },
     });
 
+    const postSaveEvents = [
+      props.onPostSave,
+      postSaveEvent,
+      onPostSaveRef.current,
+    ];
+
     // Handle Post Save events
     if (resp?.succeeded === true) {
-      if (props.onPostSave !== undefined) {
-        await props.onPostSave(
-          state.snapshot === undefined ? "CREATE" : "UPDATE",
-          state.metadata ? resp.data[state.metadata.primaryKey] : "",
-          resp.data
-        );
-      }
-      for (let event of eventListeners) {
-        if (event.eventName === "POST_SAVE") {
-          event.callback(
-            state.snapshot === undefined ? "CREATE" : "UPDATE",
-            state.metadata ? resp.data[state.metadata.primaryKey] : "",
-            resp.data
-          );
+      for (let saveEvent of postSaveEvents) {
+        if (saveEvent == null) {
+          continue;
         }
-      }
-      if (postSaveEvent != null) {
-        postSaveEvent(
+        await saveEvent(
           state.snapshot === undefined ? "CREATE" : "UPDATE",
           state.metadata ? resp.data[state.metadata.primaryKey] : "",
           resp.data
         );
       }
     } else {
-      if (props.onPostSave !== undefined) {
-        await props.onPostSave("FAILED", "", {});
-      }
-      for (let event of eventListeners) {
-        if (event.eventName === "POST_SAVE") {
-          event.callback("FAILED", "", {});
+      for (const saveEvent of postSaveEvents) {
+        if (saveEvent == null) {
+          continue;
         }
-      }
-      if (postSaveEvent != null) {
-        postSaveEvent("FAILED", "", {});
+        await saveEvent("FAILED", "", {});
       }
     }
-    dispatch({
-      type: "SUBMIT_COMPLETE",
-    });
+
+    if (resp.succeeded && props.keepLoadingOnSuccess) {
+      dispatch({
+        type: "SUBMIT_COMPLETE_LOADING",
+      });
+    } else {
+      dispatch({
+        type: "SUBMIT_COMPLETE",
+      });
+    }
+
     reloadDataTables();
   };
 
@@ -526,16 +498,11 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
     return resp.data;
   };
 
-  const on = (
-    eventName: string,
-    callback: Function | ((...arg: any[]) => Promise<boolean>)
-  ) => {
-    eventListeners.push({ eventName: eventName, callback: callback });
-  };
-
   const onValidate = () => {
     const messages = [] as ValidationMessage[];
-    for (const field of state.metadata?.fields ?? []) {
+    for (const field of state.metadata?.fields.filter(
+      (x) => x.name !== state.metadata?.primaryKey
+    ) ?? []) {
       const fieldValue = (state.data as any)[field.name];
       if (["CreatedById", "UpdatedById"].includes(field.name)) {
         continue;
@@ -692,6 +659,9 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
       : "CREATE") as "UPDATE" | "CREATE",
     stateType: state.type,
     tableName: props.tableName,
+    onPreValidateRef: onPreValidateRef,
+    onPreSaveRef: onPreSaveRef,
+    onPostSaveRef: onPostSaveRef,
     reload: async (reloadDataTables: boolean = true) => {
       if (state.metadata && state.snapshot) {
         await onLoad({
@@ -711,7 +681,6 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
     save: onSave,
     saveSilent: onSaveSilent,
     load: loadRecord,
-    on: on,
     clearEdits: clearEdits,
     clear: clear,
     validate: onValidate,

@@ -91,6 +91,9 @@ const useAuthRequest = (props?: useAuthRequestProps) => {
           ...params.headers,
           ...(authContext?.headers !== undefined && authContext?.headers),
         },
+        ...(authContext?.withCredentials && {
+          credentials: "include",
+        }),
         ...(params.body !== undefined &&
           !(params.body instanceof FormData) && {
             body: JSON.stringify(params.body),
@@ -186,11 +189,7 @@ const useAuthRequest = (props?: useAuthRequestProps) => {
       url: API_DATA_WHOAMI,
       method: "GET",
     });
-    if (resp.succeeded === true) {
-      const userData = resp.data as any;
-      return userData;
-    }
-    return null;
+    return resp;
   };
 
   const apiHasAllPermissions = async (permissions: string[]) => {
@@ -387,12 +386,12 @@ const useAuthRequest = (props?: useAuthRequestProps) => {
     return resp;
   };
 
-  const apiRead = async <T,>(body: ReadRequest) => {
+  const apiRead = async <T, U = any>(body: ReadRequest) => {
     const resp = (await makeRequest<T>({
       method: "POST",
       url: API_DATA_READ,
       body: body,
-    })) as ApiResponse<ReadResponse<T>>;
+    })) as ApiResponse<ReadResponse<T, U>>;
     return resp;
   };
 

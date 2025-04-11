@@ -76,7 +76,6 @@ export type DataTableProps = {
   columnWidths?: string[];
   showActiveSwitch?: boolean;
   showOptions?: boolean; // Show \ Hide Import\Export options, etc.
-  deleteBehavior?: "Delete" | "Deactivate";
   deleteConfirmation?: (record: any) => Promise<{
     title?: string;
     message?: string;
@@ -94,6 +93,7 @@ export type DataTableProps = {
   formCloseOnEscape?: boolean; // Close the form on escape
   formZIndex?: number; // Z index of the form
   formMaxWidth?: number; // Maximum width of the form
+  formMinWidth?: number; // Minimum width of the form
   formHideSaveButton?: boolean; // Hide the submit button
   formOnClose?: () => void; // Callback when the form is closed
   formOnOpen?: (operation: "CREATE" | "UPDATE", record: any) => void; // Callback when the form is opened
@@ -115,6 +115,7 @@ export type DataTableProps = {
   onRowClick?: (record: any) => boolean; // Return true to open the form
   onPageChange?: (page: number) => void;
   onDataLoaded?: (data: ReadResponse<any>) => void;
+  canDeactivate?: boolean; // If true, will show the deactivate button
   canDelete?: boolean;
   canUpdate?: boolean; // If true or undefined, will use the users permissions to show\hide the update button
   canCreate?: boolean;

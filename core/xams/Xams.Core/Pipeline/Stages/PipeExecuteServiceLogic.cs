@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
@@ -85,7 +86,8 @@ public class PipeExecuteServiceLogic : BasePipelineStage
             {
                 // This is intentionally not wrapped in try catch so the entire
                 // stack trace is sent to the browser log
-                var instance = Activator.CreateInstance(serviceLogic);
+                // var instance = Activator.CreateInstance(serviceLogic);
+                var instance = ActivatorUtilities.CreateInstance(context.DataService.ServiceProvider, serviceLogic);
                 var executeMethod = serviceLogic.GetMethod("Execute");
                 if (executeMethod != null)
                 {

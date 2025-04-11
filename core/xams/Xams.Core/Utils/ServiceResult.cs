@@ -13,6 +13,7 @@ namespace Xams.Core.Utils
             };
         }
         
+        
         public static Response<List<string>> Success(List<string> data)
         {
             return new Response<List<string>>

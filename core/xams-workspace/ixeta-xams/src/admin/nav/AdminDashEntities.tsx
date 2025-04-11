@@ -50,6 +50,9 @@ const AdminDashEntities = () => {
                           <DataTable
                             tableName={table.tableName}
                             maxResults={100}
+                            showActiveSwitch={true}
+                            canDeactivate={true}
+                            formMinWidth={36}
                             formAppendButton={(formbuilder) => {
                               return (
                                 <>

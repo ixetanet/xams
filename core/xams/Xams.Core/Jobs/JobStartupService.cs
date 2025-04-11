@@ -91,7 +91,7 @@ public class JobStartupService : IServiceStartup
                 job["JobId"] = jobId;
                 job["Queue"] = jobInfo.Value.ServiceJobAttribute.Queue;
                 job["Name"] = jobInfo.Value.ServiceJobAttribute.Name;
-                job["IsActive"] = true;
+                job["IsActive"] = jobInfo.Value.State == JobState.Active;
                 job["Status"] = "Waiting";
                 job["Tag"] = jobInfo.Value.ServiceJobAttribute.Tag;
                 job["LastExecution"] = DateTime.MinValue.ToUniversalTime();

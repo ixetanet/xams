@@ -13,5 +13,6 @@ namespace Xams.Core.Dtos.Data
         // public string? order { get; set; }
         // public string? orderBy { get; set; }
         public List<object> results { get; set; }
+        public dynamic parameters { get; set; } = null!;
     }
 }

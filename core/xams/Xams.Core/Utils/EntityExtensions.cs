@@ -127,9 +127,9 @@ internal static class EntityExtensions
         property.SetValue(obj, value);
     }
     
-    public static string? GetNameFieldValue(this object obj, Type type)
+    public static string? GetNameFieldValue(this object obj)
     {
-        var nameProperty = Cache.Instance.GetTableMetadata(EntityUtil.GetTableName(type, EntityUtil.DbContext?.GetType() ?? throw new Exception("DbContext not yet initialized")).TableName).NameProperty;
+        var nameProperty = obj.Metadata().NameProperty;
 
         if (nameProperty == null)
         {
