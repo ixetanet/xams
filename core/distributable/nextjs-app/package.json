@@ -14,7 +14,7 @@
     "@mantine/dates": "^7.16.2",
     "@mantine/hooks": "^7.16.2",
     "@mantine/tiptap": "^7.16.2",
-    "@next/bundle-analyzer": "^14.0.2",
+    "@next/bundle-analyzer": "^14.2.26",
     "@tabler/icons-react": "^2.40.0",
     "@tiptap/extension-highlight": "^2.1.12",
     "@tiptap/extension-link": "^2.11.3",
