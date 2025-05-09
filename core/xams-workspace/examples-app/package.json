@@ -9,8 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ixeta/xams": "1.0.6",
-    "@mantine/core": "^7.16.2",
+    "@ixeta/xams": "0.1.54",
+    "@mantine/core": "^7.0.0",
     "@mantine/dates": "^7.16.2",
     "@mantine/hooks": "^7.16.2",
     "@mantine/tiptap": "^7.16.2",
