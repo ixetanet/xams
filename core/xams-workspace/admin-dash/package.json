@@ -27,7 +27,7 @@
     "@tiptap/starter-kit": "^2.1.12",
     "cookies-next": "^4.0.0",
     "dayjs": "^1.11.10",
-    "next": "^14.2.3",
+    "next": "^14.2.24",
     "react": "^18",
     "react-dom": "^18"
   },
