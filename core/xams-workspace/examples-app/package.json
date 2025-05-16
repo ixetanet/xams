@@ -27,7 +27,7 @@
     "@tiptap/starter-kit": "^2.11.3",
     "cookies-next": "^4.0.0",
     "dayjs": "^1.11.10",
-    "next": "^14.2.3",
+    "next": "^14.2.24",
     "next-auth": "^4.22.3",
     "prism-react-renderer": "^2.3.1",
     "react": "^18",
