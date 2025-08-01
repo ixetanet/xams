@@ -811,7 +811,7 @@ namespace Xams.Core.Services
                     ? await DynamicLinq.Find(_dataRepository.CreateNewDbContext(), entityType,
                         (Guid)entity.GetId())
                     : null,
-                TableName = EntityUtil.GetTableName(entity.GetType(), EntityUtil.DbContext?.GetType() ?? throw new Exception("DbContext not yet initialized")).TableName,
+                TableName = entity.Metadata().TableName,
                 DataOperation = dataOperation,
                 InputParameters = (parameters != null ? Util.ObjectToParameters(parameters) : null) ??
                                   new Dictionary<string, JsonElement>(),

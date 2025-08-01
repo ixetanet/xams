@@ -39,9 +39,9 @@ public class ImportDataJob : IServiceJob
                     FriendlyMessage = "Failed to parse file"
                 };
             }
-
+            
             var dataContextUpsert = context.DataRepository.GetDbContext<IXamsDbContext>();
-            dataContextUpsert.Database.SetCommandTimeout(int.MaxValue);
+            dataContextUpsert.Database.SetCommandTimeout(14400); // 4 hours (Postgres rejects int.MaxValue)
             foreach (var import in imports)
             {
                 var dataContext = context.DataRepository.GetDbContext<IXamsDbContext>();
@@ -220,12 +220,11 @@ public class ImportDataJob : IServiceJob
             }
 
             await dataContextUpsert.SaveChangesAsync();
+            return ServiceResult.Success();
         }
         finally
         {
             File.Delete(filePath);
         }
-        
-        return ServiceResult.Success();
     }
 }

@@ -1,12 +1,11 @@
 import { Button, Loader, Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import React, { useMemo, useState } from "react";
-import useAuthStore from "../stores/useAuthStore";
 import dayjs from "dayjs";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 
 export type AppContextShape = {
-  showError: (message: string) => void;
+  showError: (message: string | React.ReactElement, title?: string) => void;
   showLoading: (text?: string) => void;
   hideLoading: () => void;
   showConfirm: (
@@ -38,21 +37,24 @@ export const AppContextProvider = (props: AppContextProviderProps) => {
   const [errorOpened, error] = useDisclosure(false);
   const [confirmOpened, confirm] = useDisclosure(false);
   const [loadingText, setLoadingText] = useState<string>("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorTitle, setErrorTitle] = useState<string>("Error");
+  const [errorMessage, setErrorMessage] = useState<string | React.ReactElement>(
+    ""
+  );
   const [confirmMessage, setConfirmMessage] = useState("");
   const [confirmTitle, setConfirmTitle] = useState<string>("");
   const [confirmOk, setConfirmOk] = useState<() => void>(() => () => {});
   const [confirmCancel, setConfirmCancel] = useState<() => void>(
     () => () => {}
   );
-  const authStore = useAuthStore();
 
   if (!initialized) {
     dayjs.extend(localizedFormat);
     setInitialized(true);
   }
 
-  const showError = (message: string) => {
+  const showError = (message: string | React.ReactElement, title?: string) => {
+    setErrorTitle(title ?? "Error");
     setErrorMessage(message);
     error.open();
   };
@@ -81,9 +83,8 @@ export const AppContextProvider = (props: AppContextProviderProps) => {
         loading.close();
       },
       showConfirm,
-      userId: authStore.userId,
     }),
-    [authStore.userId]
+    []
   );
 
   return (
@@ -118,7 +119,7 @@ export const AppContextProvider = (props: AppContextProviderProps) => {
         opened={errorOpened}
         onClose={error.close}
         withCloseButton={true}
-        title="Error"
+        title={errorTitle}
         size="auto"
         closeOnClickOutside={false}
         closeOnEscape={false}
