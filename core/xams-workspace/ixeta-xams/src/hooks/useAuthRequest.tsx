@@ -18,7 +18,6 @@ import { ReadRequest } from "../api/ReadRequest";
 import { MetadataResponse } from "../api/MetadataResponse";
 import { ReadResponse } from "../api/ReadResponse";
 import { TablesResponse } from "../api/TablesResponse";
-import { useAuthStore } from "../stores/useAuthStore";
 import { AuthContext } from "../contexts/AuthContext";
 import { Request } from "../api/Request";
 import { ActionRequest } from "../api/ActionRequest";
@@ -42,7 +41,6 @@ const useAuthRequest = (props?: useAuthRequestProps) => {
   // We want to be able to use useAuthRequest when not in a AuthContextProvider or AppContextProvider
   const appContext = useContext(AppContext);
   const authContext = useContext(AuthContext);
-  const authStore = useAuthStore();
 
   const saveAsFile = (blob: Blob, filename: string) => {
     // Create an anchor element
@@ -77,12 +75,14 @@ const useAuthRequest = (props?: useAuthRequestProps) => {
       }
 
       // If this is being viewed from the mobile app, get the access token from the mobile app instead of next-auth
-      let accessToken = authStore.accessToken; //session.data?.accessToken;
+      let accessToken = ""; //session.data?.accessToken;
+      if (authContext?.getAccessToken !== undefined) {
+        accessToken = (await authContext.getAccessToken()) ?? "";
+      }
       const resp = await fetch(url, {
         method: params.method,
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          UserId: authStore.userId ?? "",
           ...(params.body !== undefined &&
             !(params.body instanceof FormData) && {
               // If body is FormData then don't set Content-Type to application/json
@@ -442,13 +442,7 @@ const useAuthRequest = (props?: useAuthRequestProps) => {
       action: apiAction,
       file: apiFile,
     }),
-    [
-      authContext?.apiUrl,
-      authContext?.headers,
-      authContext?.onUnauthorized,
-      authStore.accessToken,
-      authStore.userId,
-    ]
+    [authContext?.apiUrl, authContext?.headers, authContext?.onUnauthorized]
   );
 };
 export type useAuthRequestType = ReturnType<typeof useAuthRequest>;

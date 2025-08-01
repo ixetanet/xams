@@ -4,6 +4,7 @@ using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
+using Xams.Core.Entities;
 
 namespace Xams.Core.Utils;
 
@@ -16,13 +17,22 @@ public class DependencyFinder
 
         foreach (var entityType in allEntities)
         {
+            if (entityType == targetType)
+            {
+                continue;
+            }
             var properties = entityType.GetProperties();
             foreach (var property in properties)
             {
                 var isForeignKey = dbContext.Model.FindEntityType(entityType)!
-                    .GetForeignKeys().Any(fk => fk.PrincipalEntityType.ClrType == targetType && fk.Properties.Any(p => p.Name == property.Name));
+                    .GetForeignKeys().Any(fk => (fk.PrincipalEntityType.ClrType == targetType 
+                                                || targetType.BaseType == fk.PrincipalEntityType.ClrType && targetType.BaseType == typeof(User)
+                                                || targetType.BaseType == fk.PrincipalEntityType.ClrType && targetType.BaseType == typeof(Team)
+                                                || targetType.BaseType == fk.PrincipalEntityType.ClrType && targetType.BaseType == typeof(Role)
+                                                || targetType.BaseType == fk.PrincipalEntityType.ClrType && targetType.BaseType == typeof(Setting)
+                                                )
+                                                && fk.Properties.Any(p => p.Name == property.Name));
                 
-
                 if (isForeignKey)
                 {
                     var dependency = new Dependency
@@ -82,6 +92,7 @@ public class DependencyFinder
         public required object Id { get; set; } 
         public required List<Dependency> Dependencies { get; set; }
         public required Func<IXamsDbContext> DbContextFactory { get; set; }
+        public bool ReturnEntity { get; set; } = false;
     }
 
     public class PostOrderTraversalContext
@@ -107,12 +118,16 @@ public class DependencyFinder
         
         foreach (var dependency in context.Dependencies)
         {
-            string primaryKey = Cache.Instance.GetTableMetadata(dependency.Type.Name).PrimaryKey;
+            string primaryKey = dependency.Type.Metadata().PrimaryKey;
             var dbContext = settings.DbContextFactory();
             DynamicLinq dynamicLinq = new DynamicLinq(dbContext, dependency.Type);
             IQueryable query = dynamicLinq.Query
-                .Where($"{dependency.PropertyName} == @0", context.Id)
-                .Select($"new({primaryKey})");
+                .Where($"{dependency.PropertyName} == @0", context.Id);
+            if (!settings.ReturnEntity)
+            {
+                query = query.Select($"new({primaryKey})");
+            }
+            
             List<dynamic> queryResults = await query.ToDynamicListAsync();
 
             foreach (dynamic queryResult in queryResults)
@@ -124,10 +139,22 @@ public class DependencyFinder
                 {
                     context.RecordInfoDict[resultId] = new RecordInfo()
                     {
-                        Dependency = dependency,
                         Count = 1,
                         Depth = context.Depth,
+                        Entity = queryResult,
                     };
+                    context.RecordInfoDict[resultId].Dependencies.Add(dependency);
+                    
+                    if (dependency is { Dependencies: not null } && dependency.Dependencies.Any())
+                    {
+                        await GetPostOrderTraversal(settings, new PostOrderTraversalContext()
+                        {
+                            Id = resultId,
+                            Depth = context.Depth + 1,
+                            Dependencies = dependency.Dependencies,
+                            RecordInfoDict = context.RecordInfoDict,
+                        });    
+                    }
                 }
                 else
                 {
@@ -136,17 +163,7 @@ public class DependencyFinder
                         value.Depth = context.Depth;
                     }
                     value.Count++;
-                }
-                
-                if (dependency is { Dependencies: not null } && dependency.Dependencies.Any())
-                {
-                    await GetPostOrderTraversal(settings, new PostOrderTraversalContext()
-                    {
-                        Id = resultId,
-                        Depth = context.Depth + 1,
-                        Dependencies = dependency.Dependencies,
-                        RecordInfoDict = context.RecordInfoDict,
-                    });    
+                    value.Dependencies.Add(dependency);
                 }
             }
         }
@@ -169,9 +186,10 @@ public class DependencyFinder
 
     public class RecordInfo
     {
-        public Dependency Dependency { get; set; } = null!;
+        public List<Dependency> Dependencies { get; set; } = new();
         public int Depth { get; set; }
         public int Count { get; set; }
+        public required dynamic Entity { get; set; }
     }
 }
 

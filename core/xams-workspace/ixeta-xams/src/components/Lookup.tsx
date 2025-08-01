@@ -1,15 +1,6 @@
-import { API_DATA_READ } from "../apiurls";
-import { MetadataField, MetadataResponse } from "../api/MetadataResponse";
+import { MetadataField } from "../api/MetadataResponse";
 import useAuthRequest from "../hooks/useAuthRequest";
-import {
-  Avatar,
-  ComboboxItem,
-  Group,
-  OptionsFilter,
-  Select,
-  SelectProps,
-  Text,
-} from "@mantine/core";
+import { Group, OptionsFilter, Select, SelectProps, Text } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import React, {
   Ref,
@@ -53,12 +44,6 @@ interface LookupProps {
   size?: string;
 }
 
-interface ItemProps extends React.ComponentPropsWithoutRef<"div"> {
-  image: string;
-  label: string;
-  description: string;
-}
-
 interface CustomSelectOption {
   value: string;
   label: string;
@@ -88,6 +73,7 @@ const renderSelectOption: SelectProps["renderOption"] = ({
 const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const authRequest = useAuthRequest();
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<DataItem | null>(
     props.defaultLabelValue !== undefined ? props.defaultLabelValue : null
   );
@@ -183,11 +169,11 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
     let results = readResp.data.results.map((d: any) => ({
       // Append the description field to the value so it can be used in the search
       value: `${d[props.metaDataField.lookupPrimaryKeyField]}`,
-      label:
-        d[
-          props.metaDataField.lookupTableNameField ??
-            props.metaDataField.lookupPrimaryKeyField
-        ].toString(),
+      label: (
+        d[props.metaDataField.lookupTableNameField] ??
+        d[props.metaDataField.lookupPrimaryKeyField]
+      ).toString(),
+
       // If there's a description field, add it to the label
       ...(props.metaDataField.lookupTableDescriptionField != null
         ? {
@@ -236,12 +222,13 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
 
   useEffect(() => {
     if (
+      isSelectOpen &&
       debouncedSearchValue !== null &&
       !["CreatedById", "UpdatedById"].includes(props.metaDataField.name)
     ) {
       getData();
     }
-  }, [debouncedSearchValue]);
+  }, [debouncedSearchValue, isSelectOpen]);
 
   useEffect(() => {
     // If the default value changes and it isn't in the list, add it
@@ -304,6 +291,9 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
           });
         }
         setSelectedItem(data.find((x) => x.value === value) ?? null);
+      }}
+      onClick={() => {
+        setIsSelectOpen(true);
       }}
       onBlur={props.onBlur}
       searchable

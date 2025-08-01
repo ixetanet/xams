@@ -1,10 +1,8 @@
 using System.Collections.Concurrent;
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.Json;
-using DocumentFormat.OpenXml.Drawing.Diagrams;
 using Microsoft.EntityFrameworkCore;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
@@ -12,6 +10,7 @@ using Xams.Core.Dtos.Data;
 using Xams.Core.Interfaces;
 using Xams.Core.Startup;
 using Xams.Core.Utils;
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace Xams.Core
 {
@@ -327,7 +326,8 @@ namespace Xams.Core
             
             // Repair default values for Sqlite
             await SqliteUtil.Repair(dbContext);
-
+            // Ensure all referenced assemblies are loaded first
+            cache.LoadAllReferencedAssemblies();
             var assemblies = AssemblyLoadContext.Default.Assemblies.ToList();
 
             foreach (var assembly in assemblies)
@@ -730,7 +730,7 @@ namespace Xams.Core
             }
 
             // Check for primary key
-            if (!TryFindPrimaryKeyProperties(dbContext, tableType, out var primaryKeyProperty))
+            if (!TryFindPrimaryKeyProperties(dbContext, tableType, out _))
             {
                 warnings.Add($"Unable to find primary key property for {tableAttribute?.Name ?? tableType.Name}");
             }
@@ -812,13 +812,58 @@ namespace Xams.Core
                 return false;
             }
         }
+        
+        /// <summary>
+        /// Pre-Load referenced assemblies so all service logic, jobs, actions, etc. are loaded at time of caching
+        /// </summary>
+        /// <exception cref="Exception"></exception>
+        private void LoadAllReferencedAssemblies()
+        {
+            var loaded = new HashSet<string>(AppDomain.CurrentDomain.GetAssemblies()
+                .Where(a => !a.IsDynamic)
+                .Where(a => !string.IsNullOrEmpty(a.FullName))
+                .Select(a => a.FullName ?? ""));
+
+            var toLoad = new Queue<Assembly>();
+            var entryAssembly = Assembly.GetEntryAssembly();
+
+            if (entryAssembly == null)
+            {
+                throw new Exception($"Unable to find entry assembly {entryAssembly?.FullName}");
+            }
+            
+            toLoad.Enqueue(entryAssembly);
+
+            while (toLoad.Count > 0)
+            {
+                var asm = toLoad.Dequeue();
+
+                foreach (var reference in asm.GetReferencedAssemblies())
+                {
+                    if (loaded.Contains(reference.FullName)) continue;
+
+                    try
+                    {
+                        var loadedAsm = Assembly.Load(reference);
+                        toLoad.Enqueue(loadedAsm);
+                        loaded.Add(reference.FullName);
+                    }
+                    catch
+                    {
+                        Console.Error.WriteLine($"Failed to load referenced assembly: {reference.FullName}");
+                        // swallow or log — some might not load
+                    }
+                }
+            }
+        }
+
 
 
 
         public class MetadataInfo
         {
             public Type Type { get; set; } = null!;
-            public string TableName { get; set; }
+            public string TableName { get; set; } = null!;
             public UIDisplayNameAttribute? DisplayNameAttribute { get; set; }
             public PropertyInfo? NameProperty { get; set; }
             public string PrimaryKey { get; set; } = null!;
@@ -872,7 +917,7 @@ namespace Xams.Core
         public class Entity
         {
             public required string Name { get; set; }
-            public required List<EntityProperty> Properties { get; set; }
+            public required List<EntityProperty> Properties { get; set; } = null!;
         }
 
         public class EntityProperty
