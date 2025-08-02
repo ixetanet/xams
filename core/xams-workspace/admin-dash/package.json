@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ixeta/xams": "^1.0.9",
+    "@ixeta/xams": "^1.0.7",
     "@mantine/core": "^7.16.2",
     "@mantine/dates": "^7.16.2",
     "@mantine/hooks": "^7.16.2",
