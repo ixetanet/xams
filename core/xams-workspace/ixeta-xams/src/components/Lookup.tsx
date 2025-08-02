@@ -11,7 +11,8 @@ import React, {
   useState,
 } from "react";
 import { LookupQuery } from "../reducers/formbuilderReducer";
-import { ReadOrderBy } from "../api/ReadRequest";
+import { ReadOrderBy, ReadRequest } from "../api/ReadRequest";
+import Query from "../utils/Query";
 
 type DataItem = {
   label: string;
@@ -73,6 +74,7 @@ const renderSelectOption: SelectProps["renderOption"] = ({
 const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const authRequest = useAuthRequest();
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<DataItem | null>(
     props.defaultLabelValue !== undefined ? props.defaultLabelValue : null
@@ -87,7 +89,7 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
   useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
 
   const getData = async () => {
-    let fields = [props.metaDataField.lookupPrimaryKeyField];
+    let fields = [props.metaDataField.lookupTablePrimaryKeyField];
     if (props.metaDataField.lookupTableNameField != null) {
       fields.push(props.metaDataField.lookupTableNameField);
     }
@@ -98,7 +100,8 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
     if (props.metaDataField.option !== "") {
       fields.push("Value");
     }
-    const readResp = await authRequest.read({
+
+    const readRequest = {
       tableName: props.metaDataField.lookupTable,
       maxResults: 20,
       page: 1,
@@ -111,42 +114,54 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
         {
           field:
             props.metaDataField.lookupTableNameField ??
-            props.metaDataField.lookupPrimaryKeyField,
+            props.metaDataField.lookupTablePrimaryKeyField,
           order: props.query?.order,
         },
       ],
       filters: [
-        {
-          logicalOperator: "OR",
-          filters: [
-            // search on Name field
-            {
-              field:
-                props.metaDataField.lookupTableNameField ??
-                props.metaDataField.lookupPrimaryKeyField,
-              operator: "contains",
-              value:
-                selectedItem != null &&
-                selectedItem.label === debouncedSearchValue
-                  ? ""
-                  : debouncedSearchValue,
+        isInitialLoad
+          ? {}
+          : {
+              logicalOperator: "OR",
+              filters: [
+                // search on Name field
+                {
+                  field:
+                    props.metaDataField.lookupTableNameField ??
+                    props.metaDataField.lookupTablePrimaryKeyField,
+                  operator: "contains",
+                  value:
+                    selectedItem != null &&
+                    selectedItem.label === debouncedSearchValue
+                      ? ""
+                      : debouncedSearchValue,
+                },
+                // search on description field
+                ...(props.metaDataField.lookupTableDescriptionField != null
+                  ? [
+                      {
+                        field: props.metaDataField.lookupTableDescriptionField,
+                        operator: "contains",
+                        value:
+                          selectedItem != null &&
+                          selectedItem.label === debouncedSearchValue
+                            ? ""
+                            : debouncedSearchValue,
+                      },
+                    ]
+                  : [{}]),
+              ],
             },
-            // search on description field
-            ...(props.metaDataField.lookupTableDescriptionField != null
-              ? [
-                  {
-                    field: props.metaDataField.lookupTableDescriptionField,
-                    operator: "contains",
-                    value:
-                      selectedItem != null &&
-                      selectedItem.label === debouncedSearchValue
-                        ? ""
-                        : debouncedSearchValue,
-                  },
-                ]
-              : [{}]),
-          ],
-        },
+        ...(props.metaDataField.lookupTableHasActiveField
+          ? [
+              {
+                field: "IsActive",
+                operator: "==",
+                value: "true",
+              },
+            ]
+          : []),
+        // Custom Filters
         ...(props.query?.filters ?? []),
         ...(props.metaDataField.option !== ""
           ? [{ field: "Name", value: props.metaDataField.option }]
@@ -163,25 +178,28 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
             },
           }
         : {}),
-    });
+    } as ReadRequest;
+
+    const readResp = await authRequest.read(readRequest);
 
     if (!readResp || !readResp.succeeded) return;
     let results = readResp.data.results.map((d: any) => ({
       // Append the description field to the value so it can be used in the search
-      value: `${d[props.metaDataField.lookupPrimaryKeyField]}`,
+      value: `${d[props.metaDataField.lookupTablePrimaryKeyField]}`,
       label: (
         d[props.metaDataField.lookupTableNameField] ??
-        d[props.metaDataField.lookupPrimaryKeyField]
+        d[props.metaDataField.lookupTablePrimaryKeyField]
       ).toString(),
 
       // If there's a description field, add it to the label
       ...(props.metaDataField.lookupTableDescriptionField != null
         ? {
             description: `${
-              d[props.metaDataField.lookupTableDescriptionField]
+              d[props.metaDataField.lookupTableDescriptionField] ?? ""
             }`,
           }
         : {}),
+
       ...(props.metaDataField.option !== ""
         ? {
             data: d["Value"],
@@ -211,26 +229,67 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
       return x;
     });
 
+    if (isInitialLoad) {
+      setIsInitialLoad(false);
+    }
     setData(results);
   };
 
-  // Override the default filter function to return all options
-  // This allows for description fields to be used in search
-  const optionsFilter: OptionsFilter = ({ options, search }) => {
-    return options;
+  const getItem = async (id: string) => {
+    const fields = [props.metaDataField.lookupTablePrimaryKeyField];
+    if (props.metaDataField.lookupTableNameField) {
+      fields.push(props.metaDataField.lookupTableNameField);
+    }
+    if (props.metaDataField.lookupTableDescriptionField) {
+      fields.push(props.metaDataField.lookupTableDescriptionField);
+    }
+    const readRequest = new Query(fields)
+      .top(1)
+      .from(props.metaDataField.lookupTable)
+      .where(props.metaDataField.lookupTablePrimaryKeyField, "==", id)
+      .toReadRequest();
+
+    const resp = await authRequest.read(readRequest);
+    if (!resp || !resp.succeeded) return;
+
+    const result = resp.data.results[0] as any;
+    if (result == null) return;
+    const item: DataItem = {
+      value: `${result[props.metaDataField.lookupTablePrimaryKeyField]}`,
+      label: (
+        result[props.metaDataField.lookupTableNameField] ??
+        result[props.metaDataField.lookupTablePrimaryKeyField]
+      ).toString(),
+    };
+
+    if (props.metaDataField.lookupTableDescriptionField != null) {
+      item.description =
+        result[props.metaDataField.lookupTableDescriptionField];
+    }
+    return item;
   };
 
-  useEffect(() => {
+  const fetchDefaultItem = async () => {
     if (
-      isSelectOpen &&
-      debouncedSearchValue !== null &&
-      !["CreatedById", "UpdatedById"].includes(props.metaDataField.name)
+      props.defaultLabelValue !== undefined &&
+      props.defaultLabelValue.value != null &&
+      props.defaultLabelValue.label === ""
     ) {
-      getData();
+      const existingItem = data.find(
+        (x) => x.value === props.defaultLabelValue?.value
+      );
+      if (existingItem != null && existingItem.label === "") {
+        const value = await getItem(props.defaultLabelValue.value);
+        if (value != null) {
+          setSelectedItem(value);
+          setData((prev) =>
+            prev.map((item) =>
+              item.value === existingItem.value ? { ...item, ...value } : item
+            )
+          );
+        }
+      }
     }
-  }, [debouncedSearchValue, isSelectOpen]);
-
-  useEffect(() => {
     // If the default value changes and it isn't in the list, add it
     // This is necessary because the default value may change after the component is mounted
     if (
@@ -251,6 +310,26 @@ const Lookup = forwardRef((props: LookupProps, ref: Ref<HTMLInputElement>) => {
       }
       setData([...data, props.defaultLabelValue]);
     }
+  };
+
+  // Override the default filter function to return all options
+  // This allows for description fields to be used in search
+  const optionsFilter: OptionsFilter = ({ options, search }) => {
+    return options;
+  };
+
+  useEffect(() => {
+    if (
+      isSelectOpen &&
+      debouncedSearchValue !== null &&
+      !["CreatedById", "UpdatedById"].includes(props.metaDataField.name)
+    ) {
+      getData();
+    }
+  }, [debouncedSearchValue, isSelectOpen]);
+
+  useEffect(() => {
+    fetchDefaultItem();
   }, [props.defaultLabelValue]);
 
   // Don't allow label to be null

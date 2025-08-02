@@ -276,7 +276,9 @@ const DataTable = forwardRef(
                   value:
                     options?.active != null
                       ? options?.active.toString()
-                      : "true",
+                      : state.activeSwitch === "Active"
+                      ? "true"
+                      : "false",
                 },
               ]
             : []),
@@ -539,6 +541,7 @@ const DataTable = forwardRef(
       setRecords: setRecords,
       showLoading: showLoading,
       sort: onSort,
+      Metadata: state.metadata,
     } as DataTableRef;
 
     // FormContext may need to reload the datatables

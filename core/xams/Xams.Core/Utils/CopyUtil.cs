@@ -15,7 +15,7 @@ public static class CopyUtil
     /// <param name="excludedEntities">Which entities should not be copied and maintain their original relationship</param>
     /// <returns></returns>
     public static async Task<dynamic> DeepCopy(IXamsDbContext dbContext, Type entityType, Guid entityId,
-        string excludedEntities)
+        string[] excludedEntities)
     {
         var dependencies = DependencyFinder.GetDependencies(entityType, dbContext);
         var maxDepth = DependencyFinder.GetMaxDepth(dependencies);
@@ -73,7 +73,7 @@ public static class CopyUtil
                 var id = recordDependency.Key;
                 var entity = recordDependency.Value.Entity;
                 var type = entity.GetType();
-                var metadata = (Cache.MetadataInfo)type.Metadata();
+                var metadata = (Cache.MetadataInfo)Cache.Instance.TableTypeMetadata[type];
                 if (excludedEntities.Contains(metadata.TableName))
                 {
                     continue;
