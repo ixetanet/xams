@@ -149,6 +149,7 @@ namespace Xams.Core
                         string? lookupTableNameField = string.Empty;
                         string? lookuptableDescriptionField = string.Empty;
                         string lookupTable = string.Empty;
+                        bool lookupTablHasActiveField = false;
                         if (isLookup)
                         {
                             var lookupProperty =
@@ -160,11 +161,6 @@ namespace Xams.Core
                                 propTableAttribute)
                             {
                                 lookupTable = propTableAttribute.Name;
-                            }
-
-                            if (string.IsNullOrEmpty(lookupTable))
-                            {
-                                lookupTable = lookupProperty?.PropertyType.Name + "s";
                             }
 
                             lookupTableNameField = lookupProperty?.PropertyType
@@ -183,6 +179,8 @@ namespace Xams.Core
                                 .GetProperties()
                                 .FirstOrDefault(x => x.GetCustomAttribute(typeof(UIDescriptionAttribute)) != null)
                                 ?.Name;
+                            
+                            lookupTablHasActiveField = lookupProperty?.PropertyType.GetProperty("IsActive") != null;
                         }
 
                         UIOrderAttribute layoutAttribute =
@@ -286,6 +284,7 @@ namespace Xams.Core
                             lookupTable = lookupTable,
                             lookupTableNameField = lookupTableNameField,
                             lookupTableDescriptionField = lookuptableDescriptionField,
+                            lookupTableHasActiveField = lookupTablHasActiveField,
                             dateFormat = dateFormatAttribute?.DateFormat,
                             isNullable = isNullable,
                             isRequired = requiredAttribute != null || tableRequiredFields.Contains(property.Name),
@@ -317,7 +316,7 @@ namespace Xams.Core
                 {
                     if (!string.IsNullOrEmpty(field.lookupTable))
                     {
-                        field.lookupPrimaryKeyField = cache.GetTableMetadata(field.lookupTable).PrimaryKey;
+                        field.lookupTablePrimaryKeyField = cache.GetTableMetadata(field.lookupTable).PrimaryKey;
                     }
                 }
             }
