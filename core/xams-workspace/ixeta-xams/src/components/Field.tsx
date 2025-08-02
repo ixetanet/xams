@@ -7,7 +7,6 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
-import useLookupStore, { LookupStoreInfo } from "../stores/useLookupStore";
 import { LookupQuery } from "../reducers/formbuilderReducer";
 import { useFormContext } from "../contexts/FormContext";
 import { DateInputProps } from "@mantine/dates";
@@ -49,7 +48,6 @@ const Field = (props: FieldProps) => {
   const field = formContext.formBuilder.metadata?.fields.find(
     (x) => x.name === props.name
   );
-  const lookupStore = useLookupStore();
 
   // If the metadata hasn't loaded yet
   if (formContext.formBuilder.metadata == null) {
@@ -271,16 +269,16 @@ const Field = (props: FieldProps) => {
   };
 
   const getDefaultLookupItem = (
-    fieldName: string,
-    lookupTable: string
-  ): LookupStoreInfo | undefined => {
+    fieldName: string
+  ): { label: string; value: string } | undefined => {
     const fieldDefault = formContext.formBuilder.defaults?.find(
       (x) => x.field === fieldName
     );
     if (fieldDefault !== undefined) {
-      return lookupStore.lookups.find(
-        (x) => x.fieldName === fieldName && x.lookupTable === lookupTable
-      );
+      return {
+        label: "",
+        value: fieldDefault.value as string,
+      };
     }
     return undefined;
   };
@@ -331,7 +329,7 @@ const Field = (props: FieldProps) => {
                   formContext.formBuilder.snapshot[field.lookupName],
                   formContext.formBuilder.snapshot[field.name]
                 )
-              : getDefaultLookupItem(field.name, field.lookupTable)
+              : getDefaultLookupItem(field.name)
           }
           value={formContext.formBuilder.data[field.name]}
           excludeValues={

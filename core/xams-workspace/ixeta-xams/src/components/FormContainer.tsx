@@ -45,6 +45,7 @@ const FormContainer = (props: FormContainerProps) => {
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     props.formBuilder.save(
       props.onPreValidate,
       props.onPreSave,
