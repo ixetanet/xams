@@ -298,9 +298,11 @@ public class BaseServiceContext(PipelineContext pipelineContext)
         DynamicLinq dLinq =
             new DynamicLinq(db, Cache.Instance.GetTableMetadata("Server").Type);
         IQueryable query = dLinq.Query;
-        query = query.Take(1).OrderBy("Name asc")
+        query = query
             .Where("LastPing > @0", DateTime.UtcNow.AddSeconds(-30))
-            .Where("Name == @0", options.JobServer);
+            .Where("Name == @0", options.JobServer)
+            .OrderBy("LastPing desc")
+            .Take(1);
         var server = (await query.ToDynamicListAsync()).FirstOrDefault();
         if (server == null)
         {
@@ -323,7 +325,7 @@ public class BaseServiceContext(PipelineContext pipelineContext)
         DynamicLinq dLinq =
             new DynamicLinq(db, Cache.Instance.GetTableMetadata("Server").Type);
         IQueryable query = dLinq.Query;
-        query = query.Take(1).OrderBy("Name asc").Where("LastPing > @0", DateTime.UtcNow.AddSeconds(-30));
+        query = query.Where("LastPing > @0", DateTime.UtcNow.AddSeconds(-30)).OrderBy("Name asc").Take(1);
         var server = (await query.ToDynamicListAsync()).FirstOrDefault();
         if (server == null)
         {

@@ -107,7 +107,7 @@ export const dataTableInitState = {
   data: emptyReadResponse,
   searchField: "",
   searchValue: "",
-  activeSwitch: null,
+  activeSwitch: "Active",
   editRecordId: null,
   visibleFields: undefined,
 } as DataTableState;

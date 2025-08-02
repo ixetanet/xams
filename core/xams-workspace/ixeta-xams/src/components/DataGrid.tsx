@@ -100,6 +100,23 @@ const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
       return;
     }
     if (activeCell) {
+      const cell = props.rows[activeCell.row].columns[activeCell.col];
+      if (e.key === "Delete") {
+        if (props.onDelete != null) {
+          props.onDelete(editValue, activeCell, cell.data);
+        }
+        if (cell.onDelete != null) {
+          cell.onDelete(editValue, activeCell, cell.data);
+        }
+      }
+      if (e.key === "Backspace") {
+        if (props.onBackspace != null) {
+          props.onBackspace(editValue, activeCell, cell.data);
+        }
+        if (cell.onBackspace != null) {
+          cell.onBackspace(editValue, activeCell, cell.data);
+        }
+      }
       if (
         e.key === "ArrowDown" ||
         e.key === "ArrowUp" ||

@@ -141,7 +141,7 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
           return `${ctx.props.formMaxWidth}rem`;
         }
         // minimum size
-        if (ctx.props.formMinWidth != null) {
+        if (ctx.props.formMinWidth != null && size < ctx.props.formMinWidth) {
           return `${ctx.props.formMinWidth}rem`;
         }
         return `${size}rem`;

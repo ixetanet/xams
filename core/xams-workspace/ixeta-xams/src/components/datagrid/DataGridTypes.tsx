@@ -4,6 +4,16 @@ export interface DataGridProps {
   rows: Row[];
   columnWidths: number[] | number;
   onEndEdit?: (value: string, cellLocation: CellLocation, data?: any) => void;
+  onDelete?: (
+    value: string | undefined,
+    cellLocation: CellLocation,
+    data?: any
+  ) => void;
+  onBackspace?: (
+    value: string | undefined,
+    cellLocation: CellLocation,
+    data?: any
+  ) => void;
   snapColumns?: number;
   snapRows?: number;
   zIndex?: number;
@@ -35,6 +45,16 @@ export interface Cell {
   onEditing?: (value: string, cellLocation: CellLocation, data?: any) => string;
   onEndEdit?: (value: string, cellLocation: CellLocation, data?: any) => void;
   onClick?: (value: string, cellLocation: CellLocation, data?: any) => void;
+  onDelete?: (
+    value: string | undefined,
+    cellLocation: CellLocation,
+    data?: any
+  ) => void;
+  onBackspace?: (
+    value: string | undefined,
+    cellLocation: CellLocation,
+    data?: any
+  ) => void;
 }
 
 export interface Row {
