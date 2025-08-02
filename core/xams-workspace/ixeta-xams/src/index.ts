@@ -21,12 +21,12 @@ export { default as DataTableSelectable } from "./components/DataTableSelectable
 export * from "./components/datatable/DataTableTypes";
 export { default as DataGrid } from "./components/DataGrid";
 export type { DataGridRef as DataGridRef } from "./components/DataGrid";
+export type { ApiResponse as ApiResponse } from "./api/ApiResponse";
 export * from "./components/datagrid/DataGridTypes";
 export { default as FormContainer } from "./components/FormContainer";
 export { default as Field } from "./components/Field";
 export { default as SaveButton } from "./components/SaveButton";
 export { default as ToggleMode } from "./components/ToggleMode";
-export { default as useAuthStore } from "./stores/useAuthStore";
 export { default as useColor } from "./hooks/useColor";
 export * from "./stores/usePermissionStore";
 export {

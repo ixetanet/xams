@@ -29,6 +29,7 @@ export interface DataTableRef {
   setRecords: (previousData: SetDataFunction) => void;
   showLoading: () => void;
   sort(field: string): void;
+  Metadata?: MetadataResponse;
 }
 
 export type DataTableField = string | DataTableCustomField;

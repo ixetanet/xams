@@ -19,23 +19,35 @@ const ImportDataModal = (props: ImportDataModalProps) => {
   const checkJobStatus = async () => {
     if (isCheckingStatus.current) return;
     isCheckingStatus.current = true;
-    const resp = await authRequest.action<any>("ADMIN_ImportData", {
-      jobHistoryId: jobHistoryId.current,
-    });
-    const status = resp.data.jobStatus;
-    if (status !== "Running" && status !== "Not Started") {
-      clearInterval(interval.current as number);
-      interval.current = null;
-      setIsLoading(false);
-      if (status === "Failed") {
-        console.error("Job failed");
-        // Handle job failure
-      } else if (status === "Completed") {
-        console.log("Job completed successfully");
-        props.close();
+    try {
+      const resp = await authRequest.action<any>("ADMIN_ImportData", {
+        jobHistoryId: jobHistoryId.current,
+      });
+      if (!resp.succeeded) {
+        // if there was an error, keep trying
+        isCheckingStatus.current = false;
+        return;
       }
+      const status = resp.data.jobStatus;
+      if (status !== "Running" && status !== "Not Started") {
+        clearInterval(interval.current as number);
+        interval.current = null;
+        setIsLoading(false);
+        if (status === "Failed") {
+          console.error("Job failed", resp.data.jobMessage);
+          // Handle job failure
+        } else if (status === "Completed") {
+          console.log("Job completed successfully");
+          props.close();
+        }
+      }
+      console.log(status);
+    } catch (error) {
+      // if there was an error, keep trying
+      isCheckingStatus.current = false;
+      return;
     }
-    console.log(status);
+
     isCheckingStatus.current = false;
   };
 
