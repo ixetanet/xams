@@ -18,7 +18,7 @@
     "@tabler/icons-react": "^2.40.0",
     "@tiptap/extension-highlight": "^2.1.12",
     "@tiptap/extension-link": "^2.11.3",
-    "@tiptap/extension-subscript": "^2.1.12",
+    "@tiptap/extension-subscript": "^2.11.7",
     "@tiptap/extension-superscript": "^2.1.12",
     "@tiptap/extension-text-align": "^2.1.12",
     "@tiptap/extension-underline": "^2.1.12",
