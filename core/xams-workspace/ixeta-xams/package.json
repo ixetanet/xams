@@ -1,6 +1,6 @@
 {
   "name": "@ixeta/xams",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Xams React Components",
   "source": "src/index.ts",
   "types": "dist/types/index.d.ts",
