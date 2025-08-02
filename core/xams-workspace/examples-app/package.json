@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ixeta/xams": "1.0.6",
+    "@ixeta/xams": "1.0.9",
     "@mantine/core": "^7.16.2",
     "@mantine/dates": "^7.16.2",
     "@mantine/hooks": "^7.16.2",
@@ -27,7 +27,7 @@
     "@tiptap/starter-kit": "^2.11.3",
     "cookies-next": "^4.0.0",
     "dayjs": "^1.11.10",
-    "next": "^15.2.2",
+    "next": "^14.2.31",
     "next-auth": "^4.22.3",
     "prism-react-renderer": "^2.3.1",
     "react": "^18",
