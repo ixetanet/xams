@@ -40,14 +40,12 @@ export function useFetch<T>({
     try {
       const result = await fetcher();
 
-      // Only update state if this is still the latest request
       if (requestId === activeRequestId.current) {
         setData(result);
         setIsSuccess(true);
         setIsLoading(false);
       }
     } catch (err) {
-      // Only update state if this is still the latest request
       if (requestId === activeRequestId.current) {
         setIsError(true);
         setError(err instanceof Error ? err : new Error(String(err)));
@@ -55,14 +53,13 @@ export function useFetch<T>({
         setIsLoading(false);
       }
     }
-  }, [fetcher]);
+  }, []);
 
   const refetch = useCallback(async () => {
     await fetchData();
   }, [fetchData]);
 
   useEffect(() => {
-    // Reset state when the fetcher changes
     setIsSuccess(false);
 
     if (enabled) {

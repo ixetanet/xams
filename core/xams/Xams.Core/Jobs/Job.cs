@@ -324,7 +324,7 @@ public class Job
                 if (jobHistory != null)
                 {
                     jobHistory.Status = status;
-                    jobHistory.Message = e.InnerException?.ToString() ?? string.Empty;
+                    jobHistory.Message = e.StackTrace ?? e.InnerException?.ToString() ?? string.Empty;
                     jobHistory.CompletedDate = DateTime.UtcNow;
                     xamsDbContext.Update(jobHistory);
                     await xamsDbContext.SaveChangesAsync();    

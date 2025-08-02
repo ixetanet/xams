@@ -1,7 +1,6 @@
 import { MetadataResponse } from "../api/MetadataResponse";
 import useAuthRequest from "../hooks/useAuthRequest";
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
-import useLookupStore from "../stores/useLookupStore";
 import { usePermissionStore } from "../stores/usePermissionStore";
 import {
   FieldValue,
@@ -56,7 +55,6 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
   const authRequest = useAuthRequest();
   const permissionStore = usePermissionStore();
   const guid = useGuid();
-  const lookupStore = useLookupStore();
   const firstInputRef = useRef<HTMLInputElement>(null);
   const [state, dispatch] = useReducer(
     formbuilderReducer,
@@ -261,23 +259,23 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
       }));
 
     // Get the labels for any default lookups
-    for (const field of metadata.fields ?? []) {
-      if (field.type === "Lookup") {
-        if (props.defaults !== undefined) {
-          for (const lookupDefault of props.defaults ?? []) {
-            if (lookupDefault.field === field.name) {
-              await lookupStore.getLookupLabel(
-                authRequest,
-                field.name,
-                field.lookupTable,
-                field.lookupTableNameField,
-                lookupDefault.value as string
-              );
-            }
-          }
-        }
-      }
-    }
+    // for (const field of metadata.fields ?? []) {
+    //   if (field.type === "Lookup") {
+    //     if (props.defaults !== undefined) {
+    //       for (const lookupDefault of props.defaults ?? []) {
+    //         if (lookupDefault.field === field.name) {
+    //           await lookupStore.getLookupLabel(
+    //             authRequest,
+    //             field.name,
+    //             field.lookupTable,
+    //             field.lookupTableNameField,
+    //             lookupDefault.value as string
+    //           );
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
 
     return {
       ...numericDefaults?.reduce((a, b) => ({ ...a, [b.field]: b.value }), {}),

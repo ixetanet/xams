@@ -19,9 +19,11 @@ const DataTableHeader = (props: DataTableHeaderProps) => {
     orderByOrder = ctx.state.data.orderBy[0].order;
   }
 
+  const fields = ctx.getFields();
+
   return (
     <>
-      {ctx.getFields().map((f, i) => {
+      {fields.map((f, i) => {
         if (f.metadataField == null) {
           return (
             <Table.Th

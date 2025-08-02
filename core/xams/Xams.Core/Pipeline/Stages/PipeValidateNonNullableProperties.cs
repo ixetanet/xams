@@ -34,7 +34,7 @@ public class PipeValidateNonNullableProperties : BasePipelineStage
         foreach (var property in properties)
         {
             // Ignore primary key
-            if (context.Entity.Metadata().PrimaryKeyProperty == property)
+            if (context.Entity.Metadata().PrimaryKeyProperty.Name == property.Name)
             {
                 continue;
             }
