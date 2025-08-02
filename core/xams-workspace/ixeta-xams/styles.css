@@ -116,10 +116,6 @@
   height: 0.25rem
 }
 
-.h-2 {
-  height: 0.5rem
-}
-
 .h-4 {
   height: 1rem
 }
@@ -154,10 +150,6 @@
 
 .h-full {
   height: 100%
-}
-
-.h-10 {
-  height: 2.5rem
 }
 
 .max-h-\[80vh\] {

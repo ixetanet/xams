@@ -14,7 +14,7 @@ public static class Queries
         
         if (!settings.Any())
         {
-            var entity = EntityUtil.DictionaryToEntity(settingType, new Dictionary<string, dynamic?>
+            var entity = EntityUtil.DictionaryToEntity(settingType, new Dictionary<string, dynamic>
             {
                 ["Name"] = name,
                 ["Value"] = defaultValue

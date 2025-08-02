@@ -20,7 +20,8 @@ namespace Xams.Core.Dtos.Data
         public string? lookupTable { get; set; }
         public string? lookupTableNameField { get; set; }
         public string? lookupTableDescriptionField { get; set; }
-        public string? lookupPrimaryKeyField { get; set; }
+        public string? lookupTablePrimaryKeyField { get; set; }
+        public bool lookupTableHasActiveField { get; set; }
         public string? dateFormat { get; set; }
         public bool isNullable { get; set; }
         public bool isRequired { get; set; }
