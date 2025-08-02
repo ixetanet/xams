@@ -18,7 +18,7 @@
     "@tabler/icons-react": "^2.40.0",
     "@tiptap/extension-highlight": "^2.11.7",
     "@tiptap/extension-link": "^2.11.3",
-    "@tiptap/extension-subscript": "^2.1.12",
+    "@tiptap/extension-subscript": "^2.11.7",
     "@tiptap/extension-superscript": "^2.1.12",
     "@tiptap/extension-text-align": "^2.1.12",
     "@tiptap/extension-underline": "^2.1.12",
@@ -27,7 +27,7 @@
     "@tiptap/starter-kit": "^2.11.3",
     "dayjs": "^1.11.10",
     "cookies-next": "^4.0.0",
-    "next": "^14.2.3",
+    "next": "^15.2.2",
     "react": "^18",
     "react-dom": "^18"
   },

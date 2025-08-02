@@ -12,7 +12,7 @@ const DataTableSelectable = (
   props: DataTableProps & {
     varient: "single" | "multiple";
     fields: string[]; // Make fields and columnWidths required
-    columnWidths: string[];
+    columnWidths?: string[];
     onSelectedRowsChange?: (rows: SelectedRow[]) => void;
   }
 ) => {
@@ -20,6 +20,7 @@ const DataTableSelectable = (
   const [selectAll, setSelectAll] = React.useState<boolean>(false);
   const [tableData, setTableData] = React.useState<any[]>([]); // [{}
   const dataTableRef = useRef<DataTableRef>(null);
+  const primaryKey = dataTableRef.current?.Metadata?.primaryKey ?? "";
 
   const onSelectAll = (selected: boolean) => {
     setSelectAll(selected);
@@ -31,14 +32,15 @@ const DataTableSelectable = (
         ? [
             ...prev,
             ...tableData.map((r) => {
-              return { id: r[`${props.tableName}Id`], row: r };
+              return {
+                id: r[primaryKey],
+                row: r,
+              };
             }),
           ]
         : [
             ...prev.filter((r) => {
-              return !tableData.some(
-                (r2) => r2[`${props.tableName}Id`] === r.id
-              );
+              return !tableData.some((r2) => r2[primaryKey] === r.id);
             }),
           ]
     );
@@ -76,7 +78,7 @@ const DataTableSelectable = (
     for (let x of tableData) {
       if (
         rowsToCheck.find((r) => {
-          return r.id === x[`${props.tableName}Id`];
+          return r.id === x[primaryKey];
         }) == null
       ) {
         setSelectAll(false);
@@ -91,7 +93,7 @@ const DataTableSelectable = (
     setSelectAll(
       tableData.every((r) => {
         return selectedRows.some((r2) => {
-          return r2.id === r[`${props.tableName}Id`];
+          return r2.id === r[primaryKey];
         });
       })
     );
@@ -104,10 +106,13 @@ const DataTableSelectable = (
   }, [selectedRows]);
 
   const selectableField = {
-    // header: "Select",
     header: () => {
       if (props.varient === "single") {
-        return <></>;
+        return (
+          <div className=" invisible">
+            <Checkbox></Checkbox>
+          </div>
+        );
       }
       return (
         <Checkbox
@@ -120,15 +125,10 @@ const DataTableSelectable = (
       return (
         <Checkbox
           onChange={(event) =>
-            onSelect(
-              event.target.checked,
-              record[`${props.tableName}Id`],
-              record
-            )
+            onSelect(event.target.checked, record[primaryKey], record)
           }
           checked={
-            selectedRows.find((x) => x.id === record[`${props.tableName}Id`]) !=
-            null
+            selectedRows.find((x) => x.id === record[primaryKey]) != null
           }
         ></Checkbox>
       );
@@ -141,17 +141,16 @@ const DataTableSelectable = (
       fields={[selectableField, ...(props.fields != null ? props.fields : [])]}
       columnWidths={[
         "32x",
-        ...(props.columnWidths != null ? props.columnWidths : []),
+        ...(props.columnWidths != null
+          ? props.columnWidths
+          : props.fields.map((f) => "100%")),
       ]}
-      tableStyle={{
-        truncate: false,
-      }}
       onRowClick={(record) => {
         onSelect(
           !selectedRows.some((r) => {
-            return r.id === record[`${props.tableName}Id`];
+            return r.id === record[primaryKey];
           }),
-          record[`${props.tableName}Id`],
+          record[primaryKey],
           record
         );
         return false;

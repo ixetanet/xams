@@ -6,6 +6,7 @@ export interface AuthContextProviderProps {
   headers?: { [key: string]: string };
   children?: any;
   withCredentials?: boolean;
+  getAccessToken?: () => Promise<string | undefined>;
 }
 
 export type AuthContextShape = {
@@ -13,6 +14,7 @@ export type AuthContextShape = {
   apiUrl: string;
   headers?: { [key: string]: string };
   withCredentials?: boolean;
+  getAccessToken?: () => Promise<string | undefined>;
 };
 
 export const AuthContext = React.createContext<AuthContextShape | null>(null);
@@ -43,6 +45,7 @@ const AuthContextProvider = (props: AuthContextProviderProps) => {
         apiUrl: props.apiUrl,
         headers: props.headers,
         withCredentials: props.withCredentials,
+        getAccessToken: props.getAccessToken,
       }}
     >
       {props.children}
