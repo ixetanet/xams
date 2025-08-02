@@ -84,6 +84,7 @@ namespace Xams.Core.Actions
                 return ServiceResult.Success(new
                 {
                     jobStatus = jobHistory == null ? "Not Started" : jobHistory.Status,
+                    jobMessage = jobHistory == null ? "Not Started" : jobHistory.Message,
                 });
             }
 

@@ -21,62 +21,67 @@ namespace Xams.Core.Services
         where TDbContext : XamsDbContext,
         new()
     {
-        public DataService(ILogger<DataService<TDbContext, User, Team, Role, Setting>> logger, IServiceProvider serviceProvider) : base(logger, serviceProvider) 
+        public DataService(ILogger<DataService<TDbContext, User, Team, Role, Setting>> logger,
+            IServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
         }
     }
-    
+
     public class DataService<TDbContext, TUser> : DataService<TDbContext, TUser, Team>
-        where TDbContext : XamsDbContext<TUser, Team> 
+        where TDbContext : XamsDbContext<TUser, Team>
         where TUser : User,
         new()
     {
-        public DataService(ILogger<DataService<TDbContext, TUser, Team, Role, Setting>> logger, IServiceProvider serviceProvider) : base(logger, serviceProvider) 
+        public DataService(ILogger<DataService<TDbContext, TUser, Team, Role, Setting>> logger,
+            IServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
         }
     }
-    
+
     public class DataService<TDbContext, TUser, TTeam> : DataService<TDbContext, TUser, TTeam, Role>
-        where TDbContext : XamsDbContext<TUser, TTeam> 
+        where TDbContext : XamsDbContext<TUser, TTeam>
         where TUser : User
         where TTeam : Team,
         new()
     {
-        public DataService(ILogger<DataService<TDbContext, TUser, TTeam, Role, Setting>> logger, IServiceProvider serviceProvider) : base(logger, serviceProvider) 
+        public DataService(ILogger<DataService<TDbContext, TUser, TTeam, Role, Setting>> logger,
+            IServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
         }
     }
-    
+
     public class DataService<TDbContext, TUser, TTeam, TRole> : DataService<TDbContext, TUser, TTeam, TRole, Setting>
-        where TDbContext : XamsDbContext<TUser, TTeam, TRole, Setting> 
+        where TDbContext : XamsDbContext<TUser, TTeam, TRole, Setting>
         where TUser : User
         where TTeam : Team
         where TRole : Role,
         new()
     {
-        public DataService(ILogger<DataService<TDbContext, TUser, TTeam, TRole, Setting>> logger, IServiceProvider serviceProvider) : base(logger, serviceProvider) 
+        public DataService(ILogger<DataService<TDbContext, TUser, TTeam, TRole, Setting>> logger,
+            IServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
         }
     }
-    
-    public class DataService<TDbContext, TUser, TTeam, TRole, TSetting> : IDataService 
-        where TDbContext : XamsDbContext<TUser, TTeam, TRole, TSetting> 
+
+    public class DataService<TDbContext, TUser, TTeam, TRole, TSetting> : IDataService
+        where TDbContext : XamsDbContext<TUser, TTeam, TRole, TSetting>
         where TUser : User
         where TTeam : Team
         where TRole : Role
-        where TSetting : Setting, 
+        where TSetting : Setting,
         new()
     {
         private readonly Guid ExecutionId = Guid.NewGuid();
-        private readonly DataRepository _dataRepository = new (typeof(TDbContext));
+        private readonly DataRepository _dataRepository = new(typeof(TDbContext));
         private readonly MetadataRepository _metadataRepository = new(typeof(TDbContext));
         private readonly SecurityRepository _securityRepository = new();
         private readonly Dictionary<string, HashSet<dynamic>> _deletes = new();
         private List<ServiceContext> ServiceContexts { get; set; } = new();
         internal ILogger Logger { get; }
-        public IServiceProvider ServiceProvider { get;  }
-        
-        public DataService(ILogger<DataService<TDbContext, TUser, TTeam, TRole, TSetting>> logger, IServiceProvider serviceProvider)
+        public IServiceProvider ServiceProvider { get; }
+
+        public DataService(ILogger<DataService<TDbContext, TUser, TTeam, TRole, TSetting>> logger,
+            IServiceProvider serviceProvider)
         {
             Logger = logger;
             ServiceProvider = serviceProvider;
@@ -91,7 +96,7 @@ namespace Xams.Core.Services
         {
             return ExecutionId;
         }
-        
+
         public DataRepository GetDataRepository()
         {
             return _dataRepository;
@@ -176,7 +181,8 @@ namespace Xams.Core.Services
             }
             catch (Exception e)
             {
-                Logger.LogError(e, "ExecutionId {executionId} Read Failed UserId {userId}: {Message}", ExecutionId, userId, e.Message);
+                Logger.LogError(e, "ExecutionId {executionId} Read Failed UserId {userId}: {Message}", ExecutionId,
+                    userId, e.Message);
                 return new Response<ReadOutput>()
                 {
                     Succeeded = false,
@@ -288,7 +294,7 @@ namespace Xams.Core.Services
             }
 
             // Verify User has action permissions
-            var permissions = await PermissionCache.GetUserPermissions(userId, [$"ACTION_{input.name}"]); 
+            var permissions = await PermissionCache.GetUserPermissions(userId, [$"ACTION_{input.name}"]);
             if (permissions.Length == 0)
             {
                 return new Response<object?>()
@@ -367,7 +373,8 @@ namespace Xams.Core.Services
             }
             catch (Exception e)
             {
-                Logger.LogError(e, "ExecutionId {executionId} Action Failed UserId {userId}: {Message}", ExecutionId, userId, e.Message);
+                Logger.LogError(e, "ExecutionId {executionId} Action Failed UserId {userId}: {Message}", ExecutionId,
+                    userId, e.Message);
                 await _dataRepository.RollbackTransaction();
                 return new Response<object?>()
                 {
@@ -413,13 +420,14 @@ namespace Xams.Core.Services
 
             return ServiceResult.Success();
         }
-        
+
         public bool TrackDelete(string entity, object id)
         {
             if (!_deletes.ContainsKey(entity))
             {
                 _deletes.Add(entity, new HashSet<dynamic>());
             }
+
             if (!_deletes[entity].Contains(id))
             {
                 _deletes[entity].Add(id);
@@ -436,7 +444,7 @@ namespace Xams.Core.Services
                 // For now, we only track Guid IDs
                 return false;
             }
-            
+
             return _deletes.ContainsKey(entity) && _deletes[entity].Contains(guidId);
         }
 
@@ -527,7 +535,8 @@ namespace Xams.Core.Services
                 {
                     TableName = x.tableName ?? "",
                     DataOperation = DataOperation.Create,
-                    Entity = EntityUtil.GetEntity(x, DataOperation.Create, out string error).Data ?? throw new Exception(error),
+                    Entity = EntityUtil.GetEntity(x, DataOperation.Create, out string error).Data ??
+                             throw new Exception(error),
                     Input = x
                 }));
 
@@ -535,7 +544,8 @@ namespace Xams.Core.Services
                 {
                     TableName = x.tableName ?? "",
                     DataOperation = DataOperation.Update,
-                    Entity = EntityUtil.GetEntity(x, DataOperation.Update, out string error).Data ?? throw new Exception(error),
+                    Entity = EntityUtil.GetEntity(x, DataOperation.Update, out string error).Data ??
+                             throw new Exception(error),
                     Input = x
                 }));
 
@@ -543,7 +553,8 @@ namespace Xams.Core.Services
                 {
                     TableName = x.tableName ?? "",
                     DataOperation = DataOperation.Delete,
-                    Entity = EntityUtil.GetEntity(x, DataOperation.Delete, out string error).Data ?? throw new Exception(error),
+                    Entity = EntityUtil.GetEntity(x, DataOperation.Delete, out string error).Data ??
+                             throw new Exception(error),
                     Input = x
                 }));
 
@@ -569,7 +580,7 @@ namespace Xams.Core.Services
                         };
                     }).SelectMany(x => x).Distinct();
 
-                var permissions = await PermissionCache.GetUserPermissions(userId, requiredPermissions.ToArray()); 
+                var permissions = await PermissionCache.GetUserPermissions(userId, requiredPermissions.ToArray());
 
                 // This acts as an immediate guard for unauthorized operations, it prevents the system from
                 // retrieving a bunch of PreEntity records only to find out the user doesn't have the permissions.
@@ -750,7 +761,8 @@ namespace Xams.Core.Services
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "ExecutionId {executionId} Operation Failed UserId {userId}: {Message}", ExecutionId, userId, ex.Message);
+                Logger.LogError(ex, "ExecutionId {executionId} Operation Failed UserId {userId}: {Message}",
+                    ExecutionId, userId, ex.Message);
                 await _dataRepository.RollbackTransaction();
                 throw;
             }
@@ -771,8 +783,8 @@ namespace Xams.Core.Services
                     FriendlyMessage = "Entity is required."
                 };
             }
-            
-            
+
+
             // It's possible that hierarchy of deletes is occuring from a PostTraversalDelete and as part of the
             // ServiceLogic, a deleted is called on an entity that has been or will be deleted. In this case, we need
             // to prevent the delete from happening again.
@@ -780,7 +792,6 @@ namespace Xams.Core.Services
             var entityId = entity.GetId();
             if (dataOperation is DataOperation.Delete)
             {
-                
                 if (!TrackDelete(entityType.Name, entityId))
                 {
                     return new Response<object?>()
@@ -789,7 +800,7 @@ namespace Xams.Core.Services
                     };
                 }
             }
-            
+
             // If attempting to update a record that's been deleted return success
             if (dataOperation is DataOperation.Update)
             {
@@ -801,7 +812,7 @@ namespace Xams.Core.Services
                     };
                 }
             }
-            
+
             var pipelineContext = new PipelineContext()
             {
                 Parent = parent,
@@ -811,7 +822,7 @@ namespace Xams.Core.Services
                     ? await DynamicLinq.Find(_dataRepository.CreateNewDbContext(), entityType,
                         (Guid)entity.GetId())
                     : null,
-                TableName = EntityUtil.GetTableName(entity.GetType(), EntityUtil.DbContext?.GetType() ?? throw new Exception("DbContext not yet initialized")).TableName,
+                TableName = entity.Metadata().TableName,
                 DataOperation = dataOperation,
                 InputParameters = (parameters != null ? Util.ObjectToParameters(parameters) : null) ??
                                   new Dictionary<string, JsonElement>(),
@@ -882,7 +893,8 @@ namespace Xams.Core.Services
                 }
                 catch (Exception e)
                 {
-                    Logger.LogError(e, "ExecutionId {executionId} Bulk ServiceLogic Failed UserId {userId}: {Message}", ExecutionId, userId, e.Message);
+                    Logger.LogError(e, "ExecutionId {executionId} Bulk ServiceLogic Failed UserId {userId}: {Message}",
+                        ExecutionId, userId, e.Message);
                     return ServiceResult.Error(e.Message);
                 }
             }
@@ -893,7 +905,7 @@ namespace Xams.Core.Services
         private async Task<Response<object?>> ExecutePipeline(PipelineContext pipelineContext)
         {
             // Save might be prevented in case we want to proxy the create\read\update\delete to another service
-            pipelineContext.IsProxy = pipelineContext.Entity?.Metadata().IsProxy  ?? false;
+            pipelineContext.IsProxy = pipelineContext.Entity?.Metadata().IsProxy ?? false;
 
             pipelineContext.DataService = this;
             pipelineContext.DataRepository = _dataRepository;
@@ -969,40 +981,57 @@ namespace Xams.Core.Services
             // This is to prevent a user with unauthorized access from querying all PreEntities
             using var cts = new CancellationTokenSource();
             Response<object?>? cancelledResponse = null;
-            await Parallel.ForEachAsync(deleteTableGroups, cts.Token, async (tableGroup, token) =>
+            try
             {
-                var ids = tableGroup.PipelineContexts
-                    .Select(x => x.Entity?.GetValue<object>(Cache.Instance.GetTableMetadata(x.TableName).PrimaryKey)
-                                 ?? throw new Exception($"Failed to get Id from {x.TableName} entity.")).ToList();
-            
-                var tableType = Cache.Instance.GetTableMetadata(tableGroup.TableName).Type;
-                
-                Stopwatch sw = new  Stopwatch();
-                
-                var preEntities =
-                    await DynamicLinq.BatchRequestThreaded(() => _dataRepository.CreateNewDbContext(),
-                        tableType,
-                        ids);
-                
-                // Set each PreEntity on the pipeline context and run security validation
-                foreach (var pipelineContext in tableGroup.PipelineContexts.Where(x => x.PreEntity == null))
+                await Parallel.ForEachAsync(deleteTableGroups, cts.Token, async (tableGroup, token) =>
                 {
-                    var metadata = Cache.Instance.GetTableMetadata(pipelineContext.TableName);
-                    pipelineContext.PreEntity = preEntities[pipelineContext.Entity?.GetValue<dynamic>(metadata.PrimaryKey)];
-                    if (!checkSecurity)
+                    var ids = tableGroup.PipelineContexts
+                        .Select(x => x.Entity?.GetValue<object>(Cache.Instance.GetTableMetadata(x.TableName).PrimaryKey)
+                                     ?? throw new Exception($"Failed to get Id from {x.TableName} entity.")).ToList();
+
+                    var tableType = Cache.Instance.GetTableMetadata(tableGroup.TableName).Type;
+
+                    Stopwatch sw = new Stopwatch();
+
+                    var preEntities =
+                        await DynamicLinq.BatchRequestThreaded(() => _dataRepository.CreateNewDbContext(),
+                            tableType,
+                            ids);
+
+                    // Set each PreEntity on the pipeline context and run security validation
+                    foreach (var pipelineContext in tableGroup.PipelineContexts.Where(x => x.PreEntity == null))
                     {
-                        continue;
+                        var metadata = Cache.Instance.GetTableMetadata(pipelineContext.TableName);
+                        var id = pipelineContext.Entity?.GetValue<dynamic>(metadata.PrimaryKey);
+                        if (id == Guid.Empty)
+                        {
+                            cancelledResponse = new Response<object?>()
+                            {
+                                FriendlyMessage = "Update or Delete operation requires the primary key.",
+                                Succeeded = false
+                            };
+                            await cts.CancelAsync();
+                            continue;
+                        }
+
+                        pipelineContext.PreEntity = preEntities[id];
+                        if (!checkSecurity)
+                        {
+                            continue;
+                        }
+
+                        var response = await Pipelines.SecurityPipeline.Execute(pipelineContext);
+                        if (!response.Succeeded)
+                        {
+                            cancelledResponse = response;
+                            await cts.CancelAsync();
+                        }
                     }
-                        
-                    var response = await Pipelines.SecurityPipeline.Execute(pipelineContext);
-                    if (!response.Succeeded)
-                    {
-                        cancelledResponse = response;
-                        await cts.CancelAsync();
-                    }
-                }
-            });
-            
+                });
+            }
+            catch (OperationCanceledException e)
+            {
+            }
 
             if (cancelledResponse != null)
             {
