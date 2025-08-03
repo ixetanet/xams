@@ -1,5 +1,24 @@
 # Release Notes
 
+## 1.0.9
+
+- Added Lookups lazy load values by default
+- Added CopyUtil for deep copying
+- Added DataTableSelectable columnWidths optional
+- Removed useLookupStore and replaced with loading default look label in Lookup.tsx
+- Fixed delete dependency finder with extended entities
+- Fixed import data console logs error messages
+- Fixed Postgres import data command timeout too high
+- Fixed cascade deletes not setting entities with multiple null values
+- Fixed data form width when formMinWidth specified
+- Fixed On the DataTable if looking at Inactive records, then click one of the columns to sort, it shows Active records instead of Inactive
+- Fixed DataTableSelectable not using primary key to determine selected record. It’s currently using name of table + Id
+- Fixed DataTableSelectable headers layout misalignment
+- Fixed LookupDescription render empty string instead of “null”
+- Fixed Lookup fields default to searching active records
+- Fixed Calling update without providing the primary key field doesn’t return a descriptive error
+- Resolved all Dependabot security issues
+
 ## 1.0.8
 
 - Added whoami endpoint
@@ -59,11 +78,11 @@
 - Added "Server" to admin dashboard
 - Added JobServer attribute for specifying which server a job should execute on
 
-## v1.0.3
+## 1.0.3
 
 - Fixed unable to create Roles with SQLite
 
-## v1.0.2
+## 1.0.2
 
 - Created "ExecutionId" in contexts to uniquely identify each transaction
 - Role Permissions are deleted if they aren't contained within the import
@@ -80,7 +99,7 @@
 - Added allowNegative prop to Field component to prevent negative numbers
 - Added UINumberRange attribute
 
-## v1.0.1
+## 1.0.1
 
 - Added parameter to UIHide to make hidden fields optionally queryable
 - Fixed UIDateTime format attribute not working properly with Mantine DateTime component
