@@ -8,21 +8,23 @@ export const metadata = {
 
 Service Logic executes on create, read, update or delete of an entity. {{ className: 'lead' }}
 
-Service classes can be added to the Project.Services/Logic folder. {{ className: 'lead' }}
+Service Logic classes are automatically discovered and executed by the framework. {{ className: 'lead' }}
 
 ## Logic Stage
 
 Service Logic can execute at the listed stages below.
 
+- <b>PreValidation</b>: Before security validation and before the save to the
+  database
 - <b>PreOperation</b>: After security validation and before the save to the
   database
 - <b>PostOperation</b>: After the save to the database
 
 ## Create Service Logic
 
-To create Service Logic, create a new file in the Project.Services project in the ServiceLogic folder.
+To create Service Logic, create a new file in the project in the Logic folder.
 
-```c# {{ title: 'Project.Services / Logic / MyEntityService.cs' }}
+```c# {{ title: 'Project / Logic / MyEntityService.cs' }}
 // The ServiceLogic attribute specifies what table this will execute on, what operation(s), and when (before or after the transaction)
 [ServiceLogic(nameof(MyEntity), DataOperation.Create | DataOperation.Update, LogicStage.PreOperation, 100)]
 public class MyEntityService : IServiceLogic
@@ -58,7 +60,7 @@ The ServiceLogic attribute takes the following parameters.
 
 ServiceContext has a number of properties that can be used during execution.
 
-```c# {{ title: 'Project.Services / Logic / MyEntityService.cs' }}
+```c# {{ title: 'Project / Logic / MyEntityService.cs' }}
 [ServiceLogic(nameof(MyEntity), DataOperation.Create | DataOperation.Update | DataOperation.Read, LogicStage.PreOperation | LogicStage.PostOperation, 100)]
 public class MyEntityService : IServiceLogic
 {
@@ -109,7 +111,7 @@ public class MyEntityService : IServiceLogic
 
 Use the Create, Update, and Delete methods of the ServiceContext to modify records. While it is possible to modify records directly using the Entity Framework DbContext, using the ServiceContext ensures that the service logic is executed.
 
-```c# {{ title: 'Project.Services / Logic / MyEntityService.cs' }}
+```c# {{ title: 'Project / Logic / MyEntityService.cs' }}
 [ServiceLogic(nameof(MyEntity), DataOperation.Create | DataOperation.Update, LogicStage.PreOperation, 100)]
 public class MyEntityService : IServiceLogic
 {

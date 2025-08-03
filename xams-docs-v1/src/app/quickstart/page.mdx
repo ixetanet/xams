@@ -165,10 +165,10 @@ export default function App({ Component, pageProps }: AppProps) {
 
 ## Create an Entity
 
-1. In the "Common" project create a new class file in the Entities folder and name it "Widget.cs"
+1. In the ASP.NET project create a new class file in the Entities folder and name it "Widget.cs"
 
 
-```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
+```c# {{ title: 'Project / Entities / Widget.cs' }}
 [Table("Widget")]
 public class Widget
 {
@@ -180,7 +180,7 @@ public class Widget
 
 3. Add the Widget class to the DataContext class.
 
-```c# {{ title: 'Project.Data / DataContext.cs' }}
+```c# {{ title: 'Project / DataContext.cs' }}
 public class DataContext : XamsDbContext
 {
     public DbSet<Widget> Widgets { get; set; } 
@@ -188,7 +188,7 @@ public class DataContext : XamsDbContext
 }
 ```
 
-4. In the Project.Data directory execute the code below to create a migration and update the database.
+4. In the ASP.NET project directory execute the code below to create a migration and update the database.
 
 ```cmd {{ title: 'Terminal' }}
 dotnet ef migrations add migration02
@@ -228,10 +228,10 @@ If you click the "Add" button on the table, a form will open where a new record 
 
 We can have the service layer automatically set a price for the Widget based on the number of Widgets in the database.
 
-1. Create a new class file in the Project.Services/ServiceLogic folder. Name it "WidgetService.cs"
+1. Create a new folder named `Logic`. Create a new class file in the `Logic` folder and name it "WidgetService.cs"
 2. Replace the class in the file with the code below.
 
-```c# {{ title: 'Project.Services / ServiceLogic / WidgetService.cs' }}
+```c# {{ title: 'Project / Logic / WidgetService.cs' }}
 // Execute on Create or Update of the Widget entity before the Save to the database.
 [ServiceLogic(nameof(Widget), DataOperation.Create | DataOperation.Update, LogicStage.PreOperation)]
 public class WidgetService : IServiceLogic

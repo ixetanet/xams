@@ -11,7 +11,7 @@ Scheduled jobs can execute code at regular intervals or at specific times on des
 
 To create a scheduled job, define a new class that is tagged with the `ServiceJob` attribute and implements the `IServiceJob` interface.
 
-```c# {{ title: 'Project.Services / Jobs / MyJob.cs' }}
+```c# {{ title: 'Project / Jobs / MyJob.cs' }}
 [ServiceJob("MyJobName", "Primary-Queue", "00:05:00")]
 public class MyJob : IServiceJob
 {
@@ -43,7 +43,7 @@ The `ServiceJob` attribute takes the following parameters.
 
 Below is an example of a job that executes on Monday and Wednesday at 3:00 AM UTC:
 
-```c# {{ title: 'Project.Services / Jobs / MyJob.cs' }}
+```c# {{ title: 'Project / Jobs / MyJob.cs' }}
 [ServiceJob("MyJobName", "Primary-Queue", "03:00:00", JobSchedule.TimeOfDay, DaysOfWeek.Monday | DaysOfWeek.Wednesday)]
 public class MyJob : IServiceJob
 {
@@ -77,7 +77,7 @@ public class MyJob : IServiceJob
 ## Execute on specific server only
 
 In a multi-server environment, to ensure a job runs only on a specific server, provide the server name as the second parameter in the `JobServer` attribute.
-```c# {{ title: 'Project.Services / Jobs / MyJob.cs' }}
+```c# {{ title: 'Project / Jobs / MyJob.cs' }}
 [JobServer(ExecuteJobOn.One, "Beta")] // <-- only run on server Beta
 [ServiceJob("MyJobName", "Primary-Queue", "03:00:00", JobSchedule.TimeOfDay, DaysOfWeek.Monday | DaysOfWeek.Wednesday)]
 public class MyJob : IServiceJob
@@ -96,7 +96,7 @@ public class MyJob : IServiceJob
 
 To ensure a job executes at a consistent time within a specific time zone, regardless of daylight savings changes, use the `JobTimeZone` attribute.
 
-```c# {{ title: 'Project.Services / Jobs / MyJob.cs' }}
+```c# {{ title: 'Project / Jobs / MyJob.cs' }}
 [JobTimeZone("Eastern Standard Time")] // <-- always run at 3am EST
 [ServiceJob("MyJobName", "Primary-Queue", "03:00:00", JobSchedule.TimeOfDay, DaysOfWeek.Monday | DaysOfWeek.Wednesday)]
 public class MyJob : IServiceJob
