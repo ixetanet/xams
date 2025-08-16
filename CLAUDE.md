@@ -370,6 +370,14 @@ dotnet ef database update
 [ServiceLogic(nameof(Widget), DataOperation.Create, LogicStage.PreOperation)]
 public class WidgetService : IServiceLogic
 {
+    private readonly IEmailService _emailService;
+
+    // Constructor-based dependency injection for custom services
+    public WidgetService(IEmailService emailService)
+    {
+        _emailService = emailService;
+    }
+
     public async Task<Response<object?>> Execute(ServiceContext context)
     {
         var widget = context.GetEntity<Widget>();
@@ -377,6 +385,12 @@ public class WidgetService : IServiceLogic
 
         // Business logic here
         widget.Price = await CalculatePrice(db, widget);
+
+        // Use injected services
+        await _emailService.SendNotification("Widget created");
+        
+        // Use ServiceContext for logger
+        context.Logger.LogInformation("Widget processing completed");
 
         return ServiceResult.Success();
     }
@@ -566,6 +580,44 @@ await context.Delete(entity);
 // WRONG - Bypasses service logic
 db.Widgets.Add(entity);
 await db.SaveChangesAsync();
+```
+
+#### Use Constructor-Based Dependency Injection
+
+```csharp
+// CORRECT - Constructor injection for custom services, ServiceContext for framework services
+[ServiceLogic(nameof(Widget), DataOperation.Create, LogicStage.PreOperation)]
+public class WidgetService : IServiceLogic
+{
+    private readonly IEmailService _emailService;
+
+    public WidgetService(IEmailService emailService)
+    {
+        _emailService = emailService;
+    }
+
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        // Use injected custom services
+        await _emailService.SendNotification("Widget created");
+        
+        // Use ServiceContext for framework services
+        context.Logger.LogInformation("Widget processed");
+        var db = context.GetDbContext<DataContext>();
+        
+        return ServiceResult.Success();
+    }
+}
+
+// WRONG - Service locator pattern not supported
+public class WidgetService : IServiceLogic
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        var emailService = context.GetService<IEmailService>(); // Does not exist
+        return ServiceResult.Success();
+    }
+}
 ```
 
 #### Prefer PreOperation for Performance
@@ -1179,3 +1231,9 @@ For new features:
 5. Build UI with provided components
 
 Remember: The framework handles the complexity, you focus on business logic.
+
+---
+
+## Documentation Location
+
+**Primary Documentation**: All framework documentation is maintained in the `xams-docs-v1/` folder. Always use this location for creating, updating, or referencing documentation rather than creating standalone documentation files.

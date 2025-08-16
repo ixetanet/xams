@@ -134,6 +134,47 @@ public class MyEntityService : IServiceLogic
 }
 ```
 
+## Dependency Injection
+
+Service Logic classes support constructor-based dependency injection. The framework uses `ActivatorUtilities.CreateInstance()` to instantiate service logic classes, allowing automatic injection of registered services:
+
+```c# {{ title: 'Project / Logic / WidgetService.cs' }}
+[ServiceLogic(nameof(Widget), DataOperation.Create, LogicStage.PreOperation)]
+public class WidgetService : IServiceLogic
+{
+    private readonly IEmailService _emailService;
+    private readonly ICacheService _cacheService;
+
+    public WidgetService(IEmailService emailService, ICacheService cacheService)
+    {
+        _emailService = emailService;
+        _cacheService = cacheService;
+    }
+
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        // Use injected services
+        await _emailService.SendNotification("Widget created");
+        await _cacheService.InvalidateCache("widgets");
+        
+        // Use ServiceContext for framework services
+        context.Logger.LogInformation("Widget processing completed");
+
+        return ServiceResult.Success();
+    }
+}
+```
+
+### Key Benefits
+- Standard .NET constructor-based dependency injection
+- Clean separation of concerns and testable code
+- Access to all services registered in the DI container
+- Framework automatically resolves dependencies
+
+### Available Services
+- **Constructor injection**: Custom business services and third-party services registered in DI container
+- **ServiceContext**: Framework services like `context.Logger`, `context.GetDbContext<T>()`, `context.ExecutingUserId`, etc.
+
 ## Performance
 
 For optimal performance, prioritize using `PreOperation` logic whenever possible. This allows the database save to be delayed until all records are processed, or until an entity with `PostOperation` logic is triggered.
