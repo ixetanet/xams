@@ -286,8 +286,8 @@ await authRequest.action('MyAction', { param: 'value' });
 ```tsx
 const formBuilder = useFormBuilder({
   tableName: "Widget",
-  recordId: widgetId,
-  onSave: (record) => console.log("Saved:", record),
+  id: widgetId,
+  onPostSave: (operation, id, data) => console.log("Saved:", operation, id, data),
 });
 ```
 
