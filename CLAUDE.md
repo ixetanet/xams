@@ -1,136 +1,12 @@
-# ToDo List App - Xams Project Development Guide
-
-# ⚠️ CRITICAL: READ BEFORE ANY IMPLEMENTATION ⚠️
-
-**MANDATORY READING ORDER:**
-1. ✅ Read this entire CLAUDE.md file first
-2. ✅ Read [Core Components Reference](.claude/components.md) for API documentation
-3. ✅ Read [Architecture Deep Dive](.claude/architecture.md) for system understanding
-4. ✅ Read [Development Workflows](.claude/workflows.md) for implementation patterns
-5. ✅ Only then begin implementation
-
-**DO NOT:**
-- ❌ Write code without reading the component documentation
-- ❌ Guess API interfaces - they are fully documented in .claude/components.md
-- ❌ Use generic React patterns - Xams has specific conventions
-- ❌ Skip the examples - they show the correct implementation
-
-**VERIFICATION CHECKLIST:**
-Before writing any code, confirm you know:
-- [ ] The correct useFormBuilder interface (see components.md line 210-269)
-- [ ] How DataTable props work (see components.md line 159-170)
-- [ ] The proper FormContainer usage (see components.md line 172-185)
-- [ ] Available callbacks like onPostSave (NOT onSaveSuccess)
-
----
-
-## 🛑 STOP AND CHECK
-
-Before writing your first line of code:
-
-1. **Can you answer these questions?**
-   - What are the exact props for useFormBuilder? (If no, read components.md:210-269)
-   - What callbacks does FormContainer support? (If no, read components.md:172-185)
-   - What methods are available on formBuilder? (If no, read components.md:252-268)
-
-2. **Have you found an example?**
-   - The documentation contains working examples for every component
-   - Copy the example first, then modify it
-
-3. **Are you guessing?**
-   - If you're unsure about any API, STOP and read the documentation
-   - Every component interface is fully documented
-
----
+# Xams Framework - Claude Code Development Guide
 
 ## Table of Contents
 
-### ⚠️ MANDATORY FIRST READS
-1. [**READ FIRST: Component API Documentation**](.claude/components.md)
-2. [**READ SECOND: Implementation Patterns**](.claude/workflows.md)
-3. [**READ THIRD: Architecture Overview**](.claude/architecture.md)
-
-### Then Continue With:
-4. [Project Overview](#project-overview)
-5. [Framework Overview](#framework-overview)
-6. [Quick Reference](#quick-reference)
-7. [Common Mistakes to Avoid](#common-mistakes-to-avoid)
-
----
-
-## Project Overview
-
-### Current Project: ToDo List Application
-
-**Project Name**: XamsProjectApi  
-**Project Status**: Initial Setup Phase  
-**Frontend**: xams-project (Next.js with Mantine UI)  
-**Backend**: XamsProjectApi (C# .NET 8 with Xams Framework 1.0.9)  
-**Database**: SQLite (Local development)  
-
-### Project Structure
-
-```
-ToDoListApp/
-├── CLAUDE.md                    # This development guide
-├── XamsProjectApi/              # Backend C# API
-│   ├── XamsProjectApi.sln      # Solution file
-│   └── XamsProjectApi/         # Main API project
-│       ├── DataContext.cs      # Database context (SQLite)
-│       ├── Program.cs          # API configuration
-│       ├── Migrations/         # EF Core migrations
-│       └── *.csproj           # Project file with Xams.Core 1.0.9
-└── xams-project/               # Frontend Next.js app
-    ├── package.json           # With @ixeta/xams 1.0.9
-    ├── src/pages/index.tsx    # Basic home page
-    └── ...                    # Standard Next.js structure
-```
-
-### Current Implementation Status
-
-**✅ Completed:**
-- Basic Xams framework setup (backend + frontend)
-- SQLite database configuration
-- Initial migration with all Xams system entities
-- CORS configuration for development
-- Next.js frontend with Mantine UI dependencies
-
-**🔄 In Progress:**
-- Todo list entity design and implementation
-
-**📋 Planned:**
-- Todo entity with proper Xams attributes
-- CRUD operations for todos
-- Frontend todo list interface
-- User authentication integration
-- Priority and category features
-
-### Key Configuration
-
-**Database**: SQLite at `%LocalApplicationData%/myxamsproject_app.db`  
-**Backend Port**: Default (check launchSettings.json)  
-**Frontend Port**: 3000  
-**Admin Dashboard**: Available at `/xams/admin`  
-
-### Development Commands
-
-**Backend:**
-```bash
-cd XamsProjectApi/XamsProjectApi
-dotnet run
-dotnet ef migrations add [MigrationName]
-dotnet ef database update
-```
-
-**Frontend:**
-```bash
-cd xams-project  
-npm run dev
-npm run build
-npm run lint
-```
-
----
+1. [Framework Overview](#framework-overview)
+2. [Architecture Deep Dive](.claude/architecture.md)
+3. [Core Components Reference](.claude/components.md)
+4. [Development Workflows](.claude/workflows.md)
+5. [Quick Reference](#quick-reference)
 
 **Detailed Documentation:**
 - [Architecture & Cache System](.claude/architecture.md)
@@ -328,94 +204,20 @@ dotnet ef migrations remove
 ### Key Files
 
 **Configuration:**
-- `XamsProjectApi/XamsProjectApi/Program.cs` - API setup
-- `XamsProjectApi/XamsProjectApi/DataContext.cs` - Database config
+- `core/xams/MyXProject.Web/Program.cs` - API setup
+- `core/xams/MyXProject.Web/DataContext.cs` - Database config
 
 **Service Logic:**
-- `XamsProjectApi/XamsProjectApi/Logic/` - Service logic classes (to be created)
-- `XamsProjectApi/XamsProjectApi/Actions/` - Custom actions (to be created)
+- `core/xams/MyXProject.Web/Logic/` - Service logic classes
+- `core/xams/MyXProject.Web/Actions/` - Custom actions
 
 **Entities:**
-- `XamsProjectApi/XamsProjectApi/Entities/` - Entity definitions (to be created)
-- `Xams.Core/Entities/` - System entities (from NuGet package)
+- `core/xams/MyXProject.Web/Entities/` - Entity definitions
+- `core/xams/Xams.Core/Entities/` - System entities
 
 **React Components:**
-- `xams-project/src/` - Frontend application
-- `@ixeta/xams` package - Core Xams components and hooks
-
----
-
-## Common Mistakes to Avoid
-
-### ❌ WRONG: Guessing Component APIs
-```tsx
-// WRONG - These props/methods don't exist
-const formBuilder = useFormBuilder({
-  recordId: id,  // ❌ Wrong prop name - should be 'id'
-});
-formBuilder.reset(); // ❌ Method doesn't exist - use clear() or clearEdits()
-<FormContainer onSaveSuccess={...}> // ❌ Wrong callback name - use formBuilder.onPostSave
-```
-
-### ✅ CORRECT: Use Documented APIs
-```tsx
-// CORRECT - From components.md documentation
-const formBuilder = useFormBuilder({
-  tableName: "Todo",
-  id: todoId,  // ✅ Correct prop name
-  onPostSave: (operation, id, data) => { // ✅ Correct callback
-    console.log("Saved:", operation, id, data);
-  }
-});
-// Use documented methods
-formBuilder.clear();  // ✅ Reset form completely
-formBuilder.clearEdits();  // ✅ Clear unsaved changes
-```
-
-### ❌ WRONG: Using Modal incorrectly
-```tsx
-// WRONG - Modal is not exported from @ixeta/xams
-import { Modal } from "@ixeta/xams";  // ❌ Doesn't exist
-```
-
-### ✅ CORRECT: Import from Mantine
-```tsx
-// CORRECT - Modal comes from Mantine
-import { Modal } from "@mantine/core";  // ✅ Correct import
-```
-
----
-
-## 📋 Pre-Implementation Checklist
-
-Before implementing ANY feature:
-
-### Documentation Review
-- [ ] Have you read the relevant section in components.md?
-- [ ] Have you found a working example in the documentation?
-- [ ] Have you verified the exact prop names and types?
-
-### For Todo List Implementation Specifically:
-- [ ] Review useFormBuilder interface (components.md:210-269)
-- [ ] Review DataTable props (components.md:159-170)
-- [ ] Review FormContainer usage (components.md:172-185)
-- [ ] Check the correct callback names (onPostSave not onSaveSuccess)
-- [ ] Verify available methods (clear() not reset())
-
----
-
-## 🔗 Quick Reference Links
-
-**ALWAYS CONSULT THESE BEFORE CODING:**
-
-- **Frontend Component APIs**: [components.md#frontend-components](.claude/components.md#frontend-components)
-  - [useFormBuilder Complete Interface](.claude/components.md) (lines 210-269)
-  - [DataTable Component](.claude/components.md) (lines 159-170)
-  - [FormContainer Pattern](.claude/components.md) (lines 172-185)
-
-- **Backend Patterns**: [components.md#backend-components](.claude/components.md#backend-components)
-  - [Entity Attributes](.claude/components.md) (lines 23-45)
-  - [Option System](.claude/components.md) (lines 46-136)
+- `core/xams-workspace/ixeta-xams/src/components/` - Core components
+- `core/xams-workspace/ixeta-xams/src/hooks/` - Custom hooks
 
 ---
 
@@ -429,7 +231,7 @@ Xams provides a complete full-stack framework with:
 4. **Extensible design** for custom requirements
 5. **Developer productivity** through conventions
 
-**⚠️ REMINDER: For detailed information on specific topics, ALWAYS refer to the linked documentation files in the `.claude/` directory BEFORE writing any code.**
+**For detailed information on specific topics, refer to the linked documentation files in the `.claude/` directory.**
 
 ---
 
