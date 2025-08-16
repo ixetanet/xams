@@ -1,9 +1,8 @@
-namespace Xams.Core.Dtos.Data
+namespace Xams.Core.Dtos.Data;
+
+public class TablesOutput
 {
-    public class TablesOutput
-    {
-        public string tableName { get; set; }
-        public string displayName { get; set; }
-        public string tag { get; set; }
-    }
+    public string tableName { get; set; }
+    public string displayName { get; set; }
+    public string tag { get; set; }
 }

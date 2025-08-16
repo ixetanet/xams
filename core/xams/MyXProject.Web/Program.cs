@@ -1,28 +1,20 @@
 using MyXProject.Data;
-using MyXProject.Services;
 using Xams.Core;
 using Xams.Core.Interfaces;
 using Xams.Core.Services;
 using Xams.Core.Utils;
-
-// DO NOT DELETE
-/*
- * This ensures the .Services assembly is loaded before Xams scans for services.
- */
-Init.Start = true; 
-// DO NOT DELETE
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders().AddConsole();
 
 string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "";
 // Add services to the container.
-
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = null;
     });
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 

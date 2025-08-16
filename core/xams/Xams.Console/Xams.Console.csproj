@@ -8,8 +8,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\MyXProject.Common\MyXProject.Common.csproj" />
-      <ProjectReference Include="..\MyXProject.Data\MyXProject.Data.csproj" />
       <ProjectReference Include="..\Xams.Core\Xams.Core.csproj" />
     </ItemGroup>
 

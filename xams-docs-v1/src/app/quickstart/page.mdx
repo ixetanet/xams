@@ -31,7 +31,6 @@ Ensure you have version 8+ of the Entity Framework Core tools installed.
 dotnet tool install --global dotnet-ef
 ```
 
-
 ## Create Api Project
 
 1. In your c# IDE of choice create a new ASP.NET web based project using .NET 8
@@ -57,10 +56,16 @@ public class DataContext : XamsDbContext
     }
 }
 ```
-4. Add the Xams services and provide the DbContext.
+
+4. Add the Xams services and provide the DbContext. Remove the property naming policy.
 
 ```c# {{ title: 'Program.cs' }}
 builder.Services.AddXamsServices<DataContext>();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+    });
 ```
 
 5. Add the Xams Api's and enable the dashboard.
@@ -114,7 +119,6 @@ var app = builder.Build();
 app.UseCors(corsPolicy);
 ```
 
-
 ## Create React project
 
 1. Create a new react project using [Vite](https://vite.dev/) or [NextJS](https://nextjs.org/) using React v18.
@@ -129,27 +133,27 @@ npm install @ixeta/xams
 3. Configure the root component with the MantineProvider and Xams providers.
 
 ```tsx {{ title: 'NextJs - _app.tsx' }}
-import "@/styles/globals.css";
-import type { AppProps } from "next/app";
-import "@mantine/core/styles.css";
-import "@mantine/dates/styles.css";
-import { MantineProvider } from "@mantine/core";
+import '@/styles/globals.css'
+import type { AppProps } from 'next/app'
+import '@mantine/core/styles.css'
+import '@mantine/dates/styles.css'
+import { MantineProvider } from '@mantine/core'
 import {
   AppContextProvider,
   AuthContextProvider,
   getQueryParam,
-} from "@ixeta/xams";
-import "@ixeta/xams/dist/styles.css";
-import "@ixeta/xams/dist/global.css";
-import { useRouter } from "next/router";
+} from '@ixeta/xams'
+import '@ixeta/xams/dist/styles.css'
+import '@ixeta/xams/dist/global.css'
+import { useRouter } from 'next/router'
 
 export default function App({ Component, pageProps }: AppProps) {
-  const router = useRouter();
-  const userId = getQueryParam("userid", router.asPath);
+  const router = useRouter()
+  const userId = getQueryParam('userid', router.asPath)
   return (
     <MantineProvider>
       <AuthContextProvider
-        apiUrl={"https://localhost:8000"} // <- change to your api
+        apiUrl={'https://localhost:8000'} // <- change to your api
         headers={{
           UserId: userId as string, // <- provide userid from query string in development
         }}
@@ -159,14 +163,13 @@ export default function App({ Component, pageProps }: AppProps) {
         </AppContextProvider>
       </AuthContextProvider>
     </MantineProvider>
-  );
+  )
 }
 ```
 
 ## Create an Entity
 
 1. In the ASP.NET project create a new class file in the Entities folder and name it "Widget.cs"
-
 
 ```c# {{ title: 'Project / Entities / Widget.cs' }}
 [Table("Widget")]
@@ -183,7 +186,7 @@ public class Widget
 ```c# {{ title: 'Project / DataContext.cs' }}
 public class DataContext : XamsDbContext
 {
-    public DbSet<Widget> Widgets { get; set; } 
+    public DbSet<Widget> Widgets { get; set; }
     ...
 }
 ```

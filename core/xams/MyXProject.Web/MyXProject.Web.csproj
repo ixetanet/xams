@@ -10,13 +10,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.6" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.14" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.14" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-    </ItemGroup>
-
-
-    <ItemGroup>
-      <ProjectReference Include="..\MyXProject.Services\MyXProject.Services.csproj" />
     </ItemGroup>
 
 
@@ -46,7 +42,17 @@
 
 
     <ItemGroup>
+      <Folder Include="Actions\" />
+      <Folder Include="Entities\" />
+      <Folder Include="Jobs\" />
+      <Folder Include="Logic\" />
+      <Folder Include="Startup\" />
       <Folder Include="wwwroot\" />
+    </ItemGroup>
+
+
+    <ItemGroup>
+      <ProjectReference Include="..\Xams.Core\Xams.Core.csproj" />
     </ItemGroup>
 
 </Project>

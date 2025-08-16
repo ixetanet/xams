@@ -2,12 +2,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyXProject.Web", "MyXProject.Web\MyXProject.Web.csproj", "{6B37EBE3-B16F-4BA8-8306-7E7F78F62C34}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyXProject.Data", "MyXProject.Data\MyXProject.Data.csproj", "{3E8AAE86-25FF-41D1-A227-D3563B40554F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyXProject.Services", "MyXProject.Services\MyXProject.Services.csproj", "{8BC892A6-61FE-481F-B943-570B2E011D4C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyXProject.Common", "MyXProject.Common\MyXProject.Common.csproj", "{5663E4A8-5127-4724-B40D-A6AF386047B5}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xams.Core", "Xams.Core\Xams.Core.csproj", "{9BC8390B-9958-45C8-B2AE-028618BE0CA2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xams.Console", "Xams.Console\Xams.Console.csproj", "{884026A7-E7EC-46BC-9705-4DC6F27D178E}"
@@ -22,18 +16,6 @@ Global
 		{6B37EBE3-B16F-4BA8-8306-7E7F78F62C34}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6B37EBE3-B16F-4BA8-8306-7E7F78F62C34}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6B37EBE3-B16F-4BA8-8306-7E7F78F62C34}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3E8AAE86-25FF-41D1-A227-D3563B40554F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3E8AAE86-25FF-41D1-A227-D3563B40554F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3E8AAE86-25FF-41D1-A227-D3563B40554F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3E8AAE86-25FF-41D1-A227-D3563B40554F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8BC892A6-61FE-481F-B943-570B2E011D4C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8BC892A6-61FE-481F-B943-570B2E011D4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8BC892A6-61FE-481F-B943-570B2E011D4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8BC892A6-61FE-481F-B943-570B2E011D4C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5663E4A8-5127-4724-B40D-A6AF386047B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5663E4A8-5127-4724-B40D-A6AF386047B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5663E4A8-5127-4724-B40D-A6AF386047B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5663E4A8-5127-4724-B40D-A6AF386047B5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9BC8390B-9958-45C8-B2AE-028618BE0CA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9BC8390B-9958-45C8-B2AE-028618BE0CA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9BC8390B-9958-45C8-B2AE-028618BE0CA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
