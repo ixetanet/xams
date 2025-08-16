@@ -782,6 +782,46 @@ The `permissionsNames` property contains an array of permissions to check agains
 
 ---
 
+## WhoAmI {{ tag: 'GET', label: '/xams/whoami' }}
+
+This endpoint returns information about the currently authenticated user. It retrieves the user record from the User table using the current user's ID.
+
+<Row>
+  <Col>
+    <CodeGroup title="Request" tag="GET" label="/xams/whoami">
+
+    ```bash {{ title: 'Request' }}
+GET /xams/whoami
+    ```
+    </CodeGroup>
+  </Col>
+  <Col>
+
+    ```json {{ title: 'Response' }}
+{
+      "succeeded": true,
+      "friendlyMessage": null,
+      "logMessage": null,
+      "data": {
+        "UserId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "Name": "John Doe",
+        "Email": "john.doe@example.com",
+        "_ui_info_": {
+            "canDelete": true,
+            "canUpdate": true,
+            "canAssign": true,
+            "tableName": "User"
+        },
+        "_parameters_": {}
+      }
+}
+    ```
+
+  </Col>
+</Row>
+
+---
+
 ## Metadata {{ tag: 'POST', label: '/xams/metadata' }}
 
 This endpoint provides entity metadata information.
