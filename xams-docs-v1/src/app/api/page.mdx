@@ -3,7 +3,7 @@ export const metadata = {
   description: 'The Xams API',
 }
 
-## Create {{ tag: 'POST', label: '/data/create' }}
+## Create {{ tag: 'POST', label: '/xams/create' }}
 
 This endpoint allows you to create records. When creating a single record, the `entities` array is omitted. For bulk record creation, only the `entities` array is provided.
 
@@ -13,7 +13,7 @@ The response includes the resulting entity data. Any modifications made by servi
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/create">
+    <CodeGroup title="Request" tag="POST" label="/xams/create">
 
     ```json {{ title: 'Request' }}
 {
@@ -63,7 +63,7 @@ The response includes the resulting entity data. Any modifications made by servi
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/create">
+    <CodeGroup title="Request" tag="POST" label="/xams/create">
 
     ```json {{ title: 'Request' }}
 {
@@ -110,7 +110,7 @@ The response includes the resulting entity data. Any modifications made by servi
 
 ---
 
-## Update {{ tag: 'PATCH', label: '/data/update' }}
+## Update {{ tag: 'PATCH', label: '/xams/update' }}
 
 This endpoint allows you to update records. When updating a single record, the `entities` array is omitted. For bulk record updates, only the `entities` array is provided.
 
@@ -120,7 +120,7 @@ The response includes the resulting entity data. Any modifications made by servi
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/update">
+    <CodeGroup title="Request" tag="POST" label="/xams/update">
 
     ```json {{ title: 'Request' }}
 {
@@ -170,7 +170,7 @@ The response includes the resulting entity data. Any modifications made by servi
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/update">
+    <CodeGroup title="Request" tag="POST" label="/xams/update">
 
     ```json {{ title: 'Request' }}
 {
@@ -217,7 +217,7 @@ The response includes the resulting entity data. Any modifications made by servi
 
 ---
 
-## Delete {{ tag: 'DELETE', label: '/data/delete' }}
+## Delete {{ tag: 'DELETE', label: '/xams/delete' }}
 
 This endpoint allows you to delete records. When deleting a single record, the `entities` array is omitted. For bulk record deletes, only the `entities` array is provided.
 
@@ -229,7 +229,7 @@ The response includes the resulting entity data. Any modifications made by servi
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="DELETE" label="/data/delete">
+    <CodeGroup title="Request" tag="DELETE" label="/xams/delete">
 
     ```json {{ title: 'Request' }}
 {
@@ -279,7 +279,7 @@ The response includes the resulting entity data. Any modifications made by servi
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="DELETE" label="/data/delete">
+    <CodeGroup title="Request" tag="DELETE" label="/xams/delete">
 
     ```json {{ title: 'Request' }}
 {
@@ -326,7 +326,7 @@ The response includes the resulting entity data. Any modifications made by servi
 
 ---
 
-## Upsert {{ tag: 'POST', label: '/data/upsert' }}
+## Upsert {{ tag: 'POST', label: '/xams/upsert' }}
 
 This endpoint allows you to upsert records. When upserting a single record, the `entities` array is omitted. For bulk record upserting, only the `entities` array is provided.
 
@@ -338,7 +338,7 @@ The response includes the resulting entity data. Any modifications made by servi
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/upsert">
+    <CodeGroup title="Request" tag="POST" label="/xams/upsert">
 
     ```json {{ title: 'Request' }}
 {
@@ -388,7 +388,7 @@ The response includes the resulting entity data. Any modifications made by servi
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/upsert">
+    <CodeGroup title="Request" tag="POST" label="/xams/upsert">
 
     ```json {{ title: 'Request' }}
 {
@@ -436,7 +436,7 @@ The response includes the resulting entity data. Any modifications made by servi
 ---
 
 
-## Bulk {{ tag: 'POST', label: '/data/bulk' }}
+## Bulk {{ tag: 'POST', label: '/xams/bulk' }}
 
 The bulk endpoint allows you to create, update, delete, or upsert multiple records in a single transaction.
 
@@ -444,7 +444,7 @@ The response includes the resulting entity data. Any modifications made by servi
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/bulk">
+    <CodeGroup title="Request" tag="POST" label="/xams/bulk">
 
     ```json {{ title: 'Request' }}
 {
@@ -536,7 +536,7 @@ The response includes the resulting entity data. Any modifications made by servi
 
 ---
 
-## Read {{ tag: 'POST', label: '/data/read' }}
+## Read {{ tag: 'POST', label: '/xams/read' }}
 
 This endpoint enables querying of records.
 
@@ -545,7 +545,7 @@ For single record queries, only the `id` property needs to be provided.
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/read">
+    <CodeGroup title="Request" tag="POST" label="/xams/read">
 
     ```json {{ title: 'Request' }}
 {
@@ -655,14 +655,14 @@ For single record queries, only the `id` property needs to be provided.
 
 ---
 
-## Action {{ tag: 'POST', label: '/data/action' }}
+## Action {{ tag: 'POST', label: '/xams/action' }}
 
 This endpoint executes an action, and the response could be either a JSON object or a file download.
 
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/action">
+    <CodeGroup title="Request" tag="POST" label="/xams/action">
 
     ```json {{ title: 'Request' }}
 {
@@ -698,7 +698,7 @@ This endpoint executes an action, and the response could be either a JSON object
 
 ---
 
-## File {{ tag: 'POST', label: '/data/file' }}
+## File {{ tag: 'POST', label: '/xams/file' }}
 
 This endpoint executes an action and allows a file to be uploaded to the API. It accepts an action name and parameters in the request body.
 
@@ -706,7 +706,7 @@ The response could be either a JSON object or a file download.
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/file">
+    <CodeGroup title="Request" tag="POST" label="/xams/file">
 
     ```json {{ title: 'Request' }}
 {
@@ -739,7 +739,7 @@ The response could be either a JSON object or a file download.
 
 ---
 
-## Permissions {{ tag: 'POST', label: '/data/permissions' }}
+## Permissions {{ tag: 'POST', label: '/xams/permissions' }}
 
 This endpoint provides permission related information.
 
@@ -751,7 +751,7 @@ The `permissionsNames` property contains an array of permissions to check agains
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/permissions">
+    <CodeGroup title="Request" tag="POST" label="/xams/permissions">
 
     ```json {{ title: 'Request' }}
 {
@@ -782,7 +782,7 @@ The `permissionsNames` property contains an array of permissions to check agains
 
 ---
 
-## Metadata {{ tag: 'POST', label: '/data/metadata' }}
+## Metadata {{ tag: 'POST', label: '/xams/metadata' }}
 
 This endpoint provides entity metadata information.
 
@@ -795,7 +795,7 @@ The method property can be either `table_metadata` or `table_list`.
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/permissions">
+    <CodeGroup title="Request" tag="POST" label="/xams/permissions">
 
     ```json {{ title: 'Request' }}
 {
@@ -847,7 +847,7 @@ The method property can be either `table_metadata` or `table_list`.
 
 <Row>
   <Col>
-    <CodeGroup title="Request" tag="POST" label="/data/permissions">
+    <CodeGroup title="Request" tag="POST" label="/xams/permissions">
 
     ```json {{ title: 'Request' }}
 {
