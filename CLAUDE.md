@@ -421,6 +421,14 @@ const formBuilder = useFormBuilder({ tableName: "Widget" });
 [ServiceAction(nameof(ExportWidgets))]
 public class ExportWidgets : IServiceAction
 {
+    private readonly IEmailService _emailService;
+
+    // Constructor-based dependency injection for custom services
+    public ExportWidgets(IEmailService emailService)
+    {
+        _emailService = emailService;
+    }
+
     public async Task<Response<object?>> Execute(ActionServiceContext context)
     {
         var parameters = context.GetParameters<ExportParams>();
@@ -429,6 +437,12 @@ public class ExportWidgets : IServiceAction
         var widgets = await db.Widgets
             .Where(w => w.Price > parameters.MinPrice)
             .ToListAsync();
+
+        // Use injected services
+        await _emailService.SendNotification($"Export completed: {widgets.Count} widgets");
+        
+        // Use ActionServiceContext for framework services
+        context.Logger.LogInformation($"Exported {widgets.Count} widgets");
 
         // Return JSON
         return ServiceResult.Success(new {

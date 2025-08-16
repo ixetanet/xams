@@ -270,3 +270,53 @@ const MyComponent = () => {
 
 export default MyComponent
 ```
+
+## Dependency Injection
+
+Actions support constructor-based dependency injection just like Service Logic. The framework uses `ActivatorUtilities.CreateInstance()` to instantiate action classes, allowing automatic injection of registered services:
+
+```c# {{ title: 'Project / Actions / MyAction.cs' }}
+[ServiceAction(nameof(MyAction))]
+public class MyAction : IServiceAction
+{
+    private readonly IEmailService _emailService;
+    private readonly ICacheService _cacheService;
+
+    public MyAction(IEmailService emailService, ICacheService cacheService)
+    {
+        _emailService = emailService;
+        _cacheService = cacheService;
+    }
+
+    public async Task<Response<object?>> Execute(ActionServiceContext context)
+    {
+        var parameters = context.GetParameters<MyActionParameters>();
+        
+        // Use injected services
+        await _emailService.SendNotification($"Action executed with param: {parameters.MyParam1}");
+        await _cacheService.InvalidateCache("my-cache-key");
+        
+        // Use ActionServiceContext for framework services
+        context.Logger.LogInformation("MyAction executed successfully");
+        var db = context.GetDbContext<DataContext>();
+
+        return ServiceResult.Success(new { message = "Action completed" });
+    }
+
+    private class MyActionParameters
+    {
+        public string MyParam1 { get; set; }
+        public int MyParam2 { get; set; }
+    }
+}
+```
+
+### Key Benefits
+- Standard .NET constructor-based dependency injection
+- Clean separation of concerns and testable code
+- Access to all services registered in the DI container
+- Framework automatically resolves dependencies
+
+### Available Services
+- **Constructor injection**: Custom business services and third-party services registered in DI container
+- **ActionServiceContext**: Framework services like `context.Logger`, `context.GetDbContext<T>()`, `context.ExecutingUserId`, `context.File`, etc.
