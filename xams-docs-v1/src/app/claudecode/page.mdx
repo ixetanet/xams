@@ -31,7 +31,7 @@ curl -o .claude/reference.md https://raw.githubusercontent.com/ixetanet/xams/mai
 ```
 
 <Note>
-  The framework documentation provides Claude Code with essential knowledge about Xams architecture, patterns, and best practices. This ensures consistent development approaches across your project.
+  The framework documentation provides Claude Code with essential knowledge about Xams architecture, patterns, and best practices. However, the copied files contain references to "MyXProject" and other Xams repository-specific paths that will need to be updated for your project.
 </Note>
 
 ### 2. Install Claude Code
@@ -73,13 +73,18 @@ Please analyze my current Xams project and update the memory bank with what you 
    - Important business rules discovered
    - Development status and priorities
 
-3. **Create/update .claude files:**
+3. **Update framework references in .claude files:**
+   - Replace "MyXProject" references with your actual project name
+   - Update file paths to match your project structure
+   - Correct any Xams repository-specific references to reflect your project
+
+4. **Create/update .claude files:**
    - `.claude/project-status.md` - Current implementation status, what's built vs planned
    - `.claude/entities-reference.md` - Entity definitions, relationships, and business rules
    - `.claude/custom-implementations.md` - Service logic, actions, and customizations
    - `.claude/development-notes.md` - Technical decisions, patterns used, areas for improvement
 
-4. **Track for future updates:**
+5. **Track for future updates:**
    - New entities as they're created
    - Service logic implementations
    - Custom actions and workflows
