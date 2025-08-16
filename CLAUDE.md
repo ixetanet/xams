@@ -68,18 +68,18 @@ xams/
 The pipeline implements the Chain of Responsibility pattern for all CRUD operations:
 
 ```
-Request → PreValidation → Permissions → PreOperation → Save → PostOperation → Response
+Request → PreValidation Logic → Permission Check → PreOperation Logic → Save → PostOperation Logic → Response
 ```
 
 #### Pipeline Stages
 
-1. **PreValidation Stage** (`LogicStage.PreValidation`)
+1. **PreValidation Logic** (`LogicStage.PreValidation`)
 
-   - Executes before security checks
+   - Executes AFTER initial validation but BEFORE permission checks
    - Used for data transformation or early validation
    - No database changes should occur here
 
-2. **Permission Check** (Automatic)
+2. **Permission Check** (Automatic via `PipePermissionRules`)
 
    - Validates user permissions based on operation
    - Checks record ownership (User/Team/System levels)
@@ -217,7 +217,7 @@ Central service handling all CRUD operations:
 **Behavior Attributes:**
 
 - `[CascadeDelete]` - Delete behavior configuration
-- `[UISetFieldFromLookup("Field", "TargetField")]` - Auto-populate fields
+- `[UISetFieldFromLookup("LookupIdProperty")]` - Auto-populate fields from lookup
 - `[UIProxy]` - Proxy field for related data
 
 #### Pipeline Stages (`core/xams/Xams.Core/Pipeline/Stages/`)
@@ -509,11 +509,15 @@ public class OrderService : IServiceLogic
             await context.Update(product);  // Triggers product service logic
         }
 
-        // Send notification (action)
-        await context.ExecuteAction("SendOrderNotification", new
+        // Send notification (job)
+        await context.ExecuteJob(new JobOptions
         {
-            OrderId = order.OrderId,
-            CustomerEmail = order.Customer.Email
+            JobName = "SendOrderNotification",
+            Parameters = new 
+            {
+                OrderId = order.OrderId,
+                CustomerEmail = order.Customer.Email
+            }
         });
 
         return ServiceResult.Success();
@@ -646,11 +650,11 @@ public class OrderLine
 #### 3. UIHide Misunderstanding
 
 ```csharp
-[UIHide]  // Truly hidden from the UI and CANNOT be filtered\queried on
+[UIHide]  // Hidden from UI and CANNOT be filtered/queried
 public string SecretField { get; set; }
 
-[UIHide(true)]  // Truly hidden from the UI and CAN be filtered\queried on
-public string ReallySecretField { get; set; }
+[UIHide(true)]  // Hidden from UI but CAN be filtered/queried
+public string QueryableHiddenField { get; set; }
 ```
 
 #### 4. Missing Base Entity Inheritance
@@ -1007,15 +1011,15 @@ await context.Delete(entity);
 
 // Field checks
 bool changed = context.ValueChanged("FieldName");
-object oldValue = context.GetPreValue("FieldName");
-object newValue = context.GetValue("FieldName");
 
 // Permissions
 string[] perms = await context.Permissions(userId, ["PERM1", "PERM2"]);
-bool hasPermission = await context.HasPermission(userId, "PERMISSION");
 
-// Actions
-await context.ExecuteAction("ActionName", parameters);
+// Jobs (not Actions)
+Guid jobHistoryId = await context.ExecuteJob(new JobOptions { 
+    JobName = "JobName", 
+    Parameters = parameters 
+});
 
 // Context properties
 Guid userId = context.ExecutingUserId;
