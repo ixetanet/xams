@@ -208,7 +208,7 @@ Central service handling all CRUD operations:
 - `[UIRecommended]` - Shows blue indicator
 - `[UIHide]` - Hides from UI (server-only)
 - `[UIReadOnly]` - Prevents UI updates
-- `[UIOption("OptionSet")]` - Links to option set
+- `[UIOption("Name")]` - Links to option group by Name field
 - `[UIDateFormat("lll")]` - Date display format
 - `[UICharacterLimit(100)]` - Max character length
 - `[UINumberRange(0, 100)]` - Number constraints
@@ -219,6 +219,97 @@ Central service handling all CRUD operations:
 - `[CascadeDelete]` - Delete behavior configuration
 - `[UISetFieldFromLookup("LookupIdProperty")]` - Auto-populate fields from lookup
 - `[UIProxy]` - Proxy field for related data
+
+#### Option System (`core/xams/Xams.Core/Entities/Option.cs`)
+
+The Option system provides standardized dropdown/select functionality with admin-managed values.
+
+**Option Entity Structure:**
+
+```csharp
+[Table(nameof(Option))]
+public class Option
+{
+    public Guid OptionId { get; set; }          // Primary key
+    
+    [UIName]                                    // Display field in lookups
+    [MaxLength(250)]
+    public string? Label { get; set; }          // User-facing display text
+    
+    [UIDisplayName("Option Name")]              // Grouping identifier
+    [MaxLength(250)]
+    public string? Name { get; set; }           // Groups related options
+    
+    [MaxLength(250)]
+    public string? Value { get; set; }          // Optional additional data
+    
+    public int? Order { get; set; }             // Display sequence
+    
+    [UIHide]                                    // System use only
+    [MaxLength(250)]
+    public string? Tag { get; set; }            // System labeling (e.g., "System")
+}
+```
+
+**Usage Pattern:**
+
+```csharp
+public class Widget : BaseEntity
+{
+    public Guid WidgetId { get; set; }
+    
+    [UIOption("Priority")]                      // Links to options where Name="Priority"
+    public Guid? PriorityId { get; set; }       // Foreign key to Option
+    public Option? Priority { get; set; }       // Navigation property
+    
+    [UIOption("Status")]                        // Links to options where Name="Status"
+    public Guid? StatusId { get; set; }
+    public Option? Status { get; set; }
+}
+```
+
+**Admin Dashboard Management:**
+
+- **Name**: Group identifier (e.g., "Priority", "Status", "Category")
+- **Label**: User-visible text (e.g., "High Priority", "In Progress", "Electronics")
+- **Value**: Optional additional data for business logic
+- **Order**: Controls display sequence in dropdowns
+- **Tag**: System labeling (typically "System" for framework-managed options)
+
+**Key Features:**
+
+- **Automatic UI Generation**: Fields with `[UIOption]` render as dropdowns
+- **Runtime Management**: Business users can add/modify options without deployments
+- **Consistent Querying**: Options automatically filtered by Name field
+- **Ordered Display**: Options display according to Order field
+- **Foreign Key Safety**: Referential integrity maintained through Option relationships
+
+**React Integration:**
+
+```tsx
+// Automatic dropdown rendering
+<Field name="PriorityId" />     // Renders dropdown with Priority options
+<Field name="StatusId" />       // Renders dropdown with Status options
+
+// DataTable filtering
+<DataTable 
+  tableName="Widget"
+  filters={[{ field: "StatusId", operator: "=", value: activeStatusId }]}
+/>
+```
+
+**Common Option Sets:**
+
+- **Priority**: "Low", "Medium", "High", "Critical"
+- **Status**: "Draft", "Active", "Inactive", "Archived"
+- **Category**: Domain-specific groupings
+- **Type**: Classification options
+
+**Performance Notes:**
+
+- Options are queried by `WHERE Name = 'OptionSetName'`
+- Consider caching for frequently-used option sets
+- Index the Name field for better query performance
 
 #### Pipeline Stages (`core/xams/Xams.Core/Pipeline/Stages/`)
 
@@ -991,7 +1082,7 @@ public class WidgetBulkService : IBulkService
 | `[UIRecommended]`          | Recommended field    | `[UIRecommended] public string Email { get; set; }`        |
 | `[UIHide]`                 | Hide from UI         | `[UIHide] public string Internal { get; set; }`            |
 | `[UIReadOnly]`             | Read-only in UI      | `[UIReadOnly] public DateTime Created { get; set; }`       |
-| `[UIOption("Set")]`        | Option set link      | `[UIOption("Status")] public Guid? StatusId { get; set; }` |
+| `[UIOption("Name")]`       | Option group link    | `[UIOption("Status")] public Guid? StatusId { get; set; }` |
 | `[UIDateFormat("lll")]`    | Date format          | `[UIDateFormat("MM/DD/YYYY")]`                             |
 | `[UICharacterLimit(50)]`   | Max length           | `[UICharacterLimit(100)]`                                  |
 | `[UINumberRange(0,100)]`   | Number range         | `[UINumberRange(1, 10)]`                                   |
