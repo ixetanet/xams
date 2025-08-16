@@ -1,10 +1,539 @@
 export const metadata = {
-  title: 'Entities',
-  description: 'How to create Entities in Xams',
+  title: 'React Guide',
+  description: 'Complete guide to React development with Xams framework',
 }
 
-# React
+# React Guide
 
-React components are built using [Mantine v7](https://mantine.dev/) {{ className: 'lead' }}
+This guide covers React development with the Xams framework, including the useAuthRequest hook and component patterns. {{ className: 'lead' }}
 
-React component examples and documentation can be found [here](https://examples.xams.io/) {{ className: 'lead' }}
+React components are built using [Mantine v7](https://mantine.dev/) and React component examples can be found [here](https://examples.xams.io/) {{ className: 'lead' }}
+
+## useAuthRequest Hook
+
+The `useAuthRequest` hook is the primary interface for making API requests to the Xams backend. It provides a comprehensive set of methods for CRUD operations, permissions, metadata, and custom actions.
+
+### Basic Usage
+
+```tsx
+import { useAuthRequest } from 'ixeta-xams';
+
+function MyComponent() {
+  const authRequest = useAuthRequest();
+  
+  // Use the hook methods...
+}
+```
+
+### Hook Methods Reference
+
+#### Core CRUD Operations
+
+**create(tableName, fields, parameters?)**
+Creates a new record in the specified table.
+
+```tsx
+const response = await authRequest.create('Widget', {
+  Name: 'My Widget',
+  Price: 99.99,
+  Description: 'A sample widget'
+});
+
+if (response.succeeded) {
+  console.log('Created widget:', response.data);
+}
+```
+
+**read(readRequest)**
+Queries records with advanced filtering, sorting, and joining capabilities.
+
+```tsx
+const response = await authRequest.read({
+  tableName: 'Widget',
+  filters: [
+    { field: 'Price', operator: '>', value: '50' },
+    { field: 'Name', operator: 'contains', value: 'widget' }
+  ],
+  orderBy: [{ field: 'Name', order: 'asc' }],
+  maxResults: 100,
+  page: 1
+});
+
+if (response.succeeded) {
+  const widgets = response.data.records;
+  console.log(`Found ${widgets.length} widgets`);
+}
+```
+
+**update(tableName, fields, parameters?)**
+Updates an existing record. The fields object must include the primary key.
+
+```tsx
+const response = await authRequest.update('Widget', {
+  WidgetId: 'guid-here',
+  Name: 'Updated Widget Name',
+  Price: 149.99
+});
+
+if (response.succeeded) {
+  console.log('Updated widget:', response.data);
+}
+```
+
+**delete(tableName, id, parameters?)**
+Deletes a record by its primary key.
+
+```tsx
+const response = await authRequest.delete('Widget', widgetId);
+
+if (response.succeeded) {
+  console.log('Widget deleted successfully');
+}
+```
+
+**upsert(tableName, fields, parameters?)**
+Creates or updates a record based on unique constraints.
+
+```tsx
+const response = await authRequest.upsert('Widget', {
+  Code: 'WIDGET001', // Unique field
+  Name: 'Widget 001',
+  Price: 199.99
+});
+```
+
+#### Bulk Operations
+
+**bulkCreate(entities, parameters?)**
+Creates multiple records in a single transaction.
+
+```tsx
+const widgets = [
+  { Name: 'Widget 1', Price: 99.99 },
+  { Name: 'Widget 2', Price: 149.99 },
+  { Name: 'Widget 3', Price: 199.99 }
+];
+
+const response = await authRequest.bulkCreate(widgets);
+```
+
+**bulkUpdate(entities, parameters?)**
+Updates multiple records in a single transaction.
+
+```tsx
+const updates = [
+  { WidgetId: 'guid1', Price: 109.99 },
+  { WidgetId: 'guid2', Price: 159.99 }
+];
+
+const response = await authRequest.bulkUpdate(updates);
+```
+
+**bulkDelete(entities, parameters?)**
+Deletes multiple records in a single transaction.
+
+```tsx
+const toDelete = [
+  { WidgetId: 'guid1' },
+  { WidgetId: 'guid2' }
+];
+
+const response = await authRequest.bulkDelete(toDelete);
+```
+
+**bulkUpsert(entities, parameters?)**
+Performs bulk upsert operations.
+
+```tsx
+const widgets = [
+  { Code: 'W001', Name: 'Widget 1', Price: 99.99 },
+  { Code: 'W002', Name: 'Widget 2', Price: 149.99 }
+];
+
+const response = await authRequest.bulkUpsert(widgets);
+```
+
+**bulk(bulkRequest)**
+Executes a complex bulk operation with mixed CRUD actions.
+
+```tsx
+const bulkRequest = {
+  creates: [
+    { tableName: 'Widget', fields: { Name: 'New Widget', Price: 99.99 } }
+  ],
+  updates: [
+    { tableName: 'Widget', fields: { WidgetId: 'guid1', Price: 109.99 } }
+  ],
+  deletes: [
+    { tableName: 'Widget', fields: { WidgetId: 'guid2' } }
+  ]
+};
+
+const response = await authRequest.bulk(bulkRequest);
+```
+
+#### Custom Actions
+
+**action(actionName, parameters?, fileName?)**
+Executes a custom server action. Can return JSON data or trigger file downloads.
+
+```tsx
+// JSON response
+const response = await authRequest.action('ExportWidgets', {
+  MinPrice: 100,
+  Format: 'json'
+});
+
+if (response.succeeded) {
+  console.log('Export data:', response.data);
+}
+
+// File download
+await authRequest.action('ExportWidgets', {
+  MinPrice: 100,
+  Format: 'excel'
+}, 'widgets-export.xlsx');
+```
+
+#### File Operations
+
+**file(formData)**
+Uploads files to the server.
+
+```tsx
+const handleFileUpload = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('tableName', 'Document');
+  formData.append('entityId', entityId);
+
+  const response = await authRequest.file(formData);
+  
+  if (response.succeeded) {
+    console.log('File uploaded:', response.data);
+  }
+};
+```
+
+#### Metadata Operations
+
+**metadata(tableName)**
+Retrieves metadata for a table including field definitions, attributes, and relationships.
+
+```tsx
+const metadata = await authRequest.metadata('Widget');
+
+if (metadata) {
+  console.log('Table fields:', metadata.fields);
+  console.log('UI attributes:', metadata.uiAttributes);
+}
+```
+
+**tables(tag?)**
+Retrieves a list of available tables, optionally filtered by tag.
+
+```tsx
+const response = await authRequest.tables();
+
+if (response.succeeded) {
+  const tables = response.data;
+  console.log('Available tables:', tables.map(t => t.name));
+}
+
+// Filter by tag
+const adminTablesResponse = await authRequest.tables('admin');
+```
+
+#### Permission Operations
+
+**hasAllPermissions(permissions)**
+Checks if the current user has all specified permissions.
+
+```tsx
+const hasPermissions = await authRequest.hasAllPermissions([
+  'TABLE_Widget_CREATE_SYSTEM',
+  'TABLE_Widget_UPDATE_SYSTEM'
+]);
+
+if (hasPermissions) {
+  // User can create and update widgets
+}
+```
+
+**hasAnyPermissions(permissions)**
+Checks if the current user has any of the specified permissions.
+
+```tsx
+const hasAnyPermission = await authRequest.hasAnyPermissions([
+  'TABLE_Widget_CREATE_USER',
+  'TABLE_Widget_CREATE_TEAM',
+  'TABLE_Widget_CREATE_SYSTEM'
+]);
+
+if (hasAnyPermission) {
+  // User can create widgets at some level
+}
+```
+
+#### User Information
+
+**whoAmI()**
+Retrieves information about the current authenticated user.
+
+```tsx
+const response = await authRequest.whoAmI();
+
+if (response.succeeded) {
+  const user = response.data;
+  console.log('Current user:', user.name);
+  console.log('User roles:', user.roles);
+}
+```
+
+### Advanced Query Examples
+
+#### Complex Filtering
+
+```tsx
+const response = await authRequest.read({
+  tableName: 'Order',
+  filters: [
+    {
+      logicalOperator: 'AND',
+      filters: [
+        { field: 'Status', operator: '=', value: 'Active' },
+        {
+          logicalOperator: 'OR',
+          filters: [
+            { field: 'Priority', operator: '=', value: 'High' },
+            { field: 'Amount', operator: '>', value: '1000' }
+          ]
+        }
+      ]
+    }
+  ]
+});
+```
+
+#### Joins and Related Data
+
+```tsx
+const response = await authRequest.read({
+  tableName: 'Order',
+  fields: ['OrderId', 'CustomerName', 'TotalAmount'],
+  joins: [
+    {
+      fields: ['Name', 'Email'],
+      fromTable: 'Order',
+      fromField: 'CustomerId',
+      toTable: 'Customer',
+      toField: 'CustomerId',
+      alias: 'Customer'
+    }
+  ]
+});
+```
+
+#### Pagination
+
+```tsx
+const response = await authRequest.read({
+  tableName: 'Widget',
+  maxResults: 25,
+  page: 2, // Get second page
+  orderBy: [{ field: 'CreatedDate', order: 'desc' }]
+});
+
+if (response.succeeded) {
+  console.log(`Page 2 of ${response.data.totalPages}`);
+  console.log(`Total records: ${response.data.totalRecords}`);
+}
+```
+
+### Error Handling Patterns
+
+#### Basic Error Handling
+
+```tsx
+const response = await authRequest.create('Widget', widgetData);
+
+if (!response.succeeded) {
+  console.error('Create failed:', response.friendlyMessage);
+  console.error('Debug info:', response.logMessage);
+  
+  // Handle specific error cases
+  if (response.response?.status === 400) {
+    // Validation error
+    alert('Please check your input data');
+  } else if (response.response?.status === 403) {
+    // Permission error
+    alert('You do not have permission to create widgets');
+  }
+}
+```
+
+#### Try-Catch with useAuthRequest
+
+```tsx
+const createWidget = async (widgetData: any) => {
+  try {
+    const response = await authRequest.create('Widget', widgetData);
+    
+    if (response.succeeded) {
+      return response.data;
+    } else {
+      throw new Error(response.friendlyMessage || 'Create operation failed');
+    }
+  } catch (error) {
+    console.error('Widget creation error:', error);
+    throw error;
+  }
+};
+```
+
+#### Permission-Based UI
+
+```tsx
+import { useEffect, useState } from 'react';
+
+function WidgetManager() {
+  const authRequest = useAuthRequest();
+  const [canCreate, setCanCreate] = useState(false);
+  const [canUpdate, setCanUpdate] = useState(false);
+
+  useEffect(() => {
+    const checkPermissions = async () => {
+      const [createPerm, updatePerm] = await Promise.all([
+        authRequest.hasAnyPermissions(['TABLE_Widget_CREATE_USER', 'TABLE_Widget_CREATE_TEAM', 'TABLE_Widget_CREATE_SYSTEM']),
+        authRequest.hasAnyPermissions(['TABLE_Widget_UPDATE_USER', 'TABLE_Widget_UPDATE_TEAM', 'TABLE_Widget_UPDATE_SYSTEM'])
+      ]);
+      
+      setCanCreate(createPerm);
+      setCanUpdate(updatePerm);
+    };
+
+    checkPermissions();
+  }, [authRequest]);
+
+  return (
+    <div>
+      {canCreate && <button onClick={handleCreate}>Create Widget</button>}
+      {canUpdate && <button onClick={handleUpdate}>Update Widget</button>}
+    </div>
+  );
+}
+```
+
+### Best Practices
+
+#### 1. Always Check Response Success
+
+```tsx
+// Good
+const response = await authRequest.create('Widget', data);
+if (response.succeeded) {
+  // Handle success
+} else {
+  // Handle error
+}
+
+// Avoid
+const response = await authRequest.create('Widget', data);
+const widget = response.data; // May be undefined if failed
+```
+
+#### 2. Use TypeScript Generics
+
+```tsx
+interface Widget {
+  WidgetId: string;
+  Name: string;
+  Price: number;
+}
+
+const response = await authRequest.create<Widget>('Widget', {
+  Name: 'My Widget',
+  Price: 99.99
+});
+
+if (response.succeeded) {
+  const widget: Widget = response.data; // Properly typed
+}
+```
+
+#### 3. Handle Loading States
+
+```tsx
+function WidgetList() {
+  const authRequest = useAuthRequest();
+  const [widgets, setWidgets] = useState<Widget[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadWidgets = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await authRequest.read({
+          tableName: 'Widget',
+          orderBy: [{ field: 'Name', order: 'asc' }]
+        });
+
+        if (response.succeeded) {
+          setWidgets(response.data.records);
+        } else {
+          setError(response.friendlyMessage);
+        }
+      } catch (err) {
+        setError('Failed to load widgets');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadWidgets();
+  }, [authRequest]);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  
+  return (
+    <div>
+      {widgets.map(widget => (
+        <div key={widget.WidgetId}>{widget.Name}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+#### 4. Optimize with useMemo
+
+The `useAuthRequest` hook already uses `useMemo` internally, but be mindful of dependencies:
+
+```tsx
+// The hook recreates when these dependencies change
+const authRequest = useAuthRequest();
+
+// Dependencies: authContext?.apiUrl, authContext?.headers, authContext?.onUnauthorized
+```
+
+#### 5. Batch Permission Checks
+
+```tsx
+// Good - Single API call
+const permissions = await authRequest.hasAllPermissions([
+  'TABLE_Widget_CREATE_SYSTEM',
+  'TABLE_Widget_UPDATE_SYSTEM',
+  'TABLE_Widget_DELETE_SYSTEM'
+]);
+
+// Avoid - Multiple API calls
+const canCreate = await authRequest.hasAnyPermissions(['TABLE_Widget_CREATE_SYSTEM']);
+const canUpdate = await authRequest.hasAnyPermissions(['TABLE_Widget_UPDATE_SYSTEM']);
+const canDelete = await authRequest.hasAnyPermissions(['TABLE_Widget_DELETE_SYSTEM']);
+```
+
+This comprehensive reference covers all aspects of the `useAuthRequest` hook and provides practical examples for common use cases in Xams applications.
