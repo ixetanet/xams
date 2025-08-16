@@ -786,6 +786,8 @@ The `permissionsNames` property contains an array of permissions to check agains
 
 This endpoint returns information about the currently authenticated user. It retrieves the user record from the User table using the current user's ID.
 
+**Required Permissions:** `TABLE_User_READ_USER` (User level read permissions for the User table)
+
 <Row>
   <Col>
     <CodeGroup title="Request" tag="GET" label="/xams/whoami">
