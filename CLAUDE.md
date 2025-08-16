@@ -1040,16 +1040,61 @@ await authRequest.execute(requestParams); // Low-level request method
 
 // useFormBuilder - Form management
 const formBuilder = useFormBuilder({
-  tableName: 'Widget',
-  recordId: id,
-  defaults: { field: value },
-  onSave: (record) => {},
-  onChange: (field, value) => {}
+  tableName: 'Widget',                 // Required: Entity name
+  id?: string | null,                  // Optional: Record ID for updates
+  metadata?: MetadataResponse,         // Optional: Pre-loaded metadata
+  defaults?: FieldValue[],             // Optional: Default field values
+  snapshot?: any,                      // Optional: Original record data
+  lookupExclusions?: LookupExclusions[], // Optional: Lookup filters
+  lookupQueries?: LookupQuery[],       // Optional: Lookup queries
+  canUpdate?: boolean,                 // Optional: Override update permission
+  canCreate?: boolean,                 // Optional: Override create permission
+  onPreValidate?: PreSaveEvent,        // Optional: Before validation hook
+  onPreSave?: PreSaveEvent,            // Optional: Before save hook (can cancel)
+  onPostSave?: PostSaveEvent,          // Optional: After save hook
+  forceShowLoading?: boolean,          // Optional: Force loading display
+  keepLoadingOnSuccess?: boolean       // Optional: Keep loading after success
 });
-formBuilder.setField(name, value);
-formBuilder.getField(name);
-formBuilder.save();
-formBuilder.reset();
+
+// Returned properties
+formBuilder.metadata                   // MetadataResponse | undefined
+formBuilder.dispatch                   // React dispatch function
+formBuilder.data                       // Current form data (typed as T)
+formBuilder.snapshot                   // Original data for updates (typed as T)
+formBuilder.firstInputRef              // React ref for first input focus
+formBuilder.lookupExclusions           // Array of lookup exclusions
+formBuilder.lookupQueries              // Array of lookup queries
+formBuilder.canUpdate                  // boolean - Update permission
+formBuilder.canCreate                  // boolean - Create permission
+formBuilder.canRead                    // {canRead: boolean, message: string}
+formBuilder.defaults                   // FieldValue[] | undefined
+formBuilder.validationMessages         // ValidationMessage[]
+formBuilder.isLoading                  // boolean - Loading state
+formBuilder.isSubmitted                // boolean - Form submitted state
+formBuilder.operation                  // "CREATE" | "UPDATE"
+formBuilder.stateType                  // Internal state type
+formBuilder.tableName                  // string - Entity name
+formBuilder.onPreValidateRef           // React ref for pre-validate event
+formBuilder.onPreSaveRef               // React ref for pre-save event
+formBuilder.onPostSaveRef              // React ref for post-save event
+
+// Returned methods
+formBuilder.setSnapshot(snapshot, forceShowLoading?)  // Set data to edit
+formBuilder.reload(reloadDataTables = true)           // Refresh current record
+formBuilder.setField(field, value)                    // Set field value
+formBuilder.setFieldError(field, message)             // Set field validation error
+formBuilder.isDirty(field?)                           // Check if form/field is dirty
+formBuilder.addDataTable(dataTable)                   // Register child DataTable
+formBuilder.addRequiredField(fieldName)               // Mark field as required
+formBuilder.removeRequiredField(fieldName)            // Remove required marking
+formBuilder.reloadDataTables()                        // Refresh all child DataTables
+formBuilder.save(preValidate?, preSave?, postSave?)   // Save with optional event overrides
+formBuilder.saveSilent(parameters?)                   // Save without UI feedback
+formBuilder.load(id, forceLoading?)                   // Load specific record by ID
+formBuilder.clearEdits()                              // Clear unsaved changes
+formBuilder.clear()                                   // Reset form completely
+formBuilder.validate()                                // Manual validation (returns boolean)
+formBuilder.setShowForceLoading(loading)              // Control forced loading state
 
 // useAdminPermission - Admin checks
 const { isAdmin, loading } = useAdminPermission();
