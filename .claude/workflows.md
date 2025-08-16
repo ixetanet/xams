@@ -13,7 +13,7 @@
 
 ### Creating a New Entity
 
-1. **Create Entity Class** (`MyXProject.Common/Entities/Widget.cs`):
+1. **Create Entity Class** (`MyXProject.Web/Entities/Widget.cs`):
 
 ```csharp
 [Table("Widget")]
@@ -42,7 +42,7 @@ public class Widget : BaseEntity  // Inherit for ownership
 }
 ```
 
-2. **Add to DbContext** (`MyXProject.Data/DataContext.cs`):
+2. **Add to DbContext** (`MyXProject.Web/DataContext.cs`):
 
 ```csharp
 public DbSet<Widget> Widgets { get; set; }
@@ -55,7 +55,7 @@ dotnet ef migrations add AddWidget
 dotnet ef database update
 ```
 
-4. **Add Service Logic** (`MyXProject.Services/Logic/WidgetService.cs`):
+4. **Add Service Logic** (`MyXProject.Web/Logic/WidgetService.cs`):
 
 ```csharp
 [ServiceLogic(nameof(Widget), DataOperation.Create, LogicStage.PreOperation)]
@@ -106,7 +106,7 @@ const formBuilder = useFormBuilder({ tableName: "Widget" });
 
 ### Creating a Custom Action
 
-1. **Create Action Class** (`MyXProject.Services/Actions/ExportWidgets.cs`):
+1. **Create Action Class** (`MyXProject.Web/Actions/ExportWidgets.cs`):
 
 ```csharp
 [ServiceAction(nameof(ExportWidgets))]
@@ -175,7 +175,7 @@ await authRequest.action("ExportWidgets", { MinPrice: 10 }, "widgets.xlsx");
 
 ### Creating a Scheduled Job
 
-1. **Create Job Class** (`MyXProject.Services/Jobs/WidgetPriceUpdateJob.cs`):
+1. **Create Job Class** (`MyXProject.Web/Jobs/WidgetPriceUpdateJob.cs`):
 
 ```csharp
 [JobServer(ExecuteJobOn.One)]  // Run on single server
@@ -452,18 +452,18 @@ public class Widget : BaseEntity
 **Configuration:**
 
 - `core/xams/MyXProject.Web/Program.cs` - API setup
-- `core/xams/MyXProject.Data/DataContext.cs` - Database config
+- `core/xams/MyXProject.Web/DataContext.cs` - Database config
 - `core/xams-workspace/examples-app/src/pages/_app.tsx` - React setup
 
 **Service Logic:**
 
-- `core/xams/MyXProject.Services/Logic/` - Service logic classes
-- `core/xams/MyXProject.Services/Actions/` - Custom actions
-- `core/xams/MyXProject.Services/Jobs/` - Scheduled jobs
+- `core/xams/MyXProject.Web/Logic/` - Service logic classes
+- `core/xams/MyXProject.Web/Actions/` - Custom actions
+- `core/xams/MyXProject.Web/Jobs/` - Scheduled jobs
 
 **Entities:**
 
-- `core/xams/MyXProject.Common/Entities/` - Entity definitions
+- `core/xams/MyXProject.Web/Entities/` - Entity definitions
 - `core/xams/Xams.Core/Entities/` - System entities
 
 **React Components:**

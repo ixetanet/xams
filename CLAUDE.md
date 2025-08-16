@@ -50,10 +50,13 @@ xams/
 ├── core/
 │   ├── xams/                     # Backend C# projects
 │   │   ├── Xams.Core/           # Core framework library
-│   │   ├── MyXProject.Web/      # Web API project template
-│   │   ├── MyXProject.Data/     # Data layer with migrations
-│   │   ├── MyXProject.Services/ # Service logic implementation
-│   │   └── MyXProject.Common/   # Shared entities
+│   │   ├── MyXProject.Web/      # Web API project (includes all layers)
+│   │   │   ├── Actions/         # Custom actions
+│   │   │   ├── Logic/           # Service logic implementation
+│   │   │   ├── Entities/        # Entity definitions
+│   │   │   ├── Migrations/      # Database migrations
+│   │   │   └── ...              # Other project files
+│   │   └── Xams.Console/        # Console application
 │   └── xams-workspace/
 │       ├── ixeta-xams/          # React component library
 │       ├── examples-app/        # Example implementations
@@ -202,14 +205,14 @@ dotnet ef migrations remove
 
 **Configuration:**
 - `core/xams/MyXProject.Web/Program.cs` - API setup
-- `core/xams/MyXProject.Data/DataContext.cs` - Database config
+- `core/xams/MyXProject.Web/DataContext.cs` - Database config
 
 **Service Logic:**
-- `core/xams/MyXProject.Services/Logic/` - Service logic classes
-- `core/xams/MyXProject.Services/Actions/` - Custom actions
+- `core/xams/MyXProject.Web/Logic/` - Service logic classes
+- `core/xams/MyXProject.Web/Actions/` - Custom actions
 
 **Entities:**
-- `core/xams/MyXProject.Common/Entities/` - Entity definitions
+- `core/xams/MyXProject.Web/Entities/` - Entity definitions
 - `core/xams/Xams.Core/Entities/` - System entities
 
 **React Components:**
