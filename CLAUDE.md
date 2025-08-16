@@ -268,17 +268,6 @@ const formBuilder = useFormBuilder({
 </FormContainer>;
 ```
 
-**DataGrid Component:**
-
-```tsx
-<DataGrid
-  tableName="OrderLines"
-  parentId={orderId}
-  editable={true}
-  onSave={(records) => console.log(records)}
-/>
-```
-
 #### React Hooks (`core/xams-workspace/ixeta-xams/src/hooks/`)
 
 **useAuthRequest:**
@@ -286,8 +275,8 @@ const formBuilder = useFormBuilder({
 ```tsx
 const authRequest = useAuthRequest();
 await authRequest.create('Widget', { Name: 'Test' });
-await authRequest.read('Widget', { filters: [...] });
-await authRequest.update('Widget', widgetId, { Price: 19.99 });
+await authRequest.read({ tableName: 'Widget', filters: [...] });
+await authRequest.update('Widget', { WidgetId: widgetId, Price: 19.99 });
 await authRequest.delete('Widget', widgetId);
 await authRequest.action('MyAction', { param: 'value' });
 ```
@@ -388,7 +377,7 @@ public class WidgetService : IServiceLogic
 
         // Use injected services
         await _emailService.SendNotification("Widget created");
-        
+
         // Use ServiceContext for logger
         context.Logger.LogInformation("Widget processing completed");
 
@@ -440,7 +429,7 @@ public class ExportWidgets : IServiceAction
 
         // Use injected services
         await _emailService.SendNotification($"Export completed: {widgets.Count} widgets");
-        
+
         // Use ActionServiceContext for framework services
         context.Logger.LogInformation($"Exported {widgets.Count} widgets");
 
@@ -541,7 +530,7 @@ public class OrderService : IServiceLogic
         await context.ExecuteJob(new JobOptions
         {
             JobName = "SendOrderNotification",
-            Parameters = new 
+            Parameters = new
             {
                 OrderId = order.OrderId,
                 CustomerEmail = order.Customer.Email
@@ -614,11 +603,11 @@ public class WidgetService : IServiceLogic
     {
         // Use injected custom services
         await _emailService.SendNotification("Widget created");
-        
+
         // Use ServiceContext for framework services
         context.Logger.LogInformation("Widget processed");
         var db = context.GetDbContext<DataContext>();
-        
+
         return ServiceResult.Success();
     }
 }
@@ -1030,15 +1019,24 @@ public class WidgetBulkService : IBulkService
 ```tsx
 // useAuthRequest - API operations
 const authRequest = useAuthRequest();
-await authRequest.create(table, data);
-await authRequest.read(table, { filters, orderBy, fields });
-await authRequest.update(table, id, data);
-await authRequest.delete(table, id);
-await authRequest.bulk(operations);
-await authRequest.action(name, params, fileName);
+await authRequest.create(tableName, fields, parameters?);
+await authRequest.read(readRequest);
+await authRequest.update(tableName, fields, parameters?);
+await authRequest.delete(tableName, id, parameters?);
+await authRequest.upsert(tableName, fields, parameters?);
+await authRequest.bulkCreate(entities, parameters?);
+await authRequest.bulkUpdate(entities, parameters?);
+await authRequest.bulkDelete(entities, parameters?);
+await authRequest.bulkUpsert(entities, parameters?);
+await authRequest.bulk(bulkRequest);
+await authRequest.action(actionName, parameters?, fileName?);
 await authRequest.file(formData);
-await authRequest.hasAnyPermissions([...]);
-await authRequest.hasAllPermissions([...]);
+await authRequest.metadata(tableName);
+await authRequest.tables(tag?);
+await authRequest.whoAmI();
+await authRequest.hasAnyPermissions(permissions);
+await authRequest.hasAllPermissions(permissions);
+await authRequest.execute(requestParams); // Low-level request method
 
 // useFormBuilder - Form management
 const formBuilder = useFormBuilder({
@@ -1082,9 +1080,9 @@ bool changed = context.ValueChanged("FieldName");
 string[] perms = await context.Permissions(userId, ["PERM1", "PERM2"]);
 
 // Jobs (not Actions)
-Guid jobHistoryId = await context.ExecuteJob(new JobOptions { 
-    JobName = "JobName", 
-    Parameters = parameters 
+Guid jobHistoryId = await context.ExecuteJob(new JobOptions {
+    JobName = "JobName",
+    Parameters = parameters
 });
 
 // Context properties
