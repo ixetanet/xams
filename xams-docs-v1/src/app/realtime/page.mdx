@@ -61,6 +61,9 @@ public class ChatHub : IServiceHub
 
 Hub access is controlled through role-based permissions. 
 <DocImage image={realtimePermissions} full={true} />
+<Note>
+  Modifying hub permissions forces affected clients to reconnect, causing temporary disconnection.
+</Note>
 
 The `IServiceHub` interface defines four methods with specific permission requirements:
 
