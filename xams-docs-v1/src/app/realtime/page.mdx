@@ -198,32 +198,33 @@ public class ChatHub : IServiceHub
 
 ## Authentication
 
-To configure authentication for use with OAuth where a bearer token is used, include the following in `Program.cs`.
+SignalR authentication requires configuring JWT bearer token support in `Program.cs`:
 
 ```c# {{ title: 'Project/Program.cs' }}
 builder.Services
-.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-.AddJwtBearer(options =>
-{    
-    // Enable JWT authentication for SignalR
-    options.Events = new JwtBearerEvents
-    {
-        OnMessageReceived = context =>
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {    
+        options.Events = new JwtBearerEvents
         {
-            var accessToken = context.Request.Query["access_token"];
-            var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) && 
-                path.StartsWithSegments("/xams/hub"))
+            OnMessageReceived = context =>
             {
-                context.Token = accessToken;
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                
+                if (!string.IsNullOrEmpty(accessToken) && 
+                    path.StartsWithSegments("/xams/hub"))
+                {
+                    context.Token = accessToken;
+                }
+                
+                return Task.CompletedTask;
             }
-            return Task.CompletedTask;
-        }
-    };
-});
+        };
+    });
 ```
 
-The function provided to getAccessToken will provide the `useAuthRequest` hook and `SignalR` the bearer token.
+The `getAccessToken` function provides bearer tokens to both the `useAuthRequest` hook and SignalR connections.
 
 ```tsx {{ title: 'src/pages/_app.tsx' }}
 import {
@@ -236,8 +237,8 @@ export default function App({ Component, pageProps }: AppProps) {
   const userId = getQueryParam("userid", router.asPath);
 
   const getAccessToken = async () => {
-    // Access token retrieval implementation
-  }
+    // Token retrieval implementation
+  };
 
   return (
     <MantineProvider theme={theme}>
@@ -246,7 +247,6 @@ export default function App({ Component, pageProps }: AppProps) {
         headers={{
           UserId: userId as string,
         }}
-        //
         getAccessToken={getAccessToken}
       >
         <AppContextProvider>
@@ -258,7 +258,11 @@ export default function App({ Component, pageProps }: AppProps) {
 }
 ```
 
-Before calling `appContext.signalR()` ensure that the `getAccessToken` method is ready and will return a bearer token.
+<Note>
+  SignalR connections require access tokens to be passed via query string due to WebSocket limitations with headers.
+</Note>
+
+Ensure `getAccessToken` is ready before initializing SignalR connections:
 
 ```tsx {{ title: 'src/pages/Chat.tsx' }}
 const Chat = () => {
@@ -270,7 +274,6 @@ const Chat = () => {
   useEffect(() => {
     let cleanup: (() => void) | undefined;
 
-    // Ensure that calling getAccessToken is ready to return a value
     if (auth.isReady) {
       const connect = async () => {
         const signalR = await appContext.signalR();
@@ -282,9 +285,8 @@ const Chat = () => {
       };
       connect();
     }
-    return () => {
-      cleanup?.();
-    };
+    
+    return () => cleanup?.();
   }, [auth.isReady]);
 
   return (
