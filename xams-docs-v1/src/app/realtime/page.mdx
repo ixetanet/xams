@@ -1,0 +1,98 @@
+import realtimePermissions from '@/images/realtime_permissions.png'
+export const metadata = {
+  title: 'Realtime',
+  description: 'Xams Realtime with SignalR',
+}
+
+# Realtime
+
+Xams simplifies the process of pushing realtime notifications to the client with SignalR. {{ className: 'lead' }}
+
+## Create a Hub
+
+For convenience, Xams uses a single SignalR hub and client connection per browser window instance. Child hubs are then created with the `ServiceHub` attribute and the `IServiceHub` interface.
+
+```c# {{ title: 'Project / Hubs / ChatHub.cs' }}
+// Apply the ServiceHub attribute and specify the name of the hub
+[ServiceHub(nameof(ChatHub))]
+public class ChatHub : IServiceHub // Implement the IServiceHub interface
+{
+    private static readonly string GroupName = "MyChatGroup";
+    
+    // This method is called when a client connects to the hub
+    public async Task<Response<object?>> OnConnected(HubContext context)
+    {
+        // The context provides access to the SignalR context, clients, and groups
+        await context.Groups.AddToGroupAsync(context.SignalRContext.ConnectionId, GroupName);
+        return ServiceResult.Success();
+    }
+
+    // This method is called when a client disconnects from the hub
+    public async Task<Response<object?>> OnDisconnected(HubContext context)
+    {
+        await context.Groups.RemoveFromGroupAsync(context.SignalRContext.ConnectionId, GroupName);
+        return ServiceResult.Success();
+    }
+    
+    // This method is called when a message is received from a client
+    public async Task<Response<object?>> OnReceive(HubContext context)
+    {
+        // The context.Message contains the message sent by the client
+        var stringMessage = context.Message;
+        // For convenience, we can deserialize the message into a specific type
+        // With this, we can handle different message types
+        var message = context.GetMessage<ClientMessage>();
+        if (message.type == "message")
+        {
+            await context.Clients.All.SendAsync("ReceiveMessage", message.content);    
+        }
+        return ServiceResult.Success("Great work!");
+    }
+
+    public class ClientMessage
+    {
+        public string type { get; set; }
+        public string content { get; set; }
+    }
+    
+    // This method is called to send a message from Actions or Services
+    public async Task<Response<object?>> Send(HubSendContext context)
+    {
+        // This will send to ALL connected clients, not just the clients of this hub
+        await context.Clients.All.SendAsync(context.Message as string ?? "");
+        return ServiceResult.Success();
+    }
+}
+```
+
+## Hub Permissions
+
+Access to a Hub can be set on the Role. 
+<DocImage image={realtimePermissions} full={true} />
+
+The following provides a description of how permissions are applied to each method.
+```c# {{ title: 'Project / Hubs / ChatHub.cs' }}
+public interface IServiceHub
+{
+    /// Called when a client has permission to access the Hub and when they first connect
+    public Task<Response<object?>> OnConnected(HubContext context);
+
+    /// Client disconnected from the hub either by losing permissions or closing the browser window
+    public Task<Response<object?>> OnDisconnected(HubContext context);
+    
+    /// On Receive method is called when a message is sent from a client
+    /// This will only be called if the user has permission to the Hub
+    public Task<Response<object?>> OnReceive(HubContext context);
+    
+    /// Send method is called to send a message to clients
+    /// This will only be called from server-side services
+    public Task<Response<object?>> Send(HubSendContext context);
+   
+}
+```
+
+## Client Send
+
+## Client Receive
+
+## Service Send
