@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 
 import { Footer } from '@/components/Footer'
 import { Header } from '@/components/Header'
@@ -23,7 +24,12 @@ export function Layout({
   allSections: Record<string, Array<Section>>
 }) {
   let pathname = usePathname()
-  let { resolvedTheme, setTheme } = useTheme()
+  let { resolvedTheme } = useTheme()
+  let [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <SectionProvider sections={allSections[pathname] ?? []}>
@@ -36,7 +42,24 @@ export function Layout({
             <div className="hidden lg:flex">
               <Link href="/" aria-label="Home">
                 {/* <Logo className="h-6" /> */}
-                {resolvedTheme === 'dark' ? (
+                {!mounted ? (
+                  <>
+                    <Image
+                      src={darkLogo}
+                      alt="logo"
+                      width={128}
+                      height={40}
+                      className="hidden dark:block"
+                    />
+                    <Image
+                      src={lightLogo}
+                      alt="logo"
+                      width={128}
+                      height={40}
+                      className="block dark:hidden"
+                    />
+                  </>
+                ) : resolvedTheme === 'dark' ? (
                   <Image src={darkLogo} alt="logo" width={128} height={40} />
                 ) : (
                   <Image src={lightLogo} alt="logo" width={128} height={40} />

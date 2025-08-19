@@ -152,6 +152,7 @@ const Highlighter = (props: HighlighterProps) => {
           style={{
             ...style,
             backgroundColor: 'transparent',
+            lineHeight: "1.4rem"
           }}
           className=" rounded-xl p-4 text-[0.8rem] shadow-xl "
         >
@@ -160,7 +161,9 @@ const Highlighter = (props: HighlighterProps) => {
               return (
                 <div key={i}>
                   {i !== tokens.length - 1 && (
-                    <div key={i} {...getLineProps({ line })}>
+                    <div key={i} {...getLineProps({ line })}
+                    
+                    >
                       {/* <span>{i + 1}</span> */}
                       {line.map((token, key) => (
                         <span key={key} {...getTokenProps({ token })} />

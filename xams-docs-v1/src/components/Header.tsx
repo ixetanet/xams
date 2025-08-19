@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, useEffect, useState } from 'react'
 import Link from 'next/link'
 import clsx from 'clsx'
 import { motion, useScroll, useTransform } from 'framer-motion'
@@ -44,7 +44,12 @@ export const Header = forwardRef<
   let { scrollY } = useScroll()
   let bgOpacityLight = useTransform(scrollY, [0, 72], [0.5, 0.9])
   let bgOpacityDark = useTransform(scrollY, [0, 72], [0.2, 0.8])
-  let { resolvedTheme, setTheme } = useTheme()
+  let { resolvedTheme } = useTheme()
+  let [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <motion.div
@@ -76,7 +81,24 @@ export const Header = forwardRef<
       <div className="flex items-center gap-5 lg:hidden">
         <MobileNavigation />
         <Link href="/" aria-label="Home">
-          {resolvedTheme === 'dark' ? (
+          {!mounted ? (
+            <>
+              <Image
+                src={darkLogo}
+                alt="logo"
+                width={128}
+                height={40}
+                className="hidden dark:block"
+              />
+              <Image
+                src={lightLogo}
+                alt="logo"
+                width={128}
+                height={40}
+                className="block dark:hidden"
+              />
+            </>
+          ) : resolvedTheme === 'dark' ? (
             <Image src={darkLogo} alt="logo" width={128} height={40} />
           ) : (
             <Image src={lightLogo} alt="logo" width={128} height={40} />
