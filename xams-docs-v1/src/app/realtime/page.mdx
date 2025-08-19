@@ -44,9 +44,12 @@ public class ChatHub : IServiceHub // Implement the IServiceHub interface
         var message = context.GetMessage<ClientMessage>();
         if (message.type == "message")
         {
+            // Call "ReceiveMessage" on the clients
             await context.Clients.All.SendAsync("ReceiveMessage", message.content);    
         }
-        return ServiceResult.Success("Great work!");
+
+        // Any object in the Service.Result success parameter will be returned to the client
+        return ServiceResult.Success("Message Received!");
     }
 
     public class ClientMessage
@@ -74,25 +77,142 @@ The following provides a description of how permissions are applied to each meth
 ```c# {{ title: 'Project / Hubs / ChatHub.cs' }}
 public interface IServiceHub
 {
-    /// Called when a client has permission to access the Hub and when they first connect
+    // Called when a client has permission to access the Hub and when they first connect
     public Task<Response<object?>> OnConnected(HubContext context);
 
-    /// Client disconnected from the hub either by losing permissions or closing the browser window
+    // Client disconnected from the hub either by losing permissions or closing the browser window
     public Task<Response<object?>> OnDisconnected(HubContext context);
     
-    /// On Receive method is called when a message is sent from a client
-    /// This will only be called if the user has permission to the Hub
+    // On Receive method is called when a message is sent from a client
+    // This will only be called if the user has permission to the Hub
     public Task<Response<object?>> OnReceive(HubContext context);
     
-    /// Send method is called to send a message to clients
-    /// This will only be called from server-side services
+    // Send method is called to send a message to clients
+    // This will only be called from server-side services
     public Task<Response<object?>> Send(HubSendContext context);
    
 }
 ```
 
-## Client Send
+## Client
 
-## Client Receive
+```tsx {{ title: 'src / pages / chat.tsx' }}
+const Chat = () => {
+  const appContext = useAppContext();
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<string[]>([]);
+
+  const onSubmit = async (e: FormEvent<HTMLFormElement> | undefined) => {
+    e?.preventDefault();
+    // Initialize and return a SignalR connection
+    // If already initialized, return the existing one
+    const connection = await appContext.signalR();
+    // Parameter 1: The Hub to send the message to
+    // Parameter 2: The message to be sent
+    // Use connection.invoke if a return value is expected
+    await connection.send(
+      "ChatHub",
+      JSON.stringify({
+        type: "message",
+        content: message,
+      })
+    );
+    setMessage("");
+  };
+
+  useEffect(() => {
+    let cleanup: (() => void) | undefined;
+
+    // In useEffect, setup the event hook
+    const connect = async () => {
+      const signalR = await appContext.signalR();
+      // The "ReceiveMessage" method called from the server
+      signalR.on("ReceiveMessage", (message: string) => {
+        setMessages((msgs) => [...msgs, `${message}`]);
+      });
+
+      // Cleanup method on unmount
+      cleanup = () => signalR.off("ReceiveMessage");
+    };
+    connect();
+    return () => {
+      // Call cleanup
+      cleanup?.();
+    };
+  }, []);
+
+  return (
+    <AppLayout>
+      <ul>
+        {messages.map((msg, idx) => (
+          <li key={idx}>{msg}</li>
+        ))}
+      </ul>
+      <form onSubmit={onSubmit}>
+        <div className="w-full flex gap-2">
+          <TextInput
+            value={message}
+            className="w-full"
+            onChange={(e) => setMessage(e.currentTarget.value)}
+          ></TextInput>
+          <div>
+            <Button type="submit">Send</Button>
+          </div>
+        </div>
+      </form>
+    </AppLayout>
+  );
+};
+```
+
 
 ## Service Send
+
+Within a service class such as an Action, Job or Service Logic, the HubSend method can be called, which calls the Send method on the Hub.
+
+```c# {{ title: 'Project / Service / WidgetService.cs' }}
+[ServiceLogic("Widget", DataOperation.Create, LogicStage.PreOperation)]
+public class WidgetService : IServiceLogic
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        await context.HubSend<ChatHub>(new ChatHub.ServerMessage()
+        {
+            type = "message_all_clients",
+            content = "A new widget is being created!"
+        });
+        return ServiceResult.Success();
+    }
+}
+```
+
+The below code is then called on the ChatHub.
+
+```c# {{ title: 'Project / Hubs / ChatHub.cs' }}
+[ServiceHub(nameof(ChatHub))]
+public class ChatHub : IServiceHub
+{
+    ...
+    
+    // This method is called to send a message from Actions or Services
+    public async Task<Response<object?>> Send(HubSendContext context)
+    {
+        var message = context.GetMessage<ServerMessage>();
+        if (message.type == "message_all_clients")
+        {
+            // This will message ALL of the clients connected to the application
+            // Not just the clients connected to the hub
+            // This is why it's important to add clients to specific groups
+            // upon connecting.
+            await context.Clients.All.SendAsync(message.content);    
+        }
+        return ServiceResult.Success();
+    }
+    
+    public class ServerMessage
+    {
+        public string type { get; set; }
+        public string content { get; set; }
+    }
+}
+```
