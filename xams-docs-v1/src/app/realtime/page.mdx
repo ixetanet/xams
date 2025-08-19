@@ -195,3 +195,100 @@ public class ChatHub : IServiceHub
 <Note>
   The `Clients.All` property sends messages to all connected clients across the entire application, not just those connected to this specific hub. Use groups to target specific client subsets.
 </Note>
+
+## Authentication
+
+To configure authentication for use with OAuth where a bearer token is used, include the following in `Program.cs`.
+
+```c# {{ title: 'Project/Program.cs' }}
+builder.Services
+.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+.AddJwtBearer(options =>
+{    
+    // Enable JWT authentication for SignalR
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && 
+                path.StartsWithSegments("/xams/hub"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
+});
+```
+
+The function provided to getAccessToken will provide the `useAuthRequest` hook and `SignalR` the bearer token.
+
+```tsx {{ title: 'src/pages/_app.tsx' }}
+import {
+  AppContextProvider,
+  AuthContextProvider,
+  getQueryParam,
+} from "@ixeta/xams";
+
+export default function App({ Component, pageProps }: AppProps) {
+  const userId = getQueryParam("userid", router.asPath);
+
+  const getAccessToken = async () => {
+    // Access token retrieval implementation
+  }
+
+  return (
+    <MantineProvider theme={theme}>
+      <AuthContextProvider
+        apiUrl={process.env.NEXT_PUBLIC_API as string}
+        headers={{
+          UserId: userId as string,
+        }}
+        //
+        getAccessToken={getAccessToken}
+      >
+        <AppContextProvider>
+          <Component {...pageProps} />
+        </AppContextProvider>
+      </AuthContextProvider>
+    </MantineProvider>
+  );
+}
+```
+
+Before calling `appContext.signalR()` ensure that the `getAccessToken` method is ready and will return a bearer token.
+
+```tsx {{ title: 'src/pages/Chat.tsx' }}
+const Chat = () => {
+  const appContext = useAppContext();
+  const auth = useAuth();
+  
+  ...
+
+  useEffect(() => {
+    let cleanup: (() => void) | undefined;
+
+    // Ensure that calling getAccessToken is ready to return a value
+    if (auth.isReady) {
+      const connect = async () => {
+        const signalR = await appContext.signalR();
+        signalR.on("ReceiveMessage", (message: string) => {
+          setMessages((msgs) => [...msgs, `${message}`]);
+        });
+
+        cleanup = () => signalR.off("ReceiveMessage");
+      };
+      connect();
+    }
+    return () => {
+      cleanup?.();
+    };
+  }, [auth.isReady]);
+
+  return (
+    ...
+  );
+};
+```
