@@ -240,6 +240,7 @@ export const navigation: Array<NavGroup> = [
       { title: 'Security', href: '/security' },
       { title: 'Service Logic', href: '/servicelogic' },
       { title: 'Actions', href: '/actions' },
+      { title: 'Realtime', href: '/realtime' },
       { title: 'Scheduled Jobs', href: '/scheduledjobs' },
       { title: 'React', href: '/react_guide' },
       { title: 'Queries', href: '/queries' },

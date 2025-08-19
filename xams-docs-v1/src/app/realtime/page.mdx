@@ -1,0 +1,197 @@
+import realtimePermissions from '@/images/realtime_permissions.png'
+export const metadata = {
+  title: 'Realtime',
+  description: 'Xams Realtime with SignalR',
+}
+
+# Realtime
+
+Xams provides built-in support for real-time communication between server and client using SignalR. {{ className: 'lead' }}
+
+## Creating a Hub
+
+Xams uses a single SignalR hub per browser window instance for optimal performance. You can create service-specific hubs using the `ServiceHub` attribute and implementing the `IServiceHub` interface.
+
+```c# {{ title: 'Project/Hubs/ChatHub.cs' }}
+[ServiceHub(nameof(ChatHub))]
+public class ChatHub : IServiceHub
+{
+    private static readonly string GroupName = "MyChatGroup";
+    
+    public async Task<Response<object?>> OnConnected(HubContext context)
+    {
+        await context.Groups.AddToGroupAsync(context.SignalRContext.ConnectionId, GroupName);
+        return ServiceResult.Success();
+    }
+
+    public async Task<Response<object?>> OnDisconnected(HubContext context)
+    {
+        await context.Groups.RemoveFromGroupAsync(context.SignalRContext.ConnectionId, GroupName);
+        return ServiceResult.Success();
+    }
+    
+    public async Task<Response<object?>> OnReceive(HubContext context)
+    {
+        var stringMessage = context.Message;
+        var message = context.GetMessage<ClientMessage>();
+        
+        if (message.type == "message")
+        {
+            await context.Clients.All.SendAsync("ReceiveMessage", message.content);    
+        }
+
+        return ServiceResult.Success("Message Received!");
+    }
+
+    public class ClientMessage
+    {
+        public string type { get; set; }
+        public string content { get; set; }
+    }
+    
+    public async Task<Response<object?>> Send(HubSendContext context)
+    {
+        await context.Clients.All.SendAsync(context.Message as string ?? "");
+        return ServiceResult.Success();
+    }
+}
+```
+
+## Hub Permissions
+
+Hub access is controlled through role-based permissions. 
+<DocImage image={realtimePermissions} full={true} />
+
+The `IServiceHub` interface defines four methods with specific permission requirements:
+
+```c# {{ title: 'IServiceHub Interface' }}
+public interface IServiceHub
+{
+    // Called when a client with hub permissions connects
+    public Task<Response<object?>> OnConnected(HubContext context);
+
+    // Called when a client disconnects or loses permissions
+    public Task<Response<object?>> OnDisconnected(HubContext context);
+    
+    // Called when receiving messages from permitted clients
+    public Task<Response<object?>> OnReceive(HubContext context);
+    
+    // Called from server-side services to send messages
+    public Task<Response<object?>> Send(HubSendContext context);
+}
+```
+
+## Client Implementation
+
+The client connects to the hub using the `appContext.signalR()` method, which returns a singleton SignalR connection for the browser window.
+
+```tsx {{ title: 'src/pages/Chat.tsx' }}
+const Chat = () => {
+  const appContext = useAppContext();
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<string[]>([]);
+
+  const onSubmit = async (e: FormEvent<HTMLFormElement> | undefined) => {
+    e?.preventDefault();
+    const connection = await appContext.signalR();
+    // Use send() for fire-and-forget, invoke() for return values
+    await connection.send(
+      "ChatHub",
+      JSON.stringify({
+        type: "message",
+        content: message,
+      })
+    );
+    setMessage("");
+  };
+
+  useEffect(() => {
+    let cleanup: (() => void) | undefined;
+    const connect = async () => {
+      const signalR = await appContext.signalR();
+      signalR.on("ReceiveMessage", (message: string) => {
+        setMessages((msgs) => [...msgs, `${message}`]);
+      });
+      cleanup = () => signalR.off("ReceiveMessage");
+    };
+    connect();
+    return () => cleanup?.();
+  }, []);
+
+  return (
+    <AppLayout>
+      <ul>
+        {messages.map((msg, idx) => (
+          <li key={idx}>{msg}</li>
+        ))}
+      </ul>
+      <form onSubmit={onSubmit}>
+        <div className="w-full flex gap-2">
+          <TextInput
+            value={message}
+            className="w-full"
+            onChange={(e) => setMessage(e.currentTarget.value)}
+          ></TextInput>
+          <div>
+            <Button type="submit">Send</Button>
+          </div>
+        </div>
+      </form>
+    </AppLayout>
+  );
+};
+```
+
+
+## Sending Messages from Services
+
+Service classes (Actions, Jobs, or Service Logic) can send messages to clients using the `HubSend` method, which invokes the hub's `Send` method.
+
+```c# {{ title: 'Project/Service/WidgetService.cs' }}
+[ServiceLogic("Widget", DataOperation.Create, LogicStage.PreOperation)]
+public class WidgetService : IServiceLogic
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        await context.HubSend<ChatHub>(new ChatHub.ServerMessage()
+        {
+            type = "message_all_clients",
+            content = "A new widget is being created!"
+        });
+        return ServiceResult.Success();
+    }
+}
+```
+
+<Note>
+  The `HubSend` method executes in a new database transaction, independent of the current service's transaction context.
+</Note>
+
+The hub's `Send` method processes the message:
+
+```c# {{ title: 'Project/Hubs/ChatHub.cs' }}
+[ServiceHub(nameof(ChatHub))]
+public class ChatHub : IServiceHub
+{
+    // Additional implementation details
+    public async Task<Response<object?>> Send(HubSendContext context)
+    {
+        var message = context.GetMessage<ServerMessage>();
+        if (message.type == "message_all_clients")
+        {
+            await context.Clients.All.SendAsync(message.content);
+        }
+        return ServiceResult.Success();
+    }
+    
+    public class ServerMessage
+    {
+        public string type { get; set; }
+        public string content { get; set; }
+    }
+}
+```
+
+<Note>
+  The `Clients.All` property sends messages to all connected clients across the entire application, not just those connected to this specific hub. Use groups to target specific client subsets.
+</Note>

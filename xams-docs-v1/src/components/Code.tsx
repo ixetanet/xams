@@ -153,7 +153,7 @@ const Highlighter = (props: HighlighterProps) => {
             ...style,
             backgroundColor: 'transparent',
           }}
-          className=" rounded-xl p-4 text-sm shadow-xl "
+          className=" rounded-xl p-4 text-[0.8rem] shadow-xl "
         >
           <div className=" code-scrollbar overflow-x-scroll">
             {tokens.map((line, i) => {
