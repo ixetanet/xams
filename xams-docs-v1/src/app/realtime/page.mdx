@@ -163,6 +163,10 @@ public class WidgetService : IServiceLogic
 }
 ```
 
+<Note>
+  The `HubSend` method executes in a new database transaction, independent of the current service's transaction context.
+</Note>
+
 The hub's `Send` method processes the message:
 
 ```c# {{ title: 'Project/Hubs/ChatHub.cs' }}
