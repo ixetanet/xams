@@ -1,0 +1,51 @@
+import auditAdmin from '@/images/audit_admin.png'
+import auditConfig from '@/images/audit_config.png'
+import auditHistory from '@/images/audit_history.png'
+import auditHistoryDetails from '@/images/audit_history_details.png'
+import auditFieldHistory from '@/images/audit_field_history.png'
+export const metadata = {
+  title: 'Auditing',
+  description: 'Xams Entity Auditing',
+}
+
+# Auditing
+
+Xams enables auditing of every record saved with the XamsDbContext.  {{ className: 'lead' }}
+
+## Setup
+
+To configure an entity for auditing, from the Admin dashboard navigate to `Auditing`.
+
+Select the `Config` tab and choose an entity to configure for auditing.
+
+<DocImage image={auditAdmin} full={true} />
+
+From the config screen you can choose which operations to enable ie: `create`, `update`, `delete` or `read`.
+
+For `create`, `update`, and `delete` you can select which fields to perform the audit for.
+
+<DocImage image={auditConfig} full={true} />
+
+## Audit History
+
+The `History` tab shows all audit history by data operation and table.
+
+<DocImage image={auditHistory} full={true} />
+
+Selecting a Audit Hitory record will show a table view of all of the fields that were changed in the data operation.
+
+<DocImage image={auditHistoryDetails} full={true} />
+
+## Audit Field History
+
+The `Field History` tab shows all audit history listed by data operation, table name, and field name.
+
+<DocImage image={auditFieldHistory} full={true} />
+
+## Schema
+
+- The Audit entity identifies which Tables and operations to Audit.
+- The AuditField entity identifies which fields to Audit.
+- The AuditHistory entity captures when a record is created, updated, deleted or read
+- The AuditHistoryDetail entity captures what field(s) were modified and their old and new values
+
