@@ -10,42 +10,44 @@ export const metadata = {
 
 # Auditing
 
-Xams enables auditing of every record saved with the XamsDbContext.  {{ className: 'lead' }}
+Xams provides comprehensive auditing capabilities for every record saved through the XamsDbContext. Track changes across your entities with granular control over which operations and fields to monitor. {{ className: 'lead' }}
 
-## Setup
+## Configuration
 
-To configure an entity for auditing, from the Admin dashboard navigate to `Auditing`.
+To enable auditing for an entity, navigate to the `Auditing` section in the Admin dashboard.
 
-Select the `Config` tab and choose an entity to configure for auditing.
+Select the `Config` tab and choose the entity you want to audit.
 
 <DocImage image={auditAdmin} full={true} />
 
-From the config screen you can choose which operations to enable ie: `create`, `update`, `delete` or `read`.
+From the configuration screen, you can specify which operations to audit: `create`, `update`, `delete`, or `read`.
 
-For `create`, `update`, and `delete` you can select which fields to perform the audit for.
+For `create`, `update`, and `delete` operations, you can select specific fields to track.
 
 <DocImage image={auditConfig} full={true} />
 
 ## Audit History
 
-The `History` tab shows all audit history by data operation and table.
+The `History` tab displays all audit records organized by data operation and table.
 
 <DocImage image={auditHistory} full={true} />
 
-Selecting a Audit Hitory record will show a table view of all of the fields that were changed in the data operation.
+Selecting an Audit History record reveals a detailed view of all fields modified during that operation.
 
 <DocImage image={auditHistoryDetails} full={true} />
 
-## Audit Field History
+## Field History
 
-The `Field History` tab shows all audit history listed by data operation, table name, and field name.
+The `Field History` tab presents audit records filtered by data operation, table name, and field name for granular tracking.
 
 <DocImage image={auditFieldHistory} full={true} />
 
-## Schema
+## Database Schema
 
-- The Audit entity identifies which Tables and operations to Audit.
-- The AuditField entity identifies which fields to Audit.
-- The AuditHistory entity captures when a record is created, updated, deleted or read
-- The AuditHistoryDetail entity captures what field(s) were modified and their old and new values
+The auditing system uses four primary entities:
+
+- **Audit**: Defines which tables and operations to audit
+- **AuditField**: Specifies which fields to track for each audited entity
+- **AuditHistory**: Records when a record is created, updated, deleted, or read
+- **AuditHistoryDetail**: Stores field-level changes including old and new values
 
