@@ -49,6 +49,7 @@ public class DataContext : XamsDbContext
 {
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
+        base.OnConfiguring(options);
         var folder = Environment.SpecialFolder.LocalApplicationData;
         var path = Environment.GetFolderPath(folder);
         var dbPath = Path.Join(path, "app.db");
