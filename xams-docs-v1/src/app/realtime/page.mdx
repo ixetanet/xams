@@ -117,9 +117,11 @@ const Chat = () => {
       });
       cleanup = () => signalR.off("ReceiveMessage");
     };
-    connect();
+    if (appContext.signalR && appContext.signalRState === HubConnectionState.Connected) {
+      connect();
+    }
     return () => cleanup?.();
-  }, []);
+  }, [appContext.signalRState]);
 
   return (
     <AppLayout>
@@ -277,7 +279,7 @@ const Chat = () => {
   useEffect(() => {
     let cleanup: (() => void) | undefined;
 
-    if (auth.isReady) {
+    if (auth.isReady && appContext.signalRState === HubConnectionState.Connected) {
       const connect = async () => {
         const signalR = await appContext.signalR();
         signalR.on("ReceiveMessage", (message: string) => {
@@ -290,7 +292,7 @@ const Chat = () => {
     }
     
     return () => cleanup?.();
-  }, [auth.isReady]);
+  }, [auth.isReady, appContext.signalRState]);
 
   return (
     ...

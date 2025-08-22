@@ -1,0 +1,105 @@
+import loggingAdmin from '@/images/logging_admin.png'
+export const metadata = {
+  title: 'Logging',
+  description: 'Xams built-in logging and monitoring',
+}
+
+# Logging
+
+Xams provides comprehensive logging capabilities to monitor application behavior, track errors, and troubleshoot issues through a centralized logging interface accessible from the Admin dashboard. {{ className: 'lead' }}
+
+## Overview
+
+The logging system captures all application events with structured data, making it easy to search, filter, and analyze your application's behavior over time.
+
+<DocImage image={loggingAdmin} full={true} />
+
+## Configuration
+
+To enable logging in your application, configure the Xams logging provider in your `Program.cs` file:
+
+```c# {{ title: 'Project/Program.cs' }}
+builder.Host.ConfigureXamsLogging();
+```
+
+<Note>
+  Once configured, all logs from your application are automatically captured and stored in the database for easy retrieval through the Admin dashboard.
+</Note>
+
+## Structured Logging
+
+Xams uses structured logging to ensure all log properties are queryable and searchable. When writing logs, always use message templates with named parameters instead of string interpolation:
+
+```c# {{ title: 'Project/Logic/WidgetService.cs' }}
+[ServiceLogic(nameof(Widget), DataOperation.Create, LogicStage.PreOperation)]
+public class WidgetService : IServiceLogic
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        var widget = context.GetEntity<Widget>();
+        
+        // Good: Structured logging with named parameters
+        context.Logger.LogInformation("Creating widget {WidgetName} with price {Price}", 
+            widget.Name, widget.Price);
+        
+        // Avoid: String interpolation loses structure
+        // context.Logger.LogInformation($"Creating widget {widget.Name}");
+        
+        if (widget.Price < 0)
+        {
+            context.Logger.LogWarning("Invalid price {Price} for widget {WidgetId}", 
+                widget.Price, widget.WidgetId);
+        }
+        
+        return ServiceResult.Success();
+    }
+}
+```
+
+<Note>
+  Using structured logging parameters enables the search functionality to query specific property values, not just the message text.
+</Note>
+
+## Log Levels
+
+Xams supports standard .NET log levels for categorizing messages:
+
+```c# {{ title: 'Project/Logic/WidgetService.cs' }}
+// Debug information for development
+context.Logger.LogDebug("Processing widget validation for {WidgetId}", widgetId);
+
+// General information about application flow
+context.Logger.LogInformation("Widget {WidgetId} created successfully", widgetId);
+
+// Warnings for potentially problematic situations
+context.Logger.LogWarning("Widget stock {Stock} is below threshold {Threshold}", 
+    stock, threshold);
+
+// Errors that don't stop the application
+context.Logger.LogError(exception, "Failed to send notification for {WidgetId}", 
+    widgetId);
+
+// Critical failures that require immediate attention
+context.Logger.LogCritical("Database connection lost during transaction {TransactionId}", 
+    transactionId);
+```
+
+## Searching Logs
+
+The Admin dashboard provides powerful search capabilities through the logging interface:
+
+- **Full-text search**: The search box performs text searches across both log messages and all structured data properties
+- **Time filtering**: Logs are automatically timestamped and can be filtered by date range
+- **Level filtering**: Filter logs by severity level to focus on errors or warnings
+
+<Note>
+  Search queries match against both the formatted message and all structured properties, making it easy to find logs by any included data point.
+</Note>
+
+## Log Retention
+
+Log retention is configured directly from the Admin Dashboard through the `LOG_HISTORY_RETENTION_DAYS` setting. This setting specifies the number of days to retain logs before they are automatically removed.
+
+<Note>
+  The default retention period is 30 days. Logs older than the configured retention period are automatically removed during scheduled cleanup operations.
+</Note>

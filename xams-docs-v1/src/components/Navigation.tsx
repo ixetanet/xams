@@ -243,6 +243,7 @@ export const navigation: Array<NavGroup> = [
       { title: 'Scheduled Jobs', href: '/scheduledjobs' },
       { title: 'Realtime', href: '/realtime' },
       { title: 'Auditing', href: '/auditing' },
+      { title: 'Logging', href: '/logging' },
       { title: 'React', href: '/react_guide' },
       { title: 'Queries', href: '/queries' },
       { title: 'Attributes', href: '/attributes' },
