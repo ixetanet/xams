@@ -95,3 +95,11 @@ The Admin dashboard provides powerful search capabilities through the logging in
 <Note>
   Search queries match against both the formatted message and all structured properties, making it easy to find logs by any included data point.
 </Note>
+
+## Log Retention
+
+Log retention is configured directly from the Admin Dashboard through the `LOG_HISTORY_RETENTION_DAYS` setting. This setting specifies the number of days to retain logs before they are automatically removed.
+
+<Note>
+  The default retention period is 30 days. Logs older than the configured retention period are automatically removed during scheduled cleanup operations.
+</Note>
