@@ -3,7 +3,10 @@
   "workspaces": [
     "ixeta-xams",
     "examples-app",
-    "admin-dash"
+    "admin-dash",
+    "headless-auth-react",
+    "headless-auth-react-firebase",
+    "headless-auth-react-supabase"
   ],
   "devDependencies": {
     "@types/react": "19.1.14",

@@ -1,0 +1,55 @@
+{
+  "name": "@ixeta/headless-auth-react-supabase",
+  "version": "0.0.1",
+  "description": "Xams React Components",
+  "source": "src/index.ts",
+  "types": "dist/types/index.d.ts",
+  "module": "dist/index.js",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "/dist/**/*",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:tsc": "tsc",
+    "build:rollup": "rollup -c",
+    "watch:tsc": "tsc -w",
+    "publish": "npm publish --access public"
+  },
+  "keywords": [
+    "xams",
+    "framework",
+    "react",
+    "nextjs",
+    "ui",
+    "auth"
+  ],
+  "peerDependencies": {
+    "@ixeta/headless-auth-react": "^0.0.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "@supabase/supabase-js": "^2.49.4"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/node": "^20.9.0",
+    "@types/react": "19.1.14",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8",
+    "eslint-config-next": "15.5",
+    "postcss": "^8.4.31",
+    "process": "^0.11.10",
+    "rollup": "^3.29.5",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-postcss": "^4.0.2",
+    "typescript": "^5.4.5"
+  },
+  "author": "iXeta, LLC. <support@ixeta.net> (https://ixeta.net)",
+  "license": "ISC",
+  "dependencies": {}
+}

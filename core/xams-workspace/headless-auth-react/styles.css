@@ -1,0 +1,21 @@
+/* @tailwind base; */
+
+.iflex {
+  display: flex
+}
+
+.ih-36 {
+  height: 9rem
+}
+
+.iw-32 {
+  width: 8rem
+}
+
+.iitems-center {
+  align-items: center
+}
+
+.ijustify-center {
+  justify-content: center
+}
