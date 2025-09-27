@@ -487,24 +487,18 @@ const Field = (props: FieldProps) => {
             formContext.formBuilder.data[field.name] !== null &&
             formContext.formBuilder.data[field.name] !== "0001-01-01T00:00:00"
               ? removeTime(field.dateFormat)
-                ? new Date(
-                    formContext.formBuilder.data[field.name].replace("Z", "") // Prevent UTC conversion
-                  )
-                : new Date(formContext.formBuilder.data[field.name])
+                ? formContext.formBuilder.data[field.name].replace("Z", "").split("T")[0] // Extract date only
+                : formContext.formBuilder.data[field.name].replace("Z", "")
               : null
           }
           onChange={(event) => {
-            let dateTime = event;
             updateState(
               field.name,
               event == null
                 ? null
                 : removeTime(field.dateFormat)
-                ? (() => {
-                    dateTime?.setUTCHours(0, 0, 0, 0);
-                    return dateTime?.toISOString().replace("Z", "");
-                  })()
-                : dateTime?.toISOString()
+                ? event + "T00:00:00" // Add time component for date-only fields
+                : event
             );
           }}
           onBlur={props.onBlur}

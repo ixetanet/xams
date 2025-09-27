@@ -55,11 +55,6 @@ const RichText = (props: RichTextProps) => {
         toolbar: {
           position: "static",
         },
-        typographyStylesProvider: {
-          display: "flex",
-          flexDirection: "column",
-          flexGrow: 1,
-        },
         content: {
           flexGrow: 1,
           display: "flex",

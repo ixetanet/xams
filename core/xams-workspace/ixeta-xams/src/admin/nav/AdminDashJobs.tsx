@@ -1,12 +1,13 @@
 import React from "react";
 import { useAdminDashContext } from "../AdminDashboard";
-import { NavLink, Grid } from "@mantine/core";
+import { NavLink, Grid, Fieldset } from "@mantine/core";
 import { IconClock } from "@tabler/icons-react";
 import Field from "../../components/Field";
 import JobForm from "../JobForm";
 import DataTable from "../../components/DataTable";
 import CopyId from "../components/CopyId";
 import SaveButton from "../../components/SaveButton";
+import LogsViewer from "../components/logviewer/LogsViewer";
 
 const AdminDashJobs = () => {
   const ctx = useAdminDashContext();
@@ -94,38 +95,47 @@ const AdminDashJobs = () => {
                                   order: "desc",
                                 },
                               ]}
-                              refreshInterval={1000}
                               maxResults={100}
                               canUpdate={false}
                               canCreate={false}
+                              formFullScreen={true}
+                              refreshInterval={1000}
+                              formClassNames="h-full flex grow"
                               customForm={(formbuilder) => {
                                 return (
                                   <div className="w-full flex flex-col gap-2">
                                     <Grid>
-                                      <Grid.Col span={4}>
+                                      <Grid.Col span={2.4}>
                                         <Field name={"Name"}></Field>
                                       </Grid.Col>
-                                      <Grid.Col span={4}>
+                                      <Grid.Col span={2.4}>
                                         <Field name={"JobId"}></Field>
                                       </Grid.Col>
-                                      <Grid.Col span={4}>
+                                      <Grid.Col span={2.4}>
                                         <Field name={"Status"}></Field>
                                       </Grid.Col>
-                                    </Grid>
-                                    <Grid>
-                                      <Grid.Col span={4}>
+                                      <Grid.Col span={2.4}>
                                         <Field name={"CreatedDate"}></Field>
                                       </Grid.Col>
-                                      <Grid.Col span={4}>
+                                      <Grid.Col span={2.4}>
                                         <Field name={"CompletedDate"}></Field>
                                       </Grid.Col>
-                                      <Grid.Col span={4}></Grid.Col>
                                     </Grid>
-                                    <div className="w-full h-48">
-                                      <Field
-                                        name={"Message"}
-                                        varient="textarea"
-                                      ></Field>
+                                    <div className="w-full grow flex flex-col">
+                                      <Fieldset
+                                        legend="Logs"
+                                        styles={{
+                                          root: {
+                                            flexGrow: 1,
+                                          },
+                                        }}
+                                      >
+                                        <LogsViewer
+                                          jobHistoryId={
+                                            formbuilder.snapshot?.JobHistoryId
+                                          }
+                                        />
+                                      </Fieldset>
                                     </div>
                                   </div>
                                 );

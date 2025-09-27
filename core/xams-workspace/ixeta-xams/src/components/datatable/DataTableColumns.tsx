@@ -69,7 +69,7 @@ const DataTableColumns = (props: DataTableColumnsProps) => {
       <div className="w-full flex flex-col max-h-[80vh]">
         <div className="w-full overflow-y-scroll flex flex-col gap-2">
           {fields.map((field) => (
-            <div className="flex gap-2">
+            <div key={field.metadataField.name} className="flex gap-2">
               {/* <div className="flex items-center">
                   <IconCaretDown size={16} />
                 </div> */}

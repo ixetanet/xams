@@ -3,6 +3,9 @@ import { useDisclosure } from "@mantine/hooks";
 import React, { useMemo, useState } from "react";
 import dayjs from "dayjs";
 import localizedFormat from "dayjs/plugin/localizedFormat";
+import { useSignalR, useSignalRResponse } from "../hooks/useSignalR";
+import { useAuthContext } from "./AuthContext";
+import { HubConnectionState } from "@microsoft/signalr";
 
 export type AppContextShape = {
   showError: (message: string | React.ReactElement, title?: string) => void;
@@ -15,6 +18,8 @@ export type AppContextShape = {
     title?: string
   ) => void;
   userId?: string | undefined;
+  signalR: () => Promise<useSignalRResponse>;
+  signalRState: HubConnectionState | undefined;
 };
 
 export const AppContext = React.createContext<AppContextShape | null>(null);
@@ -47,6 +52,8 @@ export const AppContextProvider = (props: AppContextProviderProps) => {
   const [confirmCancel, setConfirmCancel] = useState<() => void>(
     () => () => {}
   );
+  const authContext = useAuthContext();
+  const signalR = useSignalR(`${authContext.apiUrl}/xams/hub`);
 
   if (!initialized) {
     dayjs.extend(localizedFormat);
@@ -83,8 +90,10 @@ export const AppContextProvider = (props: AppContextProviderProps) => {
         loading.close();
       },
       showConfirm,
+      signalR: () => signalR.getConnection(),
+      signalRState: signalR.connectionState,
     }),
-    []
+    [signalR.connectionState]
   );
 
   return (
@@ -138,7 +147,7 @@ export const AppContextProvider = (props: AppContextProviderProps) => {
         centered
       >
         <div className="w-full h-full flex flex-col items-center gap-4">
-          <div>{errorMessage}</div>
+          <div className="whitespace-pre-wrap text-wrap">{errorMessage}</div>
           <div className="w-full flex justify-end">
             <Button onClick={error.close}>Ok</Button>
           </div>

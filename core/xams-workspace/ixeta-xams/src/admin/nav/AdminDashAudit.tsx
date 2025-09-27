@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useAdminDashContext } from "../AdminDashboard";
-import { NavLink, Tabs } from "@mantine/core";
+import { Grid, NavLink, Tabs } from "@mantine/core";
 import { IconReportSearch } from "@tabler/icons-react";
 import AuditForm from "../components/AuditForm";
 import AuditHistoryForm from "../components/AuditHistoryForm";
 import DataTable from "../../components/DataTable";
+import Field from "../../components/Field";
+import AuditHistoryDetailForm from "../components/AuditHistoryDetailForm";
 
 const AdminDashAudit = () => {
   const ctx = useAdminDashContext();
@@ -40,6 +42,7 @@ const AdminDashAudit = () => {
                   >
                     <Tabs.List>
                       <Tabs.Tab value="history">History</Tabs.Tab>
+                      <Tabs.Tab value="field-history">Field History</Tabs.Tab>
                       <Tabs.Tab value="config">Config</Tabs.Tab>
                     </Tabs.List>
 
@@ -53,9 +56,11 @@ const AdminDashAudit = () => {
                             "User",
                             "Name",
                             "CreatedDate",
+                            "EntityId",
                           ]}
                           columnWidths={[
                             "125px",
+                            "100%",
                             "100%",
                             "100%",
                             "100%",
@@ -72,6 +77,64 @@ const AdminDashAudit = () => {
                           ]}
                           customForm={(formBuilder) => (
                             <AuditHistoryForm formBuilder={formBuilder} />
+                          )}
+                        />
+                      </div>
+                    </Tabs.Panel>
+
+                    <Tabs.Panel value="field-history">
+                      <div className="w-full h-full pt-4">
+                        <DataTable
+                          tableName="AuditHistoryDetail"
+                          fields={[
+                            "ah.Operation",
+                            "ah.Name",
+                            "ah.TableName",
+                            "FieldName",
+                            "OldValue",
+                            "NewValue",
+                            "ah.CreatedDate",
+                            "ah.EntityId",
+                          ]}
+                          columnWidths={[
+                            "125px",
+                            "100%",
+                            "100%",
+                            "100%",
+                            "100%",
+                            "100%",
+                            "100%",
+                            "100px",
+                          ]}
+                          title="Field History"
+                          maxResults={100}
+                          canCreate={false}
+                          canUpdate={false}
+                          canDelete={false}
+                          joins={[
+                            {
+                              fromTable: "AuditHistoryDetail",
+                              fromField: "AuditHistoryId",
+                              toTable: "AuditHistory",
+                              toField: "AuditHistoryId",
+                              fields: [
+                                "EntityId",
+                                "TableName",
+                                "Name",
+                                "CreatedDate",
+                                "Operation",
+                              ],
+                              alias: "ah",
+                            },
+                          ]}
+                          orderBy={[
+                            {
+                              field: "ah.CreatedDate",
+                              order: "desc",
+                            },
+                          ]}
+                          customForm={(formBuilder) => (
+                            <AuditHistoryDetailForm />
                           )}
                         />
                       </div>

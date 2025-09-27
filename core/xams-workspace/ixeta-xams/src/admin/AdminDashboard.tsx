@@ -16,6 +16,8 @@ import AdminDashSettings from "./nav/AdminDashSettings";
 import AdminDashAudit from "./nav/AdminDashAudit";
 import AdminDashServers from "./nav/AdminDashServers";
 import AdminDashDevelopment from "./nav/AdminDashDevelopment";
+import AdminDashLogs from "./nav/AdminDashLogs";
+import LogsViewer from "./components/logviewer/LogsViewer";
 
 const EmptyTableInfo = {
   tableName: "",
@@ -177,6 +179,8 @@ const AdminDashboard = (props: AdminDashboardProps) => {
     );
   }
 
+  const logsEnabled = tables.find((t) => t.tableName === "Log") != null;
+
   let navLinks = [
     {
       order: 100,
@@ -195,21 +199,30 @@ const AdminDashboard = (props: AdminDashboardProps) => {
       navLink: <AdminDashAudit />,
     },
     {
-      order: 500,
+      order: 600,
       navLink: <AdminDashJobs />,
     },
     {
-      order: 600,
+      order: 700,
       navLink: <AdminDashSettings />,
     },
     {
-      order: 700,
+      order: 800,
       navLink: <AdminDashServers />,
     },
+    ...(logsEnabled
+      ? [
+          {
+            order: 900,
+            navLink: <AdminDashLogs />,
+          },
+        ]
+      : []),
+
     ...(access.Development === true
       ? [
           {
-            order: 800,
+            order: 1000,
             navLink: <AdminDashDevelopment />,
           },
         ]
@@ -290,7 +303,11 @@ const AdminDashboard = (props: AdminDashboardProps) => {
           }}
         >
           <div className="w-full h-1 grow">
-            {activeComponent != null && activeComponent.component}
+            {activeComponent != null ? (
+              activeComponent.component
+            ) : (
+              <>{logsEnabled && <LogsViewer />}</>
+            )}
           </div>
         </AppShell.Main>
       </AppShell>

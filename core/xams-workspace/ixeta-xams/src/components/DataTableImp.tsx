@@ -120,18 +120,11 @@ const DataTable = forwardRef(
         return;
       }
 
-      let fields =
-        props.fields ?? metadata.fields.map((f) => f.name).slice(0, 7);
-      // Fields the user has selected to show
-      if (state.visibleFields != null && state.visibleFields?.length > 0) {
-        fields = state.visibleFields;
-      }
-
       const dataResp = await getData({
         ...getDataOptions,
         metadata: metadata,
         joinMetadata: joinMetadata,
-        fields: fields,
+        fields: getDefaultFields(metadata),
         page: 1,
         active: props.showActiveSwitch === true ? true : null,
         orderBy: props.orderBy,
@@ -160,6 +153,28 @@ const DataTable = forwardRef(
         },
       });
     };
+
+    const getDefaultFields = (metadata: MetadataResponse) => {
+      // Slice 14, we default to showing 7 fields, but if each field is a lookup, which includes id + name
+      // it could bring the maximum total to 14.
+      const sliceCount =
+        metadata.fields.filter(
+          (f) => f.lookupName != null && f.lookupName !== ""
+        ).length *
+          2 +
+        metadata.fields.filter(
+          (f) => f.lookupName == null || f.lookupName === ""
+        ).length;
+      let fields =
+        props.fields ??
+        metadata.fields.map((f) => f.name).slice(0, sliceCount + 1);
+      // Fields the user has selected to show
+      if (state.visibleFields != null && state.visibleFields?.length > 0) {
+        fields = state.visibleFields;
+      }
+      return fields as string[];
+    };
+
     const validateMetadata = (metadata: MetadataResponse) => {
       if (props.fields !== undefined) {
         props.fields.forEach((f) => {
@@ -198,13 +213,20 @@ const DataTable = forwardRef(
         state.metadata ??
         (await authRequest.metadata(props.tableName));
 
-      const fields = ((state.visibleFields ?? props.fields)?.filter(
-        (f) => typeof f === "string" && !f.includes(".") // Exclude joined fields
-      ) ??
-        options?.fields?.filter(
+      let fields = [] as string[];
+      fields =
+        ((state.visibleFields ?? props.fields)?.filter(
           (f) => typeof f === "string" && !f.includes(".") // Exclude joined fields
-        ) ??
-        metadata?.fields.map((f) => f.name).slice(0, 7)) as string[];
+        ) as string[]) ?? [];
+      if (fields.length === 0) {
+        fields =
+          (options?.fields?.filter(
+            (f) => typeof f === "string" && !f.includes(".") // Exclude joined fields
+          ) as string[]) ?? [];
+      }
+      if (fields.length === 0) {
+        fields = getDefaultFields(metadata);
+      }
 
       // For every field that ends with Id, check the metadata to see if it is of type "Lookup"
       // If it is, add the corresponding field to the fields array
@@ -311,7 +333,7 @@ const DataTable = forwardRef(
 
     const refresh = async (showLoading?: boolean) => {
       if (props.disabledMessage == null) {
-        let orderBy = state.data?.orderBy;
+        let orderBy = stateRef.current.data?.orderBy;
         if (orderBy == null || orderBy.length === 0) {
           orderBy = props.orderBy ?? [];
         }

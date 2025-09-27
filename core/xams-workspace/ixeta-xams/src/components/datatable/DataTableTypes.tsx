@@ -92,9 +92,11 @@ export type DataTableProps = {
   formCloseOnCreate?: boolean; // Close the form on create
   formCloseOnUpdate?: boolean; // Close the form on update
   formCloseOnEscape?: boolean; // Close the form on escape
+  formClassNames?: string;
   formZIndex?: number; // Z index of the form
   formMaxWidth?: number; // Maximum width of the form
   formMinWidth?: number; // Minimum width of the form
+  formFullScreen?: boolean; // Fullscreen mode for the form
   formHideSaveButton?: boolean; // Hide the submit button
   formOnClose?: () => void; // Callback when the form is closed
   formOnOpen?: (operation: "CREATE" | "UPDATE", record: any) => void; // Callback when the form is opened
@@ -104,12 +106,12 @@ export type DataTableProps = {
   customForm?: (
     formbuilder: useFormBuilderType,
     disclosure: FormDisclosure
-  ) => React.ReactNode | React.ReactElement | JSX.Element;
+  ) => React.ReactNode | React.ReactElement;
   appendCustomForm?: (formbuilder: useFormBuilderType) => React.ReactNode;
   formAppendButton?: (formbuilder: useFormBuilderType) => React.ReactNode;
   customCreateButton?: (
     openForm: () => void
-  ) => React.ReactNode | React.ReactElement | JSX.Element;
+  ) => React.ReactNode | React.ReactElement;
   customRow?: (record: any) => React.ReactNode;
   onInitialLoad?: (results: any[]) => void;
   onPostDelete?: (record: any) => void;

@@ -213,6 +213,7 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
         overlayProps={{
           blur: 3,
         }}
+        fullScreen={ctx.props.formFullScreen ?? false}
         styles={{
           root: {
             overflow: "visible",
@@ -224,6 +225,11 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
               paddingLeft: 0,
               paddingRight: 0,
             }),
+            flexGrow: 1,
+          },
+          content: {
+            display: "flex",
+            flexDirection: "column",
           },
           // overlay: {
           //   ...(ctx.props.formZIndex !== undefined && {
@@ -238,7 +244,10 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
         }}
         centered
       >
-        <FormContainer formBuilder={formBuilder}>
+        <FormContainer
+          formBuilder={formBuilder}
+          className={ctx.props.formClassNames}
+        >
           {ctx.props.customForm !== undefined
             ? ctx.props.customForm(formBuilder, ctx.formDisclosure)
             : ctx.state.metadata !== undefined &&

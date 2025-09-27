@@ -3,7 +3,7 @@ import { Row } from "./DataGridTypes";
 
 interface useDataGridCellSizeProps {
   rows: Row[];
-  divRef: React.RefObject<HTMLDivElement>;
+  divRef: React.RefObject<HTMLDivElement | null>;
   columnWidths: number[];
 }
 

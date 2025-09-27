@@ -67,8 +67,8 @@ const AuditForm = (props: AuditFieldDataTableProps) => {
         // title="Notice"
         color="yellow"
       >
-        In a multi-server environment, Audit configuration changes may take up
-        to 5 minutes to take effect.
+        In a multi-server environment, audit configuration changes may take up
+        to one minute to propagate.
       </Alert>
       {props.formBuilder.snapshot?.IsTable && (
         <Grid>
@@ -282,7 +282,9 @@ const AuditForm = (props: AuditFieldDataTableProps) => {
           </div>
         )}
 
-        <SaveButton />
+        <div>
+          <SaveButton />
+        </div>
       </div>
     </div>
   );

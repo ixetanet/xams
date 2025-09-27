@@ -118,6 +118,7 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
         missingRecord = true;
       } else {
         snapshot = dataResp.data.results[0];
+        snapshot._parameters_ = dataResp.data.parameters;
         canUpdate = snapshot["_ui_info_"].canUpdate;
       }
     }

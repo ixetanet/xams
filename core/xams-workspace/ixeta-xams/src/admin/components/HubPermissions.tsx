@@ -8,13 +8,13 @@ import DataGrid from "../../components/DataGrid";
 import { Row, CellLocation } from "../../components/datagrid/DataGridTypes";
 import PermissionIcon from "../PermissionIcon";
 
-interface ActionPermissionProps {
+interface HubPermissionsProps {
   roleId: string;
   state: RolePermissionState;
   setState: React.Dispatch<React.SetStateAction<RolePermissionState>>;
 }
 
-const ActionPermissions = (props: ActionPermissionProps) => {
+const HubPermissions = (props: HubPermissionsProps) => {
   const adminPermission = useAdminPermission(props);
 
   const buildTable = () => {
@@ -22,7 +22,7 @@ const ActionPermissions = (props: ActionPermissionProps) => {
     const row1: Row = {
       columns: [
         {
-          value: "Permission Name",
+          value: "Hub Name",
           isReadOnly: true,
         },
         {
@@ -39,21 +39,7 @@ const ActionPermissions = (props: ActionPermissionProps) => {
     const canUpdate = props.roleId !== SystemAdministratorRoleId;
 
     for (let permission of props.state.allPermissions) {
-      if (permission.Tag !== "System") {
-        continue;
-      }
-
-      if (permission.Name.startsWith("ACTION_ADMIN")) {
-        continue;
-      }
-      if (permission.Name.startsWith("ACTION_TABLE")) {
-        continue;
-      }
-      if (permission.Name.startsWith("ACCESS_ADMIN")) {
-        continue;
-      }
-
-      if (!permission.Name.startsWith("ACTION_")) {
+      if (!permission.Name.startsWith("HUB_")) {
         continue;
       }
 
@@ -131,4 +117,4 @@ const ActionPermissions = (props: ActionPermissionProps) => {
   );
 };
 
-export default ActionPermissions;
+export default HubPermissions;

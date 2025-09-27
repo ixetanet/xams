@@ -4,6 +4,7 @@ import { Grid, TextInput } from "@mantine/core";
 import Field from "../../components/Field";
 import DataTable from "../../components/DataTableImp";
 import CopyId from "./CopyId";
+import AuditHistoryDetailForm from "./AuditHistoryDetailForm";
 
 interface AuditHistoryFormProps {
   formBuilder: useFormBuilderType;
@@ -84,11 +85,11 @@ const AuditHistoryForm = (props: AuditHistoryFormProps) => {
             disabledMessage={
               props.formBuilder.snapshot == null ? "Loading..." : undefined
             }
-            fields={["Name", "OldValue", "NewValue", "EntityName"]}
+            fields={["FieldName", "TableName", "OldValue", "NewValue"]}
             maxResults={100}
             orderBy={[
               {
-                field: "Name",
+                field: "FieldName",
                 order: "ASC",
               },
             ]}
@@ -98,6 +99,10 @@ const AuditHistoryForm = (props: AuditHistoryFormProps) => {
                 value: props.formBuilder.snapshot?.AuditHistoryId,
               },
             ]}
+            canCreate={false}
+            canDelete={false}
+            canUpdate={false}
+            customForm={() => <AuditHistoryDetailForm />}
           />
         </div>
       )}

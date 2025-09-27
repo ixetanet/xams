@@ -14,6 +14,7 @@ import CustomPermissions from "./components/CustomPermissions";
 import JobPermissions from "./components/JobPermissions";
 import SystemPermissions from "./components/SystemPermissions";
 import ActionPermissions from "./components/ActionPermissions";
+import HubPermissions from "./components/HubPermissions";
 import CopyId from "./components/CopyId";
 
 interface RolePermissionsProps {
@@ -92,29 +93,37 @@ const RolePermissions = (props: RolePermissionsProps) => {
   };
 
   const onSave = useCallback(async (): Promise<SaveEventResponse> => {
+    const creates = state.createRolePermissions.map((x) => {
+      return {
+        tableName: "RolePermission",
+        fields: {
+          PermissionId: x.PermissionId,
+          RoleId: x.RoleId,
+        },
+      };
+    });
+    const updates = state.updateRolePermissions.map((x) => {
+      return {
+        tableName: "RolePermission",
+        fields: x,
+      };
+    });
+    const deletes = state.deleteRolePermissions.map((x) => {
+      return {
+        tableName: "RolePermission",
+        fields: x,
+      };
+    });
+    if (creates.length === 0 && updates.length === 0 && deletes.length === 0) {
+      return {
+        continue: true,
+      };
+    }
     setIsLoading(true);
     const resp = await authRequest.bulk({
-      creates: state.createRolePermissions.map((x) => {
-        return {
-          tableName: "RolePermission",
-          fields: {
-            PermissionId: x.PermissionId,
-            RoleId: x.RoleId,
-          },
-        };
-      }),
-      updates: state.updateRolePermissions.map((x) => {
-        return {
-          tableName: "RolePermission",
-          fields: x,
-        };
-      }),
-      deletes: state.deleteRolePermissions.map((x) => {
-        return {
-          tableName: "RolePermission",
-          fields: x,
-        };
-      }),
+      creates: creates,
+      updates: updates,
+      deletes: deletes,
     });
     if (!resp.succeeded) {
       setIsLoading(false);
@@ -164,6 +173,7 @@ const RolePermissions = (props: RolePermissionsProps) => {
                 <Tabs.Tab value="entities">Entities</Tabs.Tab>
                 <Tabs.Tab value="actions">Actions</Tabs.Tab>
                 <Tabs.Tab value="jobs">Jobs</Tabs.Tab>
+                <Tabs.Tab value="hubs">Hubs</Tabs.Tab>
                 <Tabs.Tab value="system">System</Tabs.Tab>
                 <Tabs.Tab value="permissions">Custom Permissions</Tabs.Tab>
               </Tabs.List>
@@ -207,6 +217,17 @@ const RolePermissions = (props: RolePermissionsProps) => {
                   ></JobPermissions>
                 </div>
               </Tabs.Panel>
+
+              <Tabs.Panel value="hubs" pt="xs" className="h-full">
+                <div className="w-full h-full">
+                  <HubPermissions
+                    roleId={props.roleId}
+                    state={state}
+                    setState={setState}
+                  ></HubPermissions>
+                </div>
+              </Tabs.Panel>
+
               <Tabs.Panel value="system" pt="xs" className="h-full">
                 <div className="w-full h-full">
                   <SystemPermissions
@@ -247,7 +268,7 @@ const RolePermissions = (props: RolePermissionsProps) => {
             )}
           {props.roleId != null &&
             activeTab != null &&
-            (activeTab === "permissions" || activeTab === "system") && (
+            (activeTab === "permissions" || activeTab === "system" || activeTab === "hubs") && (
               <>
                 <span className="flex text-sm gap-1 items-center whitespace-nowrap">
                   <PermissionIcon icon="none"></PermissionIcon>

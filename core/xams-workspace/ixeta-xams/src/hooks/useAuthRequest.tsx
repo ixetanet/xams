@@ -126,6 +126,7 @@ const useAuthRequest = (props?: useAuthRequestProps) => {
       }
       if (resp.ok === false) {
         const message = await resp.text();
+        appContext?.showError(message);
         return {
           succeeded: false,
           data: undefined,

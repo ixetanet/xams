@@ -36,7 +36,7 @@ export interface Cell {
     value: string,
     cellLocation: CellLocation,
     data?: any
-  ) => React.ReactNode | React.ReactElement | JSX.Element;
+  ) => React.ReactNode | React.ReactElement;
   errorMessage?: string;
   style?: CSSProperties;
   isReadOnly?: boolean;
