@@ -6,7 +6,9 @@
       "Bash(npm install)",
       "Bash(sudo rm:*)",
       "Bash(npm install:*)",
-      "Bash(npm run build:tsc:*)"
+      "Bash(npm run build:tsc:*)",
+      "Bash(npm ls:*)",
+      "WebSearch"
     ],
     "defaultMode": "acceptEdits"
   },

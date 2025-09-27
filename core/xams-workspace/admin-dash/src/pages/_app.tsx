@@ -2,6 +2,7 @@ import "@mantine/core/styles.css";
 import "@/styles/globals.css";
 import "@ixeta/xams/styles.css";
 import "@ixeta/xams/global.css";
+import React from "react";
 import NextApp, { AppProps, AppContext } from "next/app";
 import {
   AppContextProvider,
