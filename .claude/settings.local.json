@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(mkdir:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm install)",
+      "Bash(sudo rm:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:tsc:*)"
     ],
     "defaultMode": "acceptEdits"
   },
