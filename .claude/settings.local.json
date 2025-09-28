@@ -10,7 +10,8 @@
       "Bash(npm ls:*)",
       "WebSearch",
       "Bash(npm run build:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "WebFetch(domain:help.mantine.dev)"
     ],
     "defaultMode": "acceptEdits"
   },

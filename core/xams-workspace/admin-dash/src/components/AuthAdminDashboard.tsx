@@ -4,7 +4,16 @@ import {
   AdminDashboard,
   AppContextProvider,
 } from "@ixeta/xams";
-import { Avatar, Button, Divider, Loader, NavLink } from "@mantine/core";
+import {
+  Avatar,
+  Box,
+  Button,
+  Divider,
+  Group,
+  Loader,
+  NavLink,
+  Text,
+} from "@mantine/core";
 import router from "next/router";
 import React from "react";
 import { getAuth } from "firebase/auth";
@@ -46,19 +55,16 @@ const AuthAdminDashboard = () => {
             },
           ]}
           userCard={
-            <div
-              className=" cursor-pointer"
-              onClick={() => router.push("/auth/profile")}
-            >
+            <Box>
               <Divider />
-              <div className="flex items-center gap-2 px-2 py-4 w-full">
-                <div className="flex items-center gap-2 w-full">
-                  <Avatar />
-                  {firebaseAuth?.currentUser?.email || "User"}
-                </div>
-                <IconChevronRight size={14} stroke={1.5} />
-              </div>
-            </div>
+              <NavLink
+                label={firebaseAuth?.currentUser?.email || "User"}
+                leftSection={<Avatar size="sm" />}
+                rightSection={<IconChevronRight size={14} stroke={1.5} />}
+                onClick={() => router.push("/auth/profile")}
+                p="md"
+              />
+            </Box>
           }
           accessDeniedMessage={
             <div className="w-full h-full flex flex-col gap-2 justify-center items-center">
