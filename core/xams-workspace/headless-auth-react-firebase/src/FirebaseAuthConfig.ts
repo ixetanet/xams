@@ -486,30 +486,31 @@ export class FirebaseAuthConfig implements AuthConfig {
   };
 
   mfaSmsCreate = async (phoneNumber: string) => {
-    if (this.recaptchaVerifier == null) {
-      this.recaptchaVerifier = new RecaptchaVerifier(
-        this.auth,
-        "auth-recaptcha",
-        {
-          size: "invisible",
-          callback: async (response: any) => {
-            // reCAPTCHA solved, you can proceed with
-            // phoneAuthProvider.verifyPhoneNumber(...).
-            // onSolvedRecaptcha();
-            // console.log("SUCCESS");
-          },
-        }
-      );
-    }
-
-    if (this.auth.currentUser == null || this.recaptchaVerifier == null) {
-      return {
-        success: false,
-        error:
-          "No user is currently signed in or reCAPTCHA verifier is not initialized.",
-      };
-    }
     try {
+      if (this.recaptchaVerifier == null) {
+        this.recaptchaVerifier = new RecaptchaVerifier(
+          this.auth,
+          "auth-recaptcha",
+          {
+            size: "invisible",
+            callback: async (response: any) => {
+              // reCAPTCHA solved, you can proceed with
+              // phoneAuthProvider.verifyPhoneNumber(...).
+              // onSolvedRecaptcha();
+              // console.log("SUCCESS");
+            },
+          }
+        );
+      }
+
+      if (this.auth.currentUser == null || this.recaptchaVerifier == null) {
+        return {
+          success: false,
+          error:
+            "No user is currently signed in or reCAPTCHA verifier is not initialized.",
+        };
+      }
+
       const session = await multiFactor(this.auth.currentUser).getSession();
       // Specify the phone number and pass the MFA session.
       const phoneInfoOptions = {

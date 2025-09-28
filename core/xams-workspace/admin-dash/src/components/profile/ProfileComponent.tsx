@@ -90,6 +90,8 @@ const ProfileComponent = () => {
                 setLoadingStates((prev) => ({ ...prev, totpEnroll: true }));
                 try {
                   await auth.mfaTotpEnroll();
+                  // Redirect to main profile after successful enrollment
+                  auth.setView("profile");
                 } finally {
                   setLoadingStates((prev) => ({
                     ...prev,
@@ -245,6 +247,8 @@ const ProfileComponent = () => {
                 setLoadingStates((prev) => ({ ...prev, smsEnroll: true }));
                 try {
                   await auth.mfaSmsEnroll();
+                  // Redirect to main profile after successful enrollment
+                  auth.setView("profile");
                 } finally {
                   setLoadingStates((prev) => ({ ...prev, smsEnroll: false }));
                 }
