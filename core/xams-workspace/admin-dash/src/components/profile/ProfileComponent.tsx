@@ -13,6 +13,7 @@ import {
   Card,
   Divider,
   PinInput,
+  Modal,
 } from "@mantine/core";
 import { useAuth } from "@ixeta/headless-auth-react";
 import QRCode from "react-qr-code";
@@ -20,6 +21,7 @@ import { useRouter } from "next/router";
 import LoginComponent from "../login/LoginComponent";
 import { LoginProvider } from "../login/LoginContext";
 import LoginForm from "../login/LoginForm";
+import DeactivateMfaModal from "./DeactivateMfaModal";
 
 interface ProfileComponentProps {
   providers: string[];
@@ -37,6 +39,13 @@ const ProfileComponent = ({ providers }: ProfileComponentProps) => {
     smsCreate: false,
     smsEnroll: false,
     smsUnenroll: false,
+  });
+  const [deactivateModal, setDeactivateModal] = useState<{
+    isOpen: boolean;
+    type: 'totp' | 'sms' | null;
+  }>({
+    isOpen: false,
+    type: null,
   });
 
   if (!auth.isReady) {
@@ -390,6 +399,14 @@ const ProfileComponent = ({ providers }: ProfileComponentProps) => {
               Multi-Factor Authentication
             </Title>
 
+            {auth.isReLoginRequired && (
+              <Alert color="blue" variant="light" mb="md">
+                <Text size="sm">
+                  <strong>Re-authentication Required:</strong> For security reasons, you need to sign in again before deactivating MFA. Please log in with your current credentials.
+                </Text>
+              </Alert>
+            )}
+
             <Stack gap="md">
               <Card withBorder p="md">
                 <Stack gap="md">
@@ -433,23 +450,11 @@ const ProfileComponent = ({ providers }: ProfileComponentProps) => {
                       fullWidth
                       variant="outline"
                       color="red"
-                      onClick={async () => {
-                        setLoadingStates((prev) => ({
-                          ...prev,
-                          totpUnenroll: true,
-                        }));
-                        try {
-                          const success = await auth.mfaTotpUnenroll();
-                          if (success) {
-                            // Force a refresh of the MFA status
-                            window.location.reload();
-                          }
-                        } finally {
-                          setLoadingStates((prev) => ({
-                            ...prev,
-                            totpUnenroll: false,
-                          }));
-                        }
+                      onClick={() => {
+                        setDeactivateModal({
+                          isOpen: true,
+                          type: 'totp',
+                        });
                       }}
                       loading={loadingStates.totpUnenroll}
                     >
@@ -486,23 +491,11 @@ const ProfileComponent = ({ providers }: ProfileComponentProps) => {
                       fullWidth
                       variant="outline"
                       color="red"
-                      onClick={async () => {
-                        setLoadingStates((prev) => ({
-                          ...prev,
-                          smsUnenroll: true,
-                        }));
-                        try {
-                          const success = await auth.mfaSmsUnenroll();
-                          if (success) {
-                            // Force a refresh of the MFA status
-                            window.location.reload();
-                          }
-                        } finally {
-                          setLoadingStates((prev) => ({
-                            ...prev,
-                            smsUnenroll: false,
-                          }));
-                        }
+                      onClick={() => {
+                        setDeactivateModal({
+                          isOpen: true,
+                          type: 'sms',
+                        });
                       }}
                       loading={loadingStates.smsUnenroll}
                     >
@@ -535,6 +528,14 @@ const ProfileComponent = ({ providers }: ProfileComponentProps) => {
           </Button>
         </Stack>
       </Paper>
+
+      <DeactivateMfaModal
+        isOpen={deactivateModal.isOpen}
+        type={deactivateModal.type}
+        onClose={() => setDeactivateModal({ isOpen: false, type: null })}
+        loadingStates={loadingStates}
+        setLoadingStates={setLoadingStates}
+      />
     </div>
   );
 };

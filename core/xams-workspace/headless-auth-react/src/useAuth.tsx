@@ -150,6 +150,10 @@ export const useAuth = (props?: useAuthProps) => {
   const mfaTotpUnenroll = async () => {
     return await execute(async () => {
       const resp = await authContext.authConfig.mfaTotpUnenroll();
+      if (!resp.success && resp.data === "re-login") {
+        setIsReLoginRequired(true);
+        setView("login");
+      }
       if (resp.success) {
         authContext.setMfaTotpEnrolled(false);
       }
@@ -188,6 +192,10 @@ export const useAuth = (props?: useAuthProps) => {
   const mfaSmsUnenroll = async () => {
     return await execute(async () => {
       const resp = await authContext.authConfig.mfaSmsUnenroll();
+      if (!resp.success && resp.data === "re-login") {
+        setIsReLoginRequired(true);
+        setView("login");
+      }
       if (resp.success) {
         authContext.setMfaSmsEnrolled(false);
       }
