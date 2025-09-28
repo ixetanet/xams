@@ -47,6 +47,7 @@ export interface AdminDashboardProps {
   forceHideImportData?: boolean;
   forceHideExportData?: boolean;
   forceHideToggleMode?: boolean;
+  userCard?: ReactNode;
   accessDeniedMessage?: ReactNode;
 }
 
@@ -293,9 +294,14 @@ const AdminDashboard = (props: AdminDashboardProps) => {
           </div>
         </AppShell.Header>
         <AppShell.Navbar className=" p-2">
-          {sortedNavLinks.map((navItem, i) => {
-            return <span key={i}>{navItem.navLink}</span>;
-          })}
+          <div className="w-full h-full flex flex-col justify-between">
+            <div className=" overflow-y-scroll">
+              {sortedNavLinks.map((navItem, i) => {
+                return <span key={i}>{navItem.navLink}</span>;
+              })}
+            </div>
+            {props.userCard && <div>{props.userCard}</div>}
+          </div>
         </AppShell.Navbar>
         <AppShell.Main
           styles={{
