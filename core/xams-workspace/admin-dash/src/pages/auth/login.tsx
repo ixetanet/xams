@@ -45,7 +45,7 @@ const Login = () => {
 
   return (
     <AuthProvider authConfig={firebaseAuthConfig}>
-      <LoginComponent />
+      <LoginComponent providers={authQuery.data.providers} />
     </AuthProvider>
   );
 };

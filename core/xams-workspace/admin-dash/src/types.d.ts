@@ -5,4 +5,5 @@ export interface FirebaseConfig {
   storageBucket: string;
   messagingSenderId: string;
   appId: string;
+  providers: string[];
 }

@@ -13,12 +13,25 @@ import {
 } from "@mantine/core";
 import { useRouter } from "next/router";
 import { sendEmailVerification } from "firebase/auth";
-import React from "react";
+import React, { useState } from "react";
 import { firebaseAuth } from "@/pages/_app";
 
-const LoginComponent = () => {
+interface LoginComponentProps {
+  providers: string[];
+}
+
+const LoginComponent = (props: LoginComponentProps) => {
   const router = useRouter();
   const auth = useAuth();
+  const [loadingStates, setLoadingStates] = useState({
+    signIn: false,
+    signUp: false,
+    mfaTotp: false,
+    mfaSms: false,
+    resendEmail: false,
+    googleSignIn: false,
+    facebookSignIn: false,
+  });
 
   if (!auth.isReady) {
     return (
@@ -54,6 +67,7 @@ const LoginComponent = () => {
                       variant="default"
                       size="md"
                       fullWidth
+                      disabled={loadingStates.mfaTotp || loadingStates.mfaSms}
                     >
                       Authenticator App
                     </Button>
@@ -70,6 +84,7 @@ const LoginComponent = () => {
                       variant="default"
                       size="md"
                       fullWidth
+                      disabled={loadingStates.mfaTotp || loadingStates.mfaSms}
                     >
                       SMS
                     </Button>
@@ -83,6 +98,7 @@ const LoginComponent = () => {
                 size="sm"
                 mt="xs"
                 fullWidth
+                disabled={loadingStates.mfaTotp || loadingStates.mfaSms}
               >
                 Logout
               </Button>
@@ -101,7 +117,17 @@ const LoginComponent = () => {
             withBorder
             className="w-full max-w-sm"
           >
-            <form onSubmit={(e) => { e.preventDefault(); auth.mfaTotpVerify(); }}>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setLoadingStates((prev) => ({ ...prev, mfaTotp: true }));
+                try {
+                  await auth.mfaTotpVerify();
+                } finally {
+                  setLoadingStates((prev) => ({ ...prev, mfaTotp: false }));
+                }
+              }}
+            >
               <Stack gap="lg">
                 <div>
                   <Title order={3} ta="center" mb="xs">
@@ -122,8 +148,14 @@ const LoginComponent = () => {
                   value={auth.mfaCode}
                   onChange={(e) => auth.setMfaCode(e.currentTarget.value)}
                   size="md"
+                  disabled={loadingStates.mfaTotp}
                 />
-                <Button type="submit" size="md" fullWidth>
+                <Button
+                  type="submit"
+                  size="md"
+                  fullWidth
+                  loading={loadingStates.mfaTotp}
+                >
                   Verify
                 </Button>
               </Stack>
@@ -142,7 +174,17 @@ const LoginComponent = () => {
             withBorder
             className="w-full max-w-sm"
           >
-            <form onSubmit={(e) => { e.preventDefault(); auth.mfaSmsVerify(); }}>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setLoadingStates((prev) => ({ ...prev, mfaSms: true }));
+                try {
+                  await auth.mfaSmsVerify();
+                } finally {
+                  setLoadingStates((prev) => ({ ...prev, mfaSms: false }));
+                }
+              }}
+            >
               <Stack gap="lg">
                 <div>
                   <Title order={3} ta="center" mb="xs">
@@ -163,8 +205,14 @@ const LoginComponent = () => {
                   value={auth.mfaCode}
                   onChange={(e) => auth.setMfaCode(e.currentTarget.value)}
                   size="md"
+                  disabled={loadingStates.mfaSms}
                 />
-                <Button type="submit" size="md" fullWidth>
+                <Button
+                  type="submit"
+                  size="md"
+                  fullWidth
+                  loading={loadingStates.mfaSms}
+                >
                   Verify
                 </Button>
               </Stack>
@@ -193,7 +241,7 @@ const LoginComponent = () => {
                   Sign in
                 </Title>
                 <Text size="sm" ta="center" c="dimmed">
-                  Welcome back! Please sign in to continue.
+                  Please sign in to continue.
                 </Text>
               </div>
 
@@ -203,14 +251,31 @@ const LoginComponent = () => {
                 </Alert>
               )}
 
-              <form onSubmit={(e) => { e.preventDefault(); auth.signIn(); }}>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setLoadingStates((prev) => ({ ...prev, signIn: true }));
+                  try {
+                    await auth.signIn();
+                  } finally {
+                    setLoadingStates((prev) => ({ ...prev, signIn: false }));
+                  }
+                }}
+              >
                 <Stack gap="md">
                   <TextInput
                     label="Email address"
                     placeholder="Enter your email"
                     value={auth.emailAddress}
-                    onChange={(e) => auth.setEmailAddress(e.currentTarget.value)}
+                    onChange={(e) =>
+                      auth.setEmailAddress(e.currentTarget.value)
+                    }
                     size="md"
+                    disabled={
+                      loadingStates.signIn ||
+                      loadingStates.googleSignIn ||
+                      loadingStates.facebookSignIn
+                    }
                   />
                   <TextInput
                     label="Password"
@@ -219,6 +284,11 @@ const LoginComponent = () => {
                     value={auth.password}
                     onChange={(e) => auth.setPassword(e.currentTarget.value)}
                     size="md"
+                    disabled={
+                      loadingStates.signIn ||
+                      loadingStates.googleSignIn ||
+                      loadingStates.facebookSignIn
+                    }
                   />
                   <Checkbox
                     label="Remember me"
@@ -226,10 +296,21 @@ const LoginComponent = () => {
                     onChange={(e) => {
                       auth.setRemember(e.currentTarget.checked);
                     }}
+                    disabled={
+                      loadingStates.signIn ||
+                      loadingStates.googleSignIn ||
+                      loadingStates.facebookSignIn
+                    }
                   />
                 </Stack>
 
-                <Button type="submit" size="md" mt="md" fullWidth>
+                <Button
+                  type="submit"
+                  size="md"
+                  mt="md"
+                  fullWidth
+                  loading={loadingStates.signIn}
+                >
                   Sign in
                 </Button>
               </form>
@@ -238,18 +319,56 @@ const LoginComponent = () => {
 
               <Stack gap="sm">
                 <Button
-                  onClick={() => auth.signInProvider("google")}
+                  onClick={async () => {
+                    setLoadingStates((prev) => ({
+                      ...prev,
+                      googleSignIn: true,
+                    }));
+                    try {
+                      await auth.signInProvider("google");
+                    } finally {
+                      setLoadingStates((prev) => ({
+                        ...prev,
+                        googleSignIn: false,
+                      }));
+                    }
+                  }}
                   variant="default"
                   size="md"
                   fullWidth
+                  disabled={
+                    loadingStates.signIn ||
+                    loadingStates.googleSignIn ||
+                    loadingStates.facebookSignIn
+                  }
+                  loading={loadingStates.googleSignIn}
                 >
                   Continue with Google
                 </Button>
                 <Button
-                  onClick={() => auth.signInProvider("facebook")}
+                  onClick={async () => {
+                    setLoadingStates((prev) => ({
+                      ...prev,
+                      facebookSignIn: true,
+                    }));
+                    try {
+                      await auth.signInProvider("facebook");
+                    } finally {
+                      setLoadingStates((prev) => ({
+                        ...prev,
+                        facebookSignIn: false,
+                      }));
+                    }
+                  }}
                   variant="default"
                   size="md"
                   fullWidth
+                  disabled={
+                    loadingStates.signIn ||
+                    loadingStates.googleSignIn ||
+                    loadingStates.facebookSignIn
+                  }
+                  loading={loadingStates.facebookSignIn}
                 >
                   Continue with Facebook
                 </Button>
@@ -297,14 +416,27 @@ const LoginComponent = () => {
                 </Alert>
               )}
 
-              <form onSubmit={(e) => { e.preventDefault(); auth.signUp(); }}>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setLoadingStates((prev) => ({ ...prev, signUp: true }));
+                  try {
+                    await auth.signUp();
+                  } finally {
+                    setLoadingStates((prev) => ({ ...prev, signUp: false }));
+                  }
+                }}
+              >
                 <Stack gap="md">
                   <TextInput
                     label="Email address"
                     placeholder="Enter your email"
                     value={auth.emailAddress}
-                    onChange={(e) => auth.setEmailAddress(e.currentTarget.value)}
+                    onChange={(e) =>
+                      auth.setEmailAddress(e.currentTarget.value)
+                    }
                     size="md"
+                    disabled={loadingStates.signUp}
                   />
                   <TextInput
                     label="Password"
@@ -313,10 +445,17 @@ const LoginComponent = () => {
                     value={auth.password}
                     onChange={(e) => auth.setPassword(e.currentTarget.value)}
                     size="md"
+                    disabled={loadingStates.signUp}
                   />
                 </Stack>
 
-                <Button type="submit" size="md" mt="md" fullWidth>
+                <Button
+                  type="submit"
+                  size="md"
+                  mt="md"
+                  fullWidth
+                  loading={loadingStates.signUp}
+                >
                   Create account
                 </Button>
               </form>
@@ -366,17 +505,29 @@ const LoginComponent = () => {
               </Alert>
             )}
 
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              if (firebaseAuth == null) {
-                return;
-              }
-              if (firebaseAuth.currentUser === null) {
-                return;
-              }
-              await sendEmailVerification(firebaseAuth.currentUser);
-            }}>
-              <Button type="submit" size="md" fullWidth>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setLoadingStates((prev) => ({ ...prev, resendEmail: true }));
+                try {
+                  if (firebaseAuth == null) {
+                    return;
+                  }
+                  if (firebaseAuth.currentUser === null) {
+                    return;
+                  }
+                  await sendEmailVerification(firebaseAuth.currentUser);
+                } finally {
+                  setLoadingStates((prev) => ({ ...prev, resendEmail: false }));
+                }
+              }}
+            >
+              <Button
+                type="submit"
+                size="md"
+                fullWidth
+                loading={loadingStates.resendEmail}
+              >
                 Resend verification email
               </Button>
             </form>
