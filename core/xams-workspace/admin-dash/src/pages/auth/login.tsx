@@ -3,7 +3,10 @@ import { API_CONFIG } from "@ixeta/xams";
 import { Loader } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
-import { firebaseApp, initializeFirebase } from "..";
+import { AuthProvider } from "@ixeta/headless-auth-react";
+import { FirebaseAuthConfig } from "@ixeta/headless-auth-react-firebase";
+import LoginComponent from "@/components/LoginComponent";
+import { firebaseApp, initializeFirebase, firebaseAuthConfig } from "../_app";
 
 const Login = () => {
   const authQuery = useQuery<FirebaseConfig>({
@@ -36,7 +39,15 @@ const Login = () => {
     initializeFirebase(authQuery.data);
   }
 
-  return <div>{JSON.stringify(authQuery.data)}</div>;
+  if (firebaseAuthConfig == null) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <AuthProvider config={firebaseAuthConfig}>
+      <LoginComponent />
+    </AuthProvider>
+  );
 };
 
 export default Login;

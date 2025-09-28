@@ -1,33 +1,10 @@
 import { AdminDashboard, API_CONFIG } from "@ixeta/xams";
 import { Loader } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
-import { FirebaseApp, initializeApp } from "firebase/app";
-import { getAuth, sendEmailVerification } from "firebase/auth";
-import { FirebaseAuthConfig } from "@ixeta/headless-auth-react-firebase";
+import { getAuth } from "firebase/auth";
 import { FirebaseConfig } from "@/types";
 import { useRouter } from "next/router";
-
-export let firebaseApp: FirebaseApp | null = null;
-export let firebaseAuthConfig: FirebaseAuthConfig | null = null;
-export const initializeFirebase = (config: FirebaseConfig) => {
-  firebaseApp = initializeApp(config);
-  const fireBaseAuth = getAuth(firebaseApp);
-  firebaseAuthConfig = new FirebaseAuthConfig(fireBaseAuth);
-  firebaseAuthConfig.setOptions({
-    totpAppName: config.projectId,
-    onSignUpSuccess: async (authConfig) => {
-      if (fireBaseAuth.currentUser) {
-        await sendEmailVerification(fireBaseAuth.currentUser);
-      }
-    },
-    onSignInSuccess: async () => {
-      // router.push("/app/coupons");
-    },
-    onSignOutSuccess: async () => {
-      // router.push("/");
-    },
-  });
-};
+import { firebaseApp, initializeFirebase } from "./_app";
 
 export default function Home() {
   const router = useRouter();
