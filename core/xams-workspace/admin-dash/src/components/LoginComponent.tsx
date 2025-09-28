@@ -9,6 +9,7 @@ import {
   Text,
   Divider,
   Stack,
+  Alert,
 } from "@mantine/core";
 import { useRouter } from "next/router";
 import { sendEmailVerification } from "firebase/auth";
@@ -39,7 +40,7 @@ const LoginComponent = () => {
             withBorder
             className="w-full max-w-sm"
           >
-            <Stack spacing="md">
+            <Stack gap="md">
               <Title order={3} ta="center">
                 Choose verification method
               </Title>
@@ -52,8 +53,7 @@ const LoginComponent = () => {
                       onClick={() => auth.setView("mfa_totp")}
                       variant="default"
                       size="md"
-                      h={48}
-                    >
+                                          >
                       Authenticator App
                     </Button>
                   );
@@ -68,8 +68,7 @@ const LoginComponent = () => {
                       }}
                       variant="default"
                       size="md"
-                      h={48}
-                    >
+                                          >
                       SMS
                     </Button>
                   );
@@ -99,7 +98,7 @@ const LoginComponent = () => {
             withBorder
             className="w-full max-w-sm"
           >
-            <Stack spacing="lg">
+            <Stack gap="lg">
               <div>
                 <Title order={3} ta="center" mb="xs">
                   Enter verification code
@@ -109,16 +108,9 @@ const LoginComponent = () => {
                 </Text>
               </div>
               {auth.error && (
-                <Text
-                  size="sm"
-                  ta="center"
-                  c="red"
-                  bg="red.0"
-                  p="xs"
-                  style={{ borderRadius: "4px" }}
-                >
+                <Alert color="red" variant="light">
                   {auth.error}
-                </Text>
+                </Alert>
               )}
               <TextInput
                 label="Verification code"
@@ -126,9 +118,8 @@ const LoginComponent = () => {
                 value={auth.mfaCode}
                 onChange={(e) => auth.setMfaCode(e.currentTarget.value)}
                 size="md"
-                h={48}
-              />
-              <Button onClick={() => auth.mfaTotpVerify()} size="md" h={48}>
+                              />
+              <Button onClick={() => auth.mfaTotpVerify()} size="md" >
                 Verify
               </Button>
             </Stack>
@@ -146,7 +137,7 @@ const LoginComponent = () => {
             withBorder
             className="w-full max-w-sm"
           >
-            <Stack spacing="lg">
+            <Stack gap="lg">
               <div>
                 <Title order={3} ta="center" mb="xs">
                   Enter SMS code
@@ -156,16 +147,9 @@ const LoginComponent = () => {
                 </Text>
               </div>
               {auth.error && (
-                <Text
-                  size="sm"
-                  ta="center"
-                  c="red"
-                  bg="red.0"
-                  p="xs"
-                  style={{ borderRadius: "4px" }}
-                >
+                <Alert color="red" variant="light">
                   {auth.error}
-                </Text>
+                </Alert>
               )}
               <TextInput
                 label="SMS code"
@@ -173,9 +157,8 @@ const LoginComponent = () => {
                 value={auth.mfaCode}
                 onChange={(e) => auth.setMfaCode(e.currentTarget.value)}
                 size="md"
-                h={48}
-              />
-              <Button onClick={() => auth.mfaSmsVerify()} size="md" h={48}>
+                              />
+              <Button onClick={() => auth.mfaSmsVerify()} size="md" >
                 Verify
               </Button>
             </Stack>
@@ -197,7 +180,7 @@ const LoginComponent = () => {
             withBorder
             className="w-full max-w-sm"
           >
-            <Stack spacing="lg">
+            <Stack gap="lg">
               <div>
                 <Title order={2} ta="center" mb="xs">
                   Sign in
@@ -208,27 +191,19 @@ const LoginComponent = () => {
               </div>
 
               {auth.error && (
-                <Text
-                  size="sm"
-                  ta="center"
-                  c="red"
-                  bg="red.0"
-                  p="xs"
-                  style={{ borderRadius: "4px" }}
-                >
+                <Alert color="red" variant="light">
                   {auth.error}
-                </Text>
+                </Alert>
               )}
 
-              <Stack spacing="md">
+              <Stack gap="md">
                 <TextInput
                   label="Email address"
                   placeholder="Enter your email"
                   value={auth.emailAddress}
                   onChange={(e) => auth.setEmailAddress(e.currentTarget.value)}
                   size="md"
-                  h={48}
-                />
+                                  />
                 <TextInput
                   label="Password"
                   placeholder="Enter your password"
@@ -236,8 +211,7 @@ const LoginComponent = () => {
                   value={auth.password}
                   onChange={(e) => auth.setPassword(e.currentTarget.value)}
                   size="md"
-                  h={48}
-                />
+                                  />
                 <Checkbox
                   label="Remember me"
                   checked={auth.remember}
@@ -247,33 +221,31 @@ const LoginComponent = () => {
                 />
               </Stack>
 
-              <Button onClick={() => auth.signIn()} size="md" h={48}>
+              <Button onClick={() => auth.signIn()} size="md" >
                 Sign in
               </Button>
 
               <Divider label="Or continue with" labelPosition="center" />
 
-              <Stack spacing="sm">
+              <Stack gap="sm">
                 <Button
                   onClick={() => auth.signInProvider("google")}
                   variant="default"
                   size="md"
-                  h={48}
-                >
+                                  >
                   Continue with Google
                 </Button>
                 <Button
                   onClick={() => auth.signInProvider("facebook")}
                   variant="default"
                   size="md"
-                  h={48}
-                >
+                                  >
                   Continue with Facebook
                 </Button>
               </Stack>
 
               <Text size="sm" ta="center">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <Text
                   component="a"
                   c="blue"
@@ -298,7 +270,7 @@ const LoginComponent = () => {
             withBorder
             className="w-full max-w-sm"
           >
-            <Stack spacing="lg">
+            <Stack gap="lg">
               <div>
                 <Title order={2} ta="center" mb="xs">
                   Create account
@@ -309,27 +281,19 @@ const LoginComponent = () => {
               </div>
 
               {auth.error && (
-                <Text
-                  size="sm"
-                  ta="center"
-                  c="red"
-                  bg="red.0"
-                  p="xs"
-                  style={{ borderRadius: "4px" }}
-                >
+                <Alert color="red" variant="light">
                   {auth.error}
-                </Text>
+                </Alert>
               )}
 
-              <Stack spacing="md">
+              <Stack gap="md">
                 <TextInput
                   label="Email address"
                   placeholder="Enter your email"
                   value={auth.emailAddress}
                   onChange={(e) => auth.setEmailAddress(e.currentTarget.value)}
                   size="md"
-                  h={48}
-                />
+                                  />
                 <TextInput
                   label="Password"
                   placeholder="Create a password"
@@ -337,11 +301,10 @@ const LoginComponent = () => {
                   value={auth.password}
                   onChange={(e) => auth.setPassword(e.currentTarget.value)}
                   size="md"
-                  h={48}
-                />
+                                  />
               </Stack>
 
-              <Button onClick={auth.signUp} size="md" h={48}>
+              <Button onClick={auth.signUp} size="md" >
                 Create account
               </Button>
 
@@ -373,28 +336,21 @@ const LoginComponent = () => {
           withBorder
           className="w-full max-w-sm"
         >
-          <Stack spacing="lg">
+          <Stack gap="lg">
             <div>
               <Title order={3} ta="center" mb="xs">
                 Verify your email
               </Title>
               <Text size="sm" ta="center" c="dimmed">
-                We've sent a verification link to your email address. Please
-                check your inbox.
+                We&apos;ve sent a verification link to your email address.
+                Please check your inbox.
               </Text>
             </div>
 
             {auth.error && (
-              <Text
-                size="sm"
-                ta="center"
-                c="red"
-                bg="red.0"
-                p="xs"
-                style={{ borderRadius: "4px" }}
-              >
+              <Alert color="red" variant="light">
                 {auth.error}
-              </Text>
+              </Alert>
             )}
 
             <Button
@@ -408,8 +364,7 @@ const LoginComponent = () => {
                 await sendEmailVerification(firebaseAuth.currentUser);
               }}
               size="md"
-              h={48}
-            >
+                          >
               Resend verification email
             </Button>
           </Stack>

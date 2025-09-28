@@ -8,7 +8,8 @@
       "Bash(npm install:*)",
       "Bash(npm run build:tsc:*)",
       "Bash(npm ls:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npm run build:*)"
     ],
     "defaultMode": "acceptEdits"
   },
