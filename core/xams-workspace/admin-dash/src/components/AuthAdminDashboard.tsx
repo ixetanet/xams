@@ -1,15 +1,15 @@
-import { firebaseApp } from "@/pages/_app";
+import { firebaseApp, firebaseAuth } from "@/pages/_app";
 import {
   AuthContextProvider,
   AdminDashboard,
   AppContextProvider,
 } from "@ixeta/xams";
-import { Button, Loader, NavLink } from "@mantine/core";
+import { Avatar, Button, Divider, Loader, NavLink } from "@mantine/core";
 import router from "next/router";
 import React from "react";
 import { getAuth } from "firebase/auth";
 import { FirebaseApp, initializeApp } from "firebase/app";
-import { IconLogout } from "@tabler/icons-react";
+import { IconChevronRight, IconLogout } from "@tabler/icons-react";
 import { AuthProvider, useAuth } from "@ixeta/headless-auth-react";
 
 const AuthAdminDashboard = () => {
@@ -45,6 +45,21 @@ const AuthAdminDashboard = () => {
               ),
             },
           ]}
+          userCard={
+            <div
+              className=" cursor-pointer"
+              onClick={() => router.push("/auth/profile")}
+            >
+              <Divider />
+              <div className="flex items-center gap-2 px-2 py-4 w-full">
+                <div className="flex items-center gap-2 w-full">
+                  <Avatar />
+                  {firebaseAuth?.currentUser?.email || "User"}
+                </div>
+                <IconChevronRight size={14} stroke={1.5} />
+              </div>
+            </div>
+          }
           accessDeniedMessage={
             <div className="w-full h-full flex flex-col gap-2 justify-center items-center">
               You don&apos;t have permission to view this page. Please contact
