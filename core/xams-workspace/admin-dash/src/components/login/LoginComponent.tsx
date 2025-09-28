@@ -33,7 +33,7 @@ const LoginComponent = (props: LoginComponentProps) => {
   }
 
   return (
-    <LoginProvider providers={props.providers}>
+    <LoginProvider providers={props.providers} auth={auth}>
       {/* User is attempting to login and MFA is required */}
       {!auth.isLoggedIn && auth.isMfaRequired && (
         <>
