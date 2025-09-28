@@ -1,0 +1,62 @@
+{
+  "name": "@ixeta/xams-lite",
+  "version": "1.0.0",
+  "description": "Xams React Components",
+  "source": "src/index.ts",
+  "types": "src/index.ts",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "/dist/**/*",
+    "/dist/styles.css",
+    "/dist/global.css",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:tsc": "tsc",
+    "build:rollup": "rollup -c && copyfiles ./styles.css ./global.css ./dist",
+    "watch:tsc": "tsc -w",
+    "publish": "npm publish --access public",
+    "tailwind": "tailwindcss -i ./src/input.css -o ./styles.css --watch"
+  },
+  "keywords": [
+    "xams",
+    "framework",
+    "react",
+    "nextjs",
+    "ui"
+  ],
+  "dependencies": {
+    "@microsoft/signalr": "^9.0.6"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/node": "^20.9.0",
+    "@types/react": "19.1.14",
+    "@types/react-dom": "19.1.9",
+    "autoprefixer": "^10.4.16",
+    "copyfiles": "^2.4.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.0.2",
+    "postcss": "^8.4.31",
+    "process": "^0.11.10",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "rollup": "^3.29.5",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-postcss": "^4.0.2",
+    "typescript": "^5.4.5"
+  },
+  "peerDependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "author": "iXeta, LLC. <support@ixeta.net> (https://xams.io)",
+  "license": "ISC"
+}

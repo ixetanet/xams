@@ -13,6 +13,9 @@ import { MantineProvider } from "@mantine/core";
 import { useState } from "react";
 import { getCookie, setCookie } from "cookies-next";
 import { useRouter } from "next/router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 export default function App(props: AppProps) {
   const router = useRouter();
@@ -23,21 +26,23 @@ export default function App(props: AppProps) {
   } = props;
 
   return (
-    <MantineProvider
-      theme={{
-        primaryColor: "indigo",
-      }}
-    >
-      <AuthContextProvider
-        apiUrl={process.env.NEXT_PUBLIC_API as string}
-        headers={{
-          UserId: userId as string,
+    <QueryClientProvider client={queryClient}>
+      <MantineProvider
+        theme={{
+          primaryColor: "indigo",
         }}
       >
-        <AppContextProvider>
-          <Component {...pageProps} />
-        </AppContextProvider>
-      </AuthContextProvider>
-    </MantineProvider>
+        <AuthContextProvider
+          apiUrl={process.env.NEXT_PUBLIC_API as string}
+          headers={{
+            UserId: userId as string,
+          }}
+        >
+          <AppContextProvider>
+            <Component {...pageProps} />
+          </AppContextProvider>
+        </AuthContextProvider>
+      </MantineProvider>
+    </QueryClientProvider>
   );
 }

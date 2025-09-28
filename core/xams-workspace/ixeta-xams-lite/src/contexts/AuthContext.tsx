@@ -1,0 +1,58 @@
+"use client";
+
+import { createContext, useContext, ReactElement } from "react";
+
+export interface AuthContextProviderProps {
+  onUnauthorized?: () => void;
+  apiUrl: string;
+  headers?: { [key: string]: string };
+  children?: any;
+  withCredentials?: boolean;
+  getAccessToken?: () => Promise<string | undefined>;
+}
+
+export type AuthContextShape = {
+  onUnauthorized?: () => void;
+  apiUrl: string;
+  headers?: { [key: string]: string };
+  withCredentials?: boolean;
+  getAccessToken?: () => Promise<string | undefined>;
+};
+
+export const AuthContext = createContext<AuthContextShape | null>(null);
+
+export const useAuthContext = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error(
+      "useAuthContext must be used within an AuthContextProvider"
+    );
+  }
+  return ctx;
+};
+
+const AuthContextProvider = (props: AuthContextProviderProps) => {
+  // Use this for memoization, otherwise the context will be recreated on every render
+  let headersString = "";
+  if (props.headers != null) {
+    for (const key in props.headers) {
+      headersString += `${key}: ${props.headers[key]}\n`;
+    }
+  }
+
+  return (
+    <AuthContext.Provider
+      value={{
+        onUnauthorized: props.onUnauthorized,
+        apiUrl: props.apiUrl,
+        headers: props.headers,
+        withCredentials: props.withCredentials,
+        getAccessToken: props.getAccessToken,
+      }}
+    >
+      {props.children}
+    </AuthContext.Provider>
+  );
+};
+
+export default AuthContextProvider;

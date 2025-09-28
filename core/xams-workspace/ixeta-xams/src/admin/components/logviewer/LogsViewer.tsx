@@ -46,7 +46,7 @@ interface LogViewerProps {
 
 const LogsViewer = (props: LogViewerProps) => {
   const appContext = useAppContext();
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const initialLoadRef = React.useRef<boolean>(true);
   const [isLoading, setIsLoading] = useState(true);
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [isLive, setIsLive] = useState(props.isLive ?? true);
@@ -139,7 +139,8 @@ const LogsViewer = (props: LogViewerProps) => {
   useEffect(() => {
     let cleanup = undefined as undefined | (() => void);
     const initialize = async () => {
-      if (!isLive && isInitialLoad) {
+      console.log("Initializing log viewer");
+      if (!isLive && initialLoadRef.current) {
         await getData();
       }
       if (isLive) {
@@ -150,15 +151,17 @@ const LogsViewer = (props: LogViewerProps) => {
         });
         cleanup = () => signalR.off("Log");
       }
-      setIsInitialLoad(false);
+      initialLoadRef.current = false;
     };
+
+    appContext.signalR();
     if (appContext.signalRState === HubConnectionState.Connected) {
       initialize();
     }
     return () => {
       cleanup?.();
     };
-  }, [appContext.signalRState, isLive, isInitialLoad]);
+  }, [appContext.signalRState, isLive]);
 
   return (
     <form

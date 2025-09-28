@@ -42,6 +42,7 @@ export {
   API_DATA_DELETE,
   API_DATA_FILE,
   API_DATA_METADATA,
+  API_CONFIG,
 } from "./apiurls";
 export * from "./api/TablesResponse";
 export * from "./api/ReadRequest";
