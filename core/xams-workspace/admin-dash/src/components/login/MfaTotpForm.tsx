@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import {
   Button,
   TextInput,
@@ -13,6 +13,18 @@ import { useLoginContext } from "./LoginContext";
 
 const MfaTotpForm = () => {
   const { auth, loadingStates, setLoadingStates } = useLoginContext();
+  const pinInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Focus the first pin input when component mounts
+    const timer = setTimeout(() => {
+      if (pinInputRef.current) {
+        pinInputRef.current.focus();
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="min-h-screen flex justify-center items-center p-4">
@@ -54,32 +66,36 @@ const MfaTotpForm = () => {
               </Text>
               <div className="flex justify-center">
                 <PinInput
+                  ref={pinInputRef}
                   length={6}
                   size="md"
                   value={auth.mfaCode}
                   onChange={(value) => auth.setMfaCode(value)}
                   disabled={loadingStates.mfaTotp}
+                  autoFocus
                 />
               </div>
             </div>
-            <Button
-              type="submit"
-              size="md"
-              fullWidth
-              loading={loadingStates.mfaTotp}
-            >
-              Verify
-            </Button>
-            <Button
-              onClick={() => auth.signOut("login")}
-              variant="subtle"
-              size="sm"
-              mt="xs"
-              fullWidth
-              disabled={loadingStates.mfaTotp}
-            >
-              Logout
-            </Button>
+            <div className="w-full flex flex-col gap-1">
+              <Button
+                type="submit"
+                size="md"
+                fullWidth
+                loading={loadingStates.mfaTotp}
+              >
+                Verify
+              </Button>
+              <Button
+                onClick={() => auth.signOut("login")}
+                variant="subtle"
+                size="sm"
+                mt="xs"
+                fullWidth
+                disabled={loadingStates.mfaTotp}
+              >
+                Logout
+              </Button>
+            </div>
           </Stack>
         </form>
       </Paper>
