@@ -84,47 +84,55 @@ const ProfileComponent = () => {
               </div>
             )}
 
-            <div>
-              <Text size="sm" fw={500} mb="xs">
-                Verification Code
-              </Text>
-              <div className="flex justify-center">
-                <PinInput
-                  length={6}
-                  size="md"
-                  value={auth.mfaCode}
-                  onChange={(value) => auth.setMfaCode(value)}
-                  disabled={loadingStates.totpEnroll}
-                />
-              </div>
-            </div>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setLoadingStates((prev) => ({ ...prev, totpEnroll: true }));
+                try {
+                  await auth.mfaTotpEnroll();
+                } finally {
+                  setLoadingStates((prev) => ({
+                    ...prev,
+                    totpEnroll: false,
+                  }));
+                }
+              }}
+            >
+              <Stack gap="lg">
+                <div>
+                  <Text size="sm" fw={500} mb="xs">
+                    Verification Code
+                  </Text>
+                  <div className="flex justify-center">
+                    <PinInput
+                      length={6}
+                      size="md"
+                      value={auth.mfaCode}
+                      onChange={(value) => auth.setMfaCode(value)}
+                      disabled={loadingStates.totpEnroll}
+                    />
+                  </div>
+                </div>
 
-            <Group grow>
-              <Button
-                onClick={async () => {
-                  setLoadingStates((prev) => ({ ...prev, totpEnroll: true }));
-                  try {
-                    await auth.mfaTotpEnroll();
-                  } finally {
-                    setLoadingStates((prev) => ({
-                      ...prev,
-                      totpEnroll: false,
-                    }));
-                  }
-                }}
-                size="md"
-                loading={loadingStates.totpEnroll}
-              >
-                Enroll
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => auth.setView("profile")}
-                size="md"
-              >
-                Cancel
-              </Button>
-            </Group>
+                <Group grow>
+                  <Button
+                    type="submit"
+                    size="md"
+                    loading={loadingStates.totpEnroll}
+                  >
+                    Enroll
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => auth.setView("profile")}
+                    size="md"
+                  >
+                    Cancel
+                  </Button>
+                </Group>
+              </Stack>
+            </form>
           </Stack>
         </Paper>
       </div>
@@ -157,40 +165,48 @@ const ProfileComponent = () => {
               </Alert>
             )}
 
-            <TextInput
-              label="Phone Number"
-              placeholder="+1234567890"
-              value={auth.phoneNumber}
-              onChange={(e) => auth.setPhoneNumber(e.currentTarget.value)}
-              size="md"
-              disabled={loadingStates.smsCreate}
-            />
-
-            <Group grow>
-              <Button
-                onClick={async () => {
-                  setLoadingStates((prev) => ({ ...prev, smsCreate: true }));
-                  try {
-                    if (await auth.mfaSmsCreate()) {
-                      auth.setView("setup_mfa_sms_enroll");
-                    }
-                  } finally {
-                    setLoadingStates((prev) => ({ ...prev, smsCreate: false }));
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setLoadingStates((prev) => ({ ...prev, smsCreate: true }));
+                try {
+                  if (await auth.mfaSmsCreate()) {
+                    auth.setView("setup_mfa_sms_enroll");
                   }
-                }}
-                size="md"
-                loading={loadingStates.smsCreate}
-              >
-                Send Code
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => auth.setView("profile")}
-                size="md"
-              >
-                Cancel
-              </Button>
-            </Group>
+                } finally {
+                  setLoadingStates((prev) => ({ ...prev, smsCreate: false }));
+                }
+              }}
+            >
+              <Stack gap="lg">
+                <TextInput
+                  label="Phone Number"
+                  placeholder="+1234567890"
+                  value={auth.phoneNumber}
+                  onChange={(e) => auth.setPhoneNumber(e.currentTarget.value)}
+                  size="md"
+                  disabled={loadingStates.smsCreate}
+                />
+
+                <Group grow>
+                  <Button
+                    type="submit"
+                    size="md"
+                    loading={loadingStates.smsCreate}
+                  >
+                    Send Code
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => auth.setView("profile")}
+                    size="md"
+                  >
+                    Cancel
+                  </Button>
+                </Group>
+              </Stack>
+            </form>
           </Stack>
         </Paper>
       </div>
@@ -223,53 +239,62 @@ const ProfileComponent = () => {
               </Alert>
             )}
 
-            <div>
-              <Text size="sm" fw={500} mb="xs">
-                Verification Code
-              </Text>
-              <div className="flex justify-center">
-                <PinInput
-                  length={6}
-                  size="md"
-                  value={auth.mfaCode}
-                  onChange={(value) => auth.setMfaCode(value)}
-                  disabled={loadingStates.smsEnroll}
-                />
-              </div>
-            </div>
-
-            <Group grow>
-              <Button
-                onClick={async () => {
-                  setLoadingStates((prev) => ({ ...prev, smsEnroll: true }));
-                  try {
-                    await auth.mfaSmsEnroll();
-                  } finally {
-                    setLoadingStates((prev) => ({ ...prev, smsEnroll: false }));
-                  }
-                }}
-                size="md"
-                loading={loadingStates.smsEnroll}
-              >
-                Enroll
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => auth.mfaSmsCreate()}
-                size="md"
-              >
-                Resend Code
-              </Button>
-            </Group>
-
-            <Button
-              variant="subtle"
-              onClick={() => auth.setView("profile")}
-              size="sm"
-              fullWidth
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setLoadingStates((prev) => ({ ...prev, smsEnroll: true }));
+                try {
+                  await auth.mfaSmsEnroll();
+                } finally {
+                  setLoadingStates((prev) => ({ ...prev, smsEnroll: false }));
+                }
+              }}
             >
-              Cancel
-            </Button>
+              <Stack gap="lg">
+                <div>
+                  <Text size="sm" fw={500} mb="xs">
+                    Verification Code
+                  </Text>
+                  <div className="flex justify-center">
+                    <PinInput
+                      length={6}
+                      size="md"
+                      value={auth.mfaCode}
+                      onChange={(value) => auth.setMfaCode(value)}
+                      disabled={loadingStates.smsEnroll}
+                    />
+                  </div>
+                </div>
+
+                <Group grow>
+                  <Button
+                    type="submit"
+                    size="md"
+                    loading={loadingStates.smsEnroll}
+                  >
+                    Enroll
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => auth.mfaSmsCreate()}
+                    size="md"
+                  >
+                    Resend Code
+                  </Button>
+                </Group>
+
+                <Button
+                  type="button"
+                  variant="subtle"
+                  onClick={() => auth.setView("profile")}
+                  size="sm"
+                  fullWidth
+                >
+                  Cancel
+                </Button>
+              </Stack>
+            </form>
           </Stack>
         </Paper>
       </div>
