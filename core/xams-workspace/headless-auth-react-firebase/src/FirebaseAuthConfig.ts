@@ -877,6 +877,8 @@ export class FirebaseAuthConfig implements AuthConfig {
         return "Tenant ID does not match.";
       case "auth/timeout":
         return "The operation timed out. Please try again.";
+      case "auth/totp-challenge-timeout":
+        return "Your authenticator code has expired. Logout and log back in to try again.";
       case "auth/too-many-requests":
         return "Too many requests. Please try again later.";
       case "auth/unauthorized-continue-uri":

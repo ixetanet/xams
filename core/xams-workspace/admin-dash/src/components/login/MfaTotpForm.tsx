@@ -7,6 +7,7 @@ import {
   Text,
   Stack,
   Alert,
+  PinInput,
 } from "@mantine/core";
 import { useLoginContext } from "./LoginContext";
 
@@ -47,14 +48,20 @@ const MfaTotpForm = () => {
                 {auth.error}
               </Alert>
             )}
-            <TextInput
-              label="Verification code"
-              placeholder="000000"
-              value={auth.mfaCode}
-              onChange={(e) => auth.setMfaCode(e.currentTarget.value)}
-              size="md"
-              disabled={loadingStates.mfaTotp}
-            />
+            <div>
+              <Text size="sm" fw={500} mb="xs">
+                Verification Code
+              </Text>
+              <div className="flex justify-center">
+                <PinInput
+                  length={6}
+                  size="md"
+                  value={auth.mfaCode}
+                  onChange={(value) => auth.setMfaCode(value)}
+                  disabled={loadingStates.mfaTotp}
+                />
+              </div>
+            </div>
             <Button
               type="submit"
               size="md"
@@ -62,6 +69,16 @@ const MfaTotpForm = () => {
               loading={loadingStates.mfaTotp}
             >
               Verify
+            </Button>
+            <Button
+              onClick={() => auth.signOut("login")}
+              variant="subtle"
+              size="sm"
+              mt="xs"
+              fullWidth
+              disabled={loadingStates.mfaTotp}
+            >
+              Logout
             </Button>
           </Stack>
         </form>

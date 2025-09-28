@@ -53,7 +53,7 @@ const MfaSelectionForm = () => {
             return null;
           })}
           <Button
-            onClick={() => auth.signOut()}
+            onClick={() => auth.signOut("login")}
             variant="subtle"
             size="sm"
             mt="xs"

@@ -150,6 +150,16 @@ const ProfileComponent = ({ providers }: ProfileComponentProps) => {
                     Cancel
                   </Button>
                 </Group>
+
+                <Button
+                  onClick={() => auth.signOut("login")}
+                  variant="subtle"
+                  size="sm"
+                  mt="xs"
+                  fullWidth
+                >
+                  Logout
+                </Button>
               </Stack>
             </form>
           </Stack>
@@ -224,6 +234,16 @@ const ProfileComponent = ({ providers }: ProfileComponentProps) => {
                     Cancel
                   </Button>
                 </Group>
+
+                <Button
+                  onClick={() => auth.signOut("login")}
+                  variant="subtle"
+                  size="sm"
+                  mt="xs"
+                  fullWidth
+                >
+                  Logout
+                </Button>
               </Stack>
             </form>
           </Stack>
@@ -313,6 +333,16 @@ const ProfileComponent = ({ providers }: ProfileComponentProps) => {
                   fullWidth
                 >
                   Cancel
+                </Button>
+
+                <Button
+                  onClick={() => auth.signOut("login")}
+                  variant="subtle"
+                  size="sm"
+                  mt="xs"
+                  fullWidth
+                >
+                  Logout
                 </Button>
               </Stack>
             </form>
@@ -441,7 +471,7 @@ const ProfileComponent = ({ providers }: ProfileComponentProps) => {
 
           <Button
             variant="outline"
-            onClick={() => auth.signOut()}
+            onClick={() => auth.signOut("login")}
             size="md"
             fullWidth
           >

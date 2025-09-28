@@ -35,6 +35,7 @@ const LoginComponent = (props: LoginComponentProps) => {
   // If only one MFA factor is available, skip the selection step
   if (
     !auth.isLoggedIn &&
+    auth.isMfaRequired &&
     auth.view !== "mfa_totp" &&
     auth.view !== "mfa_sms" &&
     auth.mfaFactors.length === 1
