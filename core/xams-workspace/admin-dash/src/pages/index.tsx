@@ -9,6 +9,25 @@ import { useRouter } from "next/router";
 
 export let firebaseApp: FirebaseApp | null = null;
 export let firebaseAuthConfig: FirebaseAuthConfig | null = null;
+export const initializeFirebase = (config: FirebaseConfig) => {
+  firebaseApp = initializeApp(config);
+  const fireBaseAuth = getAuth(firebaseApp);
+  firebaseAuthConfig = new FirebaseAuthConfig(fireBaseAuth);
+  firebaseAuthConfig.setOptions({
+    totpAppName: config.projectId,
+    onSignUpSuccess: async (authConfig) => {
+      if (fireBaseAuth.currentUser) {
+        await sendEmailVerification(fireBaseAuth.currentUser);
+      }
+    },
+    onSignInSuccess: async () => {
+      // router.push("/app/coupons");
+    },
+    onSignOutSuccess: async () => {
+      // router.push("/");
+    },
+  });
+};
 
 export default function Home() {
   const router = useRouter();
@@ -37,25 +56,9 @@ export default function Home() {
     return <div>Error loading auth settings</div>;
   }
 
-  // If there are firebase auth settings, go to login screen
+  // Initialize Firebase if not already initialized
   if (Object.keys(authQuery.data).length !== 0 && firebaseApp === null) {
-    firebaseApp = initializeApp(authQuery.data);
-    const fireBaseAuth = getAuth(firebaseApp);
-    firebaseAuthConfig = new FirebaseAuthConfig(fireBaseAuth);
-    firebaseAuthConfig.setOptions({
-      totpAppName: authQuery.data.projectId,
-      onSignUpSuccess: async (authConfig) => {
-        if (fireBaseAuth.currentUser) {
-          await sendEmailVerification(fireBaseAuth.currentUser);
-        }
-      },
-      onSignInSuccess: async () => {
-        // router.push("/app/coupons");
-      },
-      onSignOutSuccess: async () => {
-        // router.push("/");
-      },
-    });
+    initializeFirebase(authQuery.data);
   }
 
   // If there are auth settings
