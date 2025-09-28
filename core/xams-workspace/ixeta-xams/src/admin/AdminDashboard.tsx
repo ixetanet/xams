@@ -1,7 +1,7 @@
 import { TablesResponse } from "../api/TablesResponse";
 import useAuthRequest from "../hooks/useAuthRequest";
 import { AppShell, Burger, Button, Loader, ScrollArea } from "@mantine/core";
-import React, { useEffect } from "react";
+import React, { ReactNode, useEffect } from "react";
 import { useDisclosure } from "@mantine/hooks";
 import ExportDataModal from "./ExportDataModal";
 import ImportDataModal from "./ImportDataModal";
@@ -47,6 +47,7 @@ export interface AdminDashboardProps {
   forceHideImportData?: boolean;
   forceHideExportData?: boolean;
   forceHideToggleMode?: boolean;
+  accessDeniedMessage?: ReactNode;
 }
 
 export interface NavItem {
@@ -171,12 +172,16 @@ const AdminDashboard = (props: AdminDashboardProps) => {
   }
 
   if (!access.Dashboard) {
-    return (
-      <div className="w-full h-full flex justify-center items-center">
-        You don&apos;t have permission to view this page. Please contact your
-        system administrator.
-      </div>
-    );
+    if (props.accessDeniedMessage) {
+      return <>{props.accessDeniedMessage}</>;
+    } else {
+      return (
+        <div className="w-full h-full flex justify-center items-center">
+          You don&apos;t have permission to view this page. Please contact your
+          system administrator.
+        </div>
+      );
+    }
   }
 
   const logsEnabled = tables.find((t) => t.tableName === "Log") != null;

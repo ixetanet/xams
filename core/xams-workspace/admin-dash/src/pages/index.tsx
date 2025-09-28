@@ -1,10 +1,11 @@
 import { AdminDashboard, API_CONFIG } from "@ixeta/xams";
-import { Loader } from "@mantine/core";
+import { Button, Loader } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import { getAuth } from "firebase/auth";
 import { FirebaseConfig } from "@/types";
 import { useRouter } from "next/router";
 import { firebaseApp, initializeFirebase } from "./_app";
+import { FirebaseApp, initializeApp } from "firebase/app";
 
 export default function Home() {
   const router = useRouter();
@@ -45,8 +46,26 @@ export default function Home() {
       router.push("/auth/login");
       return <></>;
     }
-    return <div>No auth settings found</div>;
   }
 
-  return <AdminDashboard />;
+  return (
+    <AdminDashboard
+      accessDeniedMessage={
+        <div className="w-full h-full flex flex-col gap-2 justify-center items-center">
+          You don&apos;t have permission to view this page. Please contact your
+          system administrator.
+          {firebaseApp != null && (
+            <Button
+              onClick={() => {
+                getAuth(firebaseApp as FirebaseApp).signOut();
+                router.push("/");
+              }}
+            >
+              Logout
+            </Button>
+          )}
+        </div>
+      }
+    />
+  );
 }

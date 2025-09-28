@@ -16,21 +16,23 @@ import { useRouter } from "next/router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { FirebaseApp, initializeApp } from "firebase/app";
-import { getAuth, sendEmailVerification } from "firebase/auth";
+import { Auth, getAuth, sendEmailVerification } from "firebase/auth";
 import { FirebaseAuthConfig } from "@ixeta/headless-auth-react-firebase";
 import { FirebaseConfig } from "@/types";
 
 export let firebaseApp: FirebaseApp | null = null;
 export let firebaseAuthConfig: FirebaseAuthConfig;
+export let firebaseAuth: Auth | null = null;
 export const initializeFirebase = (config: FirebaseConfig) => {
   firebaseApp = initializeApp(config);
-  const fireBaseAuth = getAuth(firebaseApp);
-  firebaseAuthConfig = new FirebaseAuthConfig(fireBaseAuth);
+  firebaseAuth = getAuth(firebaseApp);
+  firebaseAuthConfig = new FirebaseAuthConfig(firebaseAuth);
   firebaseAuthConfig.setOptions({
     totpAppName: config.projectId,
     onSignUpSuccess: async (authConfig) => {
-      if (fireBaseAuth.currentUser) {
-        await sendEmailVerification(fireBaseAuth.currentUser);
+      if (!firebaseAuth) return;
+      if (firebaseAuth.currentUser) {
+        await sendEmailVerification(firebaseAuth.currentUser);
       }
     },
     onSignInSuccess: async () => {

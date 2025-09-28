@@ -44,7 +44,7 @@ const Login = () => {
   }
 
   return (
-    <AuthProvider config={firebaseAuthConfig}>
+    <AuthProvider authConfig={firebaseAuthConfig}>
       <LoginComponent />
     </AuthProvider>
   );
