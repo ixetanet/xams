@@ -53,7 +53,8 @@ const LoginComponent = () => {
                       onClick={() => auth.setView("mfa_totp")}
                       variant="default"
                       size="md"
-                                          >
+                      fullWidth
+                    >
                       Authenticator App
                     </Button>
                   );
@@ -68,7 +69,8 @@ const LoginComponent = () => {
                       }}
                       variant="default"
                       size="md"
-                                          >
+                      fullWidth
+                    >
                       SMS
                     </Button>
                   );
@@ -80,6 +82,7 @@ const LoginComponent = () => {
                 variant="subtle"
                 size="sm"
                 mt="xs"
+                fullWidth
               >
                 Logout
               </Button>
@@ -98,31 +101,33 @@ const LoginComponent = () => {
             withBorder
             className="w-full max-w-sm"
           >
-            <Stack gap="lg">
-              <div>
-                <Title order={3} ta="center" mb="xs">
-                  Enter verification code
-                </Title>
-                <Text size="sm" ta="center" c="dimmed">
-                  Enter the code from your authenticator app
-                </Text>
-              </div>
-              {auth.error && (
-                <Alert color="red" variant="light">
-                  {auth.error}
-                </Alert>
-              )}
-              <TextInput
-                label="Verification code"
-                placeholder="000000"
-                value={auth.mfaCode}
-                onChange={(e) => auth.setMfaCode(e.currentTarget.value)}
-                size="md"
-                              />
-              <Button onClick={() => auth.mfaTotpVerify()} size="md" >
-                Verify
-              </Button>
-            </Stack>
+            <form onSubmit={(e) => { e.preventDefault(); auth.mfaTotpVerify(); }}>
+              <Stack gap="lg">
+                <div>
+                  <Title order={3} ta="center" mb="xs">
+                    Enter verification code
+                  </Title>
+                  <Text size="sm" ta="center" c="dimmed">
+                    Enter the code from your authenticator app
+                  </Text>
+                </div>
+                {auth.error && (
+                  <Alert color="red" variant="light">
+                    {auth.error}
+                  </Alert>
+                )}
+                <TextInput
+                  label="Verification code"
+                  placeholder="000000"
+                  value={auth.mfaCode}
+                  onChange={(e) => auth.setMfaCode(e.currentTarget.value)}
+                  size="md"
+                />
+                <Button type="submit" size="md" fullWidth>
+                  Verify
+                </Button>
+              </Stack>
+            </form>
           </Paper>
         </div>
       );
@@ -137,31 +142,33 @@ const LoginComponent = () => {
             withBorder
             className="w-full max-w-sm"
           >
-            <Stack gap="lg">
-              <div>
-                <Title order={3} ta="center" mb="xs">
-                  Enter SMS code
-                </Title>
-                <Text size="sm" ta="center" c="dimmed">
-                  Enter the code sent to your phone
-                </Text>
-              </div>
-              {auth.error && (
-                <Alert color="red" variant="light">
-                  {auth.error}
-                </Alert>
-              )}
-              <TextInput
-                label="SMS code"
-                placeholder="000000"
-                value={auth.mfaCode}
-                onChange={(e) => auth.setMfaCode(e.currentTarget.value)}
-                size="md"
-                              />
-              <Button onClick={() => auth.mfaSmsVerify()} size="md" >
-                Verify
-              </Button>
-            </Stack>
+            <form onSubmit={(e) => { e.preventDefault(); auth.mfaSmsVerify(); }}>
+              <Stack gap="lg">
+                <div>
+                  <Title order={3} ta="center" mb="xs">
+                    Enter SMS code
+                  </Title>
+                  <Text size="sm" ta="center" c="dimmed">
+                    Enter the code sent to your phone
+                  </Text>
+                </div>
+                {auth.error && (
+                  <Alert color="red" variant="light">
+                    {auth.error}
+                  </Alert>
+                )}
+                <TextInput
+                  label="SMS code"
+                  placeholder="000000"
+                  value={auth.mfaCode}
+                  onChange={(e) => auth.setMfaCode(e.currentTarget.value)}
+                  size="md"
+                />
+                <Button type="submit" size="md" fullWidth>
+                  Verify
+                </Button>
+              </Stack>
+            </form>
           </Paper>
         </div>
       );
@@ -196,34 +203,36 @@ const LoginComponent = () => {
                 </Alert>
               )}
 
-              <Stack gap="md">
-                <TextInput
-                  label="Email address"
-                  placeholder="Enter your email"
-                  value={auth.emailAddress}
-                  onChange={(e) => auth.setEmailAddress(e.currentTarget.value)}
-                  size="md"
-                                  />
-                <TextInput
-                  label="Password"
-                  placeholder="Enter your password"
-                  type="password"
-                  value={auth.password}
-                  onChange={(e) => auth.setPassword(e.currentTarget.value)}
-                  size="md"
-                                  />
-                <Checkbox
-                  label="Remember me"
-                  checked={auth.remember}
-                  onChange={(e) => {
-                    auth.setRemember(e.currentTarget.checked);
-                  }}
-                />
-              </Stack>
+              <form onSubmit={(e) => { e.preventDefault(); auth.signIn(); }}>
+                <Stack gap="md">
+                  <TextInput
+                    label="Email address"
+                    placeholder="Enter your email"
+                    value={auth.emailAddress}
+                    onChange={(e) => auth.setEmailAddress(e.currentTarget.value)}
+                    size="md"
+                  />
+                  <TextInput
+                    label="Password"
+                    placeholder="Enter your password"
+                    type="password"
+                    value={auth.password}
+                    onChange={(e) => auth.setPassword(e.currentTarget.value)}
+                    size="md"
+                  />
+                  <Checkbox
+                    label="Remember me"
+                    checked={auth.remember}
+                    onChange={(e) => {
+                      auth.setRemember(e.currentTarget.checked);
+                    }}
+                  />
+                </Stack>
 
-              <Button onClick={() => auth.signIn()} size="md" >
-                Sign in
-              </Button>
+                <Button type="submit" size="md" mt="md" fullWidth>
+                  Sign in
+                </Button>
+              </form>
 
               <Divider label="Or continue with" labelPosition="center" />
 
@@ -232,14 +241,16 @@ const LoginComponent = () => {
                   onClick={() => auth.signInProvider("google")}
                   variant="default"
                   size="md"
-                                  >
+                  fullWidth
+                >
                   Continue with Google
                 </Button>
                 <Button
                   onClick={() => auth.signInProvider("facebook")}
                   variant="default"
                   size="md"
-                                  >
+                  fullWidth
+                >
                   Continue with Facebook
                 </Button>
               </Stack>
@@ -286,27 +297,29 @@ const LoginComponent = () => {
                 </Alert>
               )}
 
-              <Stack gap="md">
-                <TextInput
-                  label="Email address"
-                  placeholder="Enter your email"
-                  value={auth.emailAddress}
-                  onChange={(e) => auth.setEmailAddress(e.currentTarget.value)}
-                  size="md"
-                                  />
-                <TextInput
-                  label="Password"
-                  placeholder="Create a password"
-                  type="password"
-                  value={auth.password}
-                  onChange={(e) => auth.setPassword(e.currentTarget.value)}
-                  size="md"
-                                  />
-              </Stack>
+              <form onSubmit={(e) => { e.preventDefault(); auth.signUp(); }}>
+                <Stack gap="md">
+                  <TextInput
+                    label="Email address"
+                    placeholder="Enter your email"
+                    value={auth.emailAddress}
+                    onChange={(e) => auth.setEmailAddress(e.currentTarget.value)}
+                    size="md"
+                  />
+                  <TextInput
+                    label="Password"
+                    placeholder="Create a password"
+                    type="password"
+                    value={auth.password}
+                    onChange={(e) => auth.setPassword(e.currentTarget.value)}
+                    size="md"
+                  />
+                </Stack>
 
-              <Button onClick={auth.signUp} size="md" >
-                Create account
-              </Button>
+                <Button type="submit" size="md" mt="md" fullWidth>
+                  Create account
+                </Button>
+              </form>
 
               <Text size="sm" ta="center">
                 Already have an account?{" "}
@@ -353,20 +366,20 @@ const LoginComponent = () => {
               </Alert>
             )}
 
-            <Button
-              onClick={async () => {
-                if (firebaseAuth == null) {
-                  return;
-                }
-                if (firebaseAuth.currentUser === null) {
-                  return;
-                }
-                await sendEmailVerification(firebaseAuth.currentUser);
-              }}
-              size="md"
-                          >
-              Resend verification email
-            </Button>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (firebaseAuth == null) {
+                return;
+              }
+              if (firebaseAuth.currentUser === null) {
+                return;
+              }
+              await sendEmailVerification(firebaseAuth.currentUser);
+            }}>
+              <Button type="submit" size="md" fullWidth>
+                Resend verification email
+              </Button>
+            </form>
           </Stack>
         </Paper>
       </div>
