@@ -1,30 +1,26 @@
 import React from "react";
-import {
-  Modal,
-  Text,
-  Button,
-  Group,
-  Stack,
-  Alert,
-} from "@mantine/core";
+import { Modal, Text, Button, Group, Stack, Alert } from "@mantine/core";
 import { useAuth } from "@ixeta/headless-auth-react";
+import { useProfileContext } from "./ProfileContext";
 
 interface DeactivateMfaModalProps {
   isOpen: boolean;
-  type: 'totp' | 'sms' | null;
+  type: "totp" | "sms" | null;
   onClose: () => void;
   loadingStates: {
     totpUnenroll: boolean;
     smsUnenroll: boolean;
   };
-  setLoadingStates: React.Dispatch<React.SetStateAction<{
-    totpCreate: boolean;
-    totpEnroll: boolean;
-    totpUnenroll: boolean;
-    smsCreate: boolean;
-    smsEnroll: boolean;
-    smsUnenroll: boolean;
-  }>>;
+  setLoadingStates: React.Dispatch<
+    React.SetStateAction<{
+      totpCreate: boolean;
+      totpEnroll: boolean;
+      totpUnenroll: boolean;
+      smsCreate: boolean;
+      smsEnroll: boolean;
+      smsUnenroll: boolean;
+    }>
+  >;
 }
 
 const DeactivateMfaModal = ({
@@ -34,10 +30,9 @@ const DeactivateMfaModal = ({
   loadingStates,
   setLoadingStates,
 }: DeactivateMfaModalProps) => {
-  const auth = useAuth();
-
+  const { auth } = useProfileContext();
   const handleDeactivate = async () => {
-    if (type === 'totp') {
+    if (type === "totp") {
       setLoadingStates((prev) => ({
         ...prev,
         totpUnenroll: true,
@@ -53,7 +48,7 @@ const DeactivateMfaModal = ({
           totpUnenroll: false,
         }));
       }
-    } else if (type === 'sms') {
+    } else if (type === "sms") {
       setLoadingStates((prev) => ({
         ...prev,
         smsUnenroll: true,
@@ -73,22 +68,23 @@ const DeactivateMfaModal = ({
   };
 
   const getTitle = () => {
-    if (type === 'totp') return 'Deactivate Authenticator App';
-    if (type === 'sms') return 'Deactivate SMS Authentication';
-    return 'Deactivate MFA';
+    if (type === "totp") return "Deactivate Authenticator App";
+    if (type === "sms") return "Deactivate SMS Authentication";
+    return "Deactivate MFA";
   };
 
   const getMessage = () => {
-    if (type === 'totp') {
-      return 'Are you sure you want to deactivate the Authenticator App? This will reduce your account security.';
+    if (type === "totp") {
+      return "Are you sure you want to deactivate the Authenticator App? This will reduce your account security.";
     }
-    if (type === 'sms') {
-      return 'Are you sure you want to deactivate SMS Authentication? This will reduce your account security.';
+    if (type === "sms") {
+      return "Are you sure you want to deactivate SMS Authentication? This will reduce your account security.";
     }
-    return 'Are you sure you want to deactivate this MFA method?';
+    return "Are you sure you want to deactivate this MFA method?";
   };
 
-  const isLoading = type === 'totp' ? loadingStates.totpUnenroll : loadingStates.smsUnenroll;
+  const isLoading =
+    type === "totp" ? loadingStates.totpUnenroll : loadingStates.smsUnenroll;
 
   return (
     <Modal
@@ -100,28 +96,19 @@ const DeactivateMfaModal = ({
     >
       <Stack gap="lg">
         <Alert color="orange" variant="light">
-          <Text size="sm">
-            {getMessage()}
-          </Text>
+          <Text size="sm">{getMessage()}</Text>
         </Alert>
 
         <Text size="sm" c="dimmed">
-          You can always re-enable this authentication method later from your profile settings.
+          You can always re-enable this authentication method later from your
+          profile settings.
         </Text>
 
         <Group justify="flex-end" gap="sm">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button
-            color="red"
-            onClick={handleDeactivate}
-            loading={isLoading}
-          >
+          <Button color="red" onClick={handleDeactivate} loading={isLoading}>
             Deactivate
           </Button>
         </Group>
