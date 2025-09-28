@@ -402,22 +402,21 @@ export class FirebaseAuthConfig implements AuthConfig {
           error: "No user is currently signed in.",
         };
       }
-      if (this.mfaResolver == null) {
-        return {
-          success: false,
-          error: "No multi-factor resolver available.",
-        };
-      }
-      const totpFactor = this.mfaResolver.hints.find(
-        (i) => i.factorId === "totp"
+
+      const multiFactorUser = multiFactor(currentUser);
+      const enrolledFactors = multiFactorUser.enrolledFactors;
+      const totpFactor = enrolledFactors.find(
+        (factor) => factor.factorId === "totp"
       );
-      if (totpFactor == null) {
+
+      if (!totpFactor) {
         return {
           success: false,
           error: "No TOTP factor found.",
         };
       }
-      await multiFactor(currentUser).unenroll(totpFactor);
+
+      await multiFactorUser.unenroll(totpFactor);
       return {
         success: true,
       };
@@ -426,6 +425,10 @@ export class FirebaseAuthConfig implements AuthConfig {
       return {
         success: false,
         error: this.friendlyError(error),
+        data:
+          (error as any)?.code === "auth/requires-recent-login"
+            ? "re-login"
+            : undefined,
       };
     }
   };
@@ -581,22 +584,20 @@ export class FirebaseAuthConfig implements AuthConfig {
         };
       }
 
-      if (this.mfaResolver == null) {
-        return {
-          success: false,
-          error: "No multi-factor resolver available.",
-        };
-      }
-      const totpFactor = this.mfaResolver.hints.find(
-        (i) => i.factorId === "phone"
+      const multiFactorUser = multiFactor(currentUser);
+      const enrolledFactors = multiFactorUser.enrolledFactors;
+      const smsFactor = enrolledFactors.find(
+        (factor) => factor.factorId === "phone"
       );
-      if (totpFactor == null) {
+
+      if (!smsFactor) {
         return {
           success: false,
           error: "No SMS factor found.",
         };
       }
-      await multiFactor(currentUser).unenroll(totpFactor);
+
+      await multiFactorUser.unenroll(smsFactor);
       return {
         success: true,
       };
@@ -605,6 +606,10 @@ export class FirebaseAuthConfig implements AuthConfig {
       return {
         success: false,
         error: this.friendlyError(error),
+        data:
+          (error as any)?.code === "auth/requires-recent-login"
+            ? "re-login"
+            : undefined,
       };
     }
   };

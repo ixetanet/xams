@@ -33,8 +33,10 @@ const ProfileComponent = ({ providers }: ProfileComponentProps) => {
   const [loadingStates, setLoadingStates] = useState({
     totpCreate: false,
     totpEnroll: false,
+    totpUnenroll: false,
     smsCreate: false,
     smsEnroll: false,
+    smsUnenroll: false,
   });
 
   if (!auth.isReady) {
@@ -404,7 +406,7 @@ const ProfileComponent = ({ providers }: ProfileComponentProps) => {
                       </Badge>
                     )}
                   </Group>
-                  {!auth.mfaTotpEnrolled && (
+                  {!auth.mfaTotpEnrolled ? (
                     <Button
                       fullWidth
                       onClick={async () => {
@@ -426,6 +428,33 @@ const ProfileComponent = ({ providers }: ProfileComponentProps) => {
                     >
                       Setup Authenticator App
                     </Button>
+                  ) : (
+                    <Button
+                      fullWidth
+                      variant="outline"
+                      color="red"
+                      onClick={async () => {
+                        setLoadingStates((prev) => ({
+                          ...prev,
+                          totpUnenroll: true,
+                        }));
+                        try {
+                          const success = await auth.mfaTotpUnenroll();
+                          if (success) {
+                            // Force a refresh of the MFA status
+                            window.location.reload();
+                          }
+                        } finally {
+                          setLoadingStates((prev) => ({
+                            ...prev,
+                            totpUnenroll: false,
+                          }));
+                        }
+                      }}
+                      loading={loadingStates.totpUnenroll}
+                    >
+                      Deactivate Authenticator App
+                    </Button>
                   )}
                 </Stack>
               </Card>
@@ -445,12 +474,39 @@ const ProfileComponent = ({ providers }: ProfileComponentProps) => {
                       </Badge>
                     )}
                   </Group>
-                  {!auth.mfaSmsEnrolled && (
+                  {!auth.mfaSmsEnrolled ? (
                     <Button
                       fullWidth
                       onClick={() => auth.setView("setup_mfa_sms")}
                     >
                       Setup SMS Authentication
+                    </Button>
+                  ) : (
+                    <Button
+                      fullWidth
+                      variant="outline"
+                      color="red"
+                      onClick={async () => {
+                        setLoadingStates((prev) => ({
+                          ...prev,
+                          smsUnenroll: true,
+                        }));
+                        try {
+                          const success = await auth.mfaSmsUnenroll();
+                          if (success) {
+                            // Force a refresh of the MFA status
+                            window.location.reload();
+                          }
+                        } finally {
+                          setLoadingStates((prev) => ({
+                            ...prev,
+                            smsUnenroll: false,
+                          }));
+                        }
+                      }}
+                      loading={loadingStates.smsUnenroll}
+                    >
+                      Deactivate SMS Authentication
                     </Button>
                   )}
                 </Stack>
