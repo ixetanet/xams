@@ -169,7 +169,7 @@ export const useAuth = (props?: useAuthProps) => {
       // Could be incorrect phone number format OR require re-login
       if (!resp.success && resp.data === "re-login") {
         setIsReLoginRequired(true);
-        setView(props?.defaultView ?? "login");
+        setView("login");
       }
       return resp;
     });

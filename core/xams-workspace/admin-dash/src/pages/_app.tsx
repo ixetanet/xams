@@ -69,6 +69,7 @@ export default function App(props: AppProps) {
         >
           <AppContextProvider>
             <Component {...pageProps} />
+            <div id="auth-recaptcha" className="invisible" />
           </AppContextProvider>
         </AuthContextProvider>
       </MantineProvider>

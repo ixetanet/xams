@@ -17,9 +17,18 @@ import {
 import { useAuth } from "@ixeta/headless-auth-react";
 import QRCode from "react-qr-code";
 import { useRouter } from "next/router";
+import LoginComponent from "../login/LoginComponent";
+import { LoginProvider } from "../login/LoginContext";
+import LoginForm from "../login/LoginForm";
 
-const ProfileComponent = () => {
-  const auth = useAuth();
+interface ProfileComponentProps {
+  providers: string[];
+}
+
+const ProfileComponent = ({ providers }: ProfileComponentProps) => {
+  const auth = useAuth({
+    defaultView: "profile",
+  });
   const router = useRouter();
   const [loadingStates, setLoadingStates] = useState({
     totpCreate: false,
@@ -37,7 +46,15 @@ const ProfileComponent = () => {
   }
 
   if (!auth.isLoggedIn) {
-    router.push("/");
+    router.push("/auth/login");
+  }
+
+  if (auth.view === "login") {
+    return (
+      <LoginProvider providers={providers} auth={auth}>
+        <LoginForm />
+      </LoginProvider>
+    );
   }
 
   // Handle MFA setup views
@@ -320,7 +337,7 @@ const ProfileComponent = () => {
             variant="subtle"
             onClick={() => router.back()}
             size="sm"
-            style={{ alignSelf: 'flex-start' }}
+            style={{ alignSelf: "flex-start" }}
           >
             ← Back
           </Button>

@@ -32,6 +32,16 @@ const LoginComponent = (props: LoginComponentProps) => {
     return <></>;
   }
 
+  // If only one MFA factor is available, skip the selection step
+  if (
+    !auth.isLoggedIn &&
+    auth.view !== "mfa_totp" &&
+    auth.view !== "mfa_sms" &&
+    auth.mfaFactors.length === 1
+  ) {
+    auth.setView(auth.mfaFactors[0] === "totp" ? "mfa_totp" : "mfa_sms");
+  }
+
   return (
     <LoginProvider providers={props.providers} auth={auth}>
       {/* User is attempting to login and MFA is required */}

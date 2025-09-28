@@ -45,7 +45,7 @@ const Profile = () => {
 
   return (
     <AuthProvider authConfig={firebaseAuthConfig}>
-      <ProfileComponent />
+      <ProfileComponent providers={authQuery.data.providers} />
     </AuthProvider>
   );
 };
