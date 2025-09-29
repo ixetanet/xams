@@ -30,6 +30,8 @@ export const useAuth = (props?: useAuthProps) => {
   const [mfaCode, setMfaCode] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isReLoginRequired, setIsReLoginRequired] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
 
   if (authContext === undefined) {
     throw new Error("useAuth must be used within a AuthProvider");
@@ -44,6 +46,8 @@ export const useAuth = (props?: useAuthProps) => {
     setMfaTotpQrCode(undefined);
     setMfaCode("");
     setPhoneNumber("");
+    setCurrentPassword("");
+    setNewPassword("");
   };
 
   const onSetView = (view: string) => {
@@ -214,6 +218,23 @@ export const useAuth = (props?: useAuthProps) => {
     });
   };
 
+  const changePassword = async (
+    currentPwd?: string,
+    newPwd?: string
+  ) => {
+    return await execute(async () => {
+      const resp = await authContext.authConfig.changePassword(
+        currentPwd || currentPassword,
+        newPwd || newPassword
+      );
+      if (resp.success) {
+        setCurrentPassword("");
+        setNewPassword("");
+      }
+      return resp;
+    });
+  };
+
   return {
     view,
     setView: onSetView,
@@ -244,6 +265,11 @@ export const useAuth = (props?: useAuthProps) => {
     mfaSmsUnenroll,
     mfaSmsSend,
     mfaSmsVerify,
+    currentPassword,
+    setCurrentPassword,
+    newPassword,
+    setNewPassword,
+    changePassword,
     ...authContext,
   };
 };

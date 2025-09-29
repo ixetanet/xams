@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ixeta/headless-auth-react": "*",
     "@ixeta/headless-auth-react-firebase": "*",
     "@ixeta/xams": "*",
     "@mantine/core": "^8.3.0",

@@ -28,6 +28,9 @@ import {
   RecaptchaVerifier,
   PhoneAuthProvider,
   PhoneMultiFactorGenerator,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
 } from "firebase/auth";
 
 export type FirebaseAuthConfigOptions = {
@@ -717,6 +720,45 @@ export class FirebaseAuthConfig implements AuthConfig {
     }
   };
 
+  changePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      const currentUser = this.auth.currentUser;
+      if (!currentUser || !currentUser.email) {
+        return {
+          success: false,
+          error: "No user is currently signed in.",
+        };
+      }
+
+      // Re-authenticate the user with their current password
+      const credential = EmailAuthProvider.credential(
+        currentUser.email,
+        currentPassword
+      );
+
+      try {
+        await reauthenticateWithCredential(currentUser, credential);
+      } catch (reauthError) {
+        return {
+          success: false,
+          error: this.friendlyError(reauthError),
+        };
+      }
+
+      // Update to the new password
+      await updatePassword(currentUser, newPassword);
+
+      return {
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: this.friendlyError(error),
+      };
+    }
+  };
+
   private friendlyError = (error: any): string => {
     this.firebaseError = error;
     const code = error.code;
@@ -811,6 +853,8 @@ export class FirebaseAuthConfig implements AuthConfig {
         return "This domain is not authorized to perform this operation.";
       case "auth/wrong-password":
         return "The password is incorrect.";
+      case "auth/missing-password":
+        return "Password is required.";
       case "auth/invalid-persistence-type":
         return "The persistence type is invalid.";
       case "auth/invalid-phone-number":

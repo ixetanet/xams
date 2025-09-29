@@ -33,6 +33,10 @@ export type AuthConfig = {
   mfaSmsUnenroll: () => Promise<AuthResponse>;
   mfaSmsSend: () => Promise<AuthResponse>;
   mfaSmsVerify: (code: string) => Promise<AuthResponse>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string
+  ) => Promise<AuthResponse>;
 };
 
 export type AuthResponse<T = any> = {

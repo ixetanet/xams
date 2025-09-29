@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Button,
   Title,
@@ -11,6 +11,7 @@ import {
   Divider,
 } from "@mantine/core";
 import DeactivateMfaModal from "./DeactivateMfaModal";
+import ChangePasswordModal from "./ChangePasswordModal";
 import { useLoginContext } from "../LoginContext";
 
 const ProfileMainView = () => {
@@ -23,6 +24,9 @@ const ProfileMainView = () => {
     setDeactivateModal,
     smsEnrollmentEnabled,
   } = useLoginContext();
+
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] =
+    useState(false);
 
   return (
     <>
@@ -179,6 +183,30 @@ const ProfileMainView = () => {
 
         <Divider />
 
+        <div>
+          <Title order={4} mb="md">
+            Password
+          </Title>
+          <Card withBorder p="md">
+            <Stack gap="md">
+              <div>
+                <Text fw={500}>Change Password</Text>
+                <Text size="sm" c="dimmed">
+                  Update your account password
+                </Text>
+              </div>
+              <Button
+                fullWidth
+                onClick={() => setIsChangePasswordModalOpen(true)}
+              >
+                Change Password
+              </Button>
+            </Stack>
+          </Card>
+        </div>
+
+        <Divider />
+
         <Button
           variant="outline"
           onClick={() => auth.signOut("login")}
@@ -193,6 +221,13 @@ const ProfileMainView = () => {
         isOpen={deactivateModal.isOpen}
         type={deactivateModal.type}
         onClose={() => setDeactivateModal({ isOpen: false, type: null })}
+        loadingStates={loadingStates}
+        setLoadingStates={setLoadingStates}
+      />
+
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        onClose={() => setIsChangePasswordModalOpen(false)}
         loadingStates={loadingStates}
         setLoadingStates={setLoadingStates}
       />

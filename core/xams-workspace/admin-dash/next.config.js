@@ -7,7 +7,11 @@ const nextConfig = {
   },
   trailingSlash: false,
   reactStrictMode: true,
-  transpilePackages: ["@ixeta/xams"],
+  transpilePackages: [
+    "@ixeta/xams",
+    "@ixeta/headless-auth-react",
+    "@ixeta/headless-auth-react-firebase",
+  ],
 };
 
 const withBundleAnalyzer = require("@next/bundle-analyzer")({
