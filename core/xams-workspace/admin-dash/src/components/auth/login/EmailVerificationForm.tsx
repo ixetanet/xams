@@ -51,6 +51,16 @@ const EmailVerificationForm = () => {
           Resend verification email
         </Button>
       </form>
+
+      <Button
+        onClick={() => auth.signOut("login")}
+        variant="subtle"
+        size="sm"
+        fullWidth
+        disabled={loadingStates.resendEmail}
+      >
+        Return to login
+      </Button>
     </Stack>
   );
 };

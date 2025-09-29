@@ -63,21 +63,23 @@ const ProfileMainView = () => {
           )}
 
           <Stack gap="md">
-            <Card withBorder p="md">
+            <Card withBorder p="md" style={{ position: "relative" }}>
+              {auth.mfaTotpEnrolled && (
+                <Badge
+                  color="green"
+                  variant="light"
+                  style={{ position: "absolute", top: "12px", right: "12px" }}
+                >
+                  Enabled
+                </Badge>
+              )}
               <Stack gap="md">
-                <Group justify="space-between" align="center">
-                  <div>
-                    <Text fw={500}>Authenticator App</Text>
-                    <Text size="sm" c="dimmed">
-                      Use an authenticator app for secure login
-                    </Text>
-                  </div>
-                  {auth.mfaTotpEnrolled && (
-                    <Badge color="green" variant="light">
-                      Enabled
-                    </Badge>
-                  )}
-                </Group>
+                <div>
+                  <Text fw={500}>Authenticator App</Text>
+                  <Text size="sm" c="dimmed">
+                    Use an authenticator app for secure login
+                  </Text>
+                </div>
                 {!auth.mfaTotpEnrolled ? (
                   <Button
                     fullWidth
@@ -120,21 +122,23 @@ const ProfileMainView = () => {
             </Card>
 
             {smsEnrollmentEnabled && (
-              <Card withBorder p="md">
+              <Card withBorder p="md" style={{ position: "relative" }}>
+                {auth.mfaSmsEnrolled && (
+                  <Badge
+                    color="green"
+                    variant="light"
+                    style={{ position: "absolute", top: "12px", right: "12px" }}
+                  >
+                    Enabled
+                  </Badge>
+                )}
                 <Stack gap="md">
-                  <Group justify="space-between" align="center">
-                    <div>
-                      <Text fw={500}>SMS Authentication</Text>
-                      <Text size="sm" c="dimmed">
-                        Receive verification codes via SMS
-                      </Text>
-                    </div>
-                    {auth.mfaSmsEnrolled && (
-                      <Badge color="green" variant="light">
-                        Enabled
-                      </Badge>
-                    )}
-                  </Group>
+                  <div>
+                    <Text fw={500}>SMS Authentication</Text>
+                    <Text size="sm" c="dimmed">
+                      Receive verification codes via SMS
+                    </Text>
+                  </div>
                   {!auth.mfaSmsEnrolled ? (
                     <Button
                       fullWidth
