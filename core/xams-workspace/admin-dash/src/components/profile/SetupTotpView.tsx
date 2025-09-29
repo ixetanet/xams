@@ -11,10 +11,10 @@ import {
   PinInput,
 } from "@mantine/core";
 import QRCode from "react-qr-code";
-import { useProfileContext } from "./ProfileContext";
+import { useLoginContext } from "../login/LoginContext";
 
 const SetupTotpView = () => {
-  const { auth, loadingStates, setLoadingStates } = useProfileContext();
+  const { auth, loadingStates, setLoadingStates } = useLoginContext();
 
   return (
     <div className="min-h-screen flex justify-center items-center p-4">

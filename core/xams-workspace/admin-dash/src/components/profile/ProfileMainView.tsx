@@ -11,7 +11,7 @@ import {
   Card,
   Divider,
 } from "@mantine/core";
-import { useProfileContext } from "./ProfileContext";
+import { useLoginContext } from "../login/LoginContext";
 import DeactivateMfaModal from "./DeactivateMfaModal";
 
 const ProfileMainView = () => {
@@ -22,7 +22,7 @@ const ProfileMainView = () => {
     setLoadingStates,
     deactivateModal,
     setDeactivateModal,
-  } = useProfileContext();
+  } = useLoginContext();
 
   return (
     <div className="min-h-screen flex justify-center items-center p-4">

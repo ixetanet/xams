@@ -7,8 +7,11 @@ import { AuthProvider } from "@ixeta/headless-auth-react";
 import { FirebaseAuthConfig } from "@ixeta/headless-auth-react-firebase";
 import ProfileComponent from "@/components/profile/ProfileComponent";
 import { firebaseApp, initializeFirebase, firebaseAuthConfig } from "../_app";
+import LoginComponent from "@/components/login/LoginComponent";
+import { useRouter } from "next/router";
 
 const Profile = () => {
+  const router = useRouter();
   const authQuery = useQuery<FirebaseConfig>({
     queryKey: ["auth-settings"],
     queryFn: async () => {
@@ -45,7 +48,12 @@ const Profile = () => {
 
   return (
     <AuthProvider authConfig={firebaseAuthConfig}>
-      <ProfileComponent providers={authQuery.data.providers} />
+      {/* <ProfileComponent providers={authQuery.data.providers} /> */}
+      <LoginComponent
+        providers={authQuery.data.providers}
+        onLoginSuccess={() => router.push("/auth/profile")}
+        defaultView="profile"
+      />
     </AuthProvider>
   );
 };

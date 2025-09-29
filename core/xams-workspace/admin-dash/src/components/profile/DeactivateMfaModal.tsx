@@ -1,25 +1,15 @@
 import React from "react";
 import { Modal, Text, Button, Group, Stack, Alert } from "@mantine/core";
 import { useAuth } from "@ixeta/headless-auth-react";
-import { useProfileContext } from "./ProfileContext";
+import { useLoginContext } from "../login/LoginContext";
 
 interface DeactivateMfaModalProps {
   isOpen: boolean;
   type: "totp" | "sms" | null;
   onClose: () => void;
-  loadingStates: {
-    totpUnenroll: boolean;
-    smsUnenroll: boolean;
-  };
+  loadingStates: Record<string, boolean>;
   setLoadingStates: React.Dispatch<
-    React.SetStateAction<{
-      totpCreate: boolean;
-      totpEnroll: boolean;
-      totpUnenroll: boolean;
-      smsCreate: boolean;
-      smsEnroll: boolean;
-      smsUnenroll: boolean;
-    }>
+    React.SetStateAction<Record<string, boolean>>
   >;
 }
 
@@ -30,7 +20,7 @@ const DeactivateMfaModal = ({
   loadingStates,
   setLoadingStates,
 }: DeactivateMfaModalProps) => {
-  const { auth } = useProfileContext();
+  const { auth } = useLoginContext();
   const handleDeactivate = async () => {
     if (type === "totp") {
       setLoadingStates((prev) => ({

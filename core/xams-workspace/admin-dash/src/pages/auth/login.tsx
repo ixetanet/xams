@@ -50,6 +50,7 @@ const Login = () => {
       <LoginComponent
         providers={authQuery.data.providers}
         onLoginSuccess={() => router.push("/")}
+        defaultView={"login"}
       />
     </AuthProvider>
   );

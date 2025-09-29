@@ -14,6 +14,16 @@ interface LoginContextType {
   getProviderDisplayName: (provider: string) => string;
   getProviderIcon: (provider: string) => React.ReactNode;
   isAnyProviderLoading: () => boolean;
+  deactivateModal: {
+    isOpen: boolean;
+    type: 'totp' | 'sms' | null;
+  };
+  setDeactivateModal: React.Dispatch<
+    React.SetStateAction<{
+      isOpen: boolean;
+      type: 'totp' | 'sms' | null;
+    }>
+  >;
 }
 
 const LoginContext = createContext<LoginContextType | undefined>(undefined);
@@ -140,7 +150,21 @@ export const LoginProvider = ({
     mfaTotp: false,
     mfaSms: false,
     resendEmail: false,
+    totpCreate: false,
+    totpEnroll: false,
+    totpUnenroll: false,
+    smsCreate: false,
+    smsEnroll: false,
+    smsUnenroll: false,
     ...createProviderLoadingStates(),
+  });
+
+  const [deactivateModal, setDeactivateModal] = useState<{
+    isOpen: boolean;
+    type: 'totp' | 'sms' | null;
+  }>({
+    isOpen: false,
+    type: null,
   });
 
   const isAnyProviderLoading = () => {
@@ -158,6 +182,8 @@ export const LoginProvider = ({
     getProviderDisplayName,
     getProviderIcon,
     isAnyProviderLoading,
+    deactivateModal,
+    setDeactivateModal,
   };
 
   return (

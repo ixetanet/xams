@@ -9,10 +9,10 @@ import {
   Alert,
   Group,
 } from "@mantine/core";
-import { useProfileContext } from "./ProfileContext";
+import { useLoginContext } from "../login/LoginContext";
 
 const SetupSmsView = () => {
-  const { auth, loadingStates, setLoadingStates } = useProfileContext();
+  const { auth, loadingStates, setLoadingStates } = useLoginContext();
 
   return (
     <div className="min-h-screen flex justify-center items-center p-4">
