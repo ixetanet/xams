@@ -2,15 +2,15 @@ import { useAuth } from "@ixeta/headless-auth-react";
 import { Loader } from "@mantine/core";
 import React, { useEffect } from "react";
 import { LoginProvider } from "./LoginContext";
-import EmailVerificationForm from "./EmailVerificationForm";
-import LoginForm from "./LoginForm";
-import MfaSelectionForm from "./MfaSelectionForm";
-import MfaSmsForm from "./MfaSmsForm";
-import MfaTotpForm from "./MfaTotpForm";
-import RegisterForm from "./RegisterForm";
-import ProfileMainView from "../profile/ProfileMainView";
-import SetupSmsView from "../profile/SetupSmsView";
-import SetupTotpView from "../profile/SetupTotpView";
+import EmailVerificationForm from "./login/EmailVerificationForm";
+import LoginForm from "./login/LoginForm";
+import MfaSelectionForm from "./login/MfaSelectionForm";
+import MfaSmsForm from "./login/MfaSmsForm";
+import MfaTotpForm from "./login/MfaTotpForm";
+import RegisterForm from "./login/RegisterForm";
+import ProfileMainView from "./profile/ProfileMainView";
+import SetupSmsView from "./profile/SetupSmsView";
+import SetupTotpView from "./profile/SetupTotpView";
 
 interface LoginComponentProps {
   defaultView: string;

@@ -1,6 +1,6 @@
 import React from "react";
 import { Button, Paper, Title, Stack } from "@mantine/core";
-import { useLoginContext } from "./LoginContext";
+import { useLoginContext } from "../LoginContext";
 
 const MfaSelectionForm = () => {
   const { auth, loadingStates } = useLoginContext();

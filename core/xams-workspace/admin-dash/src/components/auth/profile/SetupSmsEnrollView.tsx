@@ -9,7 +9,7 @@ import {
   Group,
   PinInput,
 } from "@mantine/core";
-import { useLoginContext } from "../login/LoginContext";
+import { useLoginContext } from "../LoginContext";
 
 const SetupSmsEnrollView = () => {
   const { auth, loadingStates, setLoadingStates } = useLoginContext();

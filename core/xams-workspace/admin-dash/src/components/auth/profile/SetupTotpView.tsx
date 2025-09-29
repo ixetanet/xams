@@ -11,7 +11,7 @@ import {
   PinInput,
 } from "@mantine/core";
 import QRCode from "react-qr-code";
-import { useLoginContext } from "../login/LoginContext";
+import { useLoginContext } from "../LoginContext";
 
 const SetupTotpView = () => {
   const { auth, loadingStates, setLoadingStates } = useLoginContext();

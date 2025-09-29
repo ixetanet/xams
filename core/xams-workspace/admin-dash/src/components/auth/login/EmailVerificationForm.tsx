@@ -2,7 +2,7 @@ import React from "react";
 import { Button, Paper, Title, Text, Stack, Alert } from "@mantine/core";
 import { sendEmailVerification } from "firebase/auth";
 import { firebaseAuth } from "@/pages/_app";
-import { useLoginContext } from "./LoginContext";
+import { useLoginContext } from "../LoginContext";
 
 const EmailVerificationForm = () => {
   const { auth, loadingStates, setLoadingStates } = useLoginContext();

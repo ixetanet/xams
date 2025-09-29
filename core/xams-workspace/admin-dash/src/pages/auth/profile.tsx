@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import React from "react";
 import { AuthProvider } from "@ixeta/headless-auth-react";
 import { firebaseApp, initializeFirebase, firebaseAuthConfig } from "../_app";
-import LoginComponent from "@/components/login/LoginComponent";
+import LoginComponent from "@/components/auth/LoginComponent";
 import { useRouter } from "next/router";
 
 const Profile = () => {

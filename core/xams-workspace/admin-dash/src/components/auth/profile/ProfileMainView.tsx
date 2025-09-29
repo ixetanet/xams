@@ -11,8 +11,8 @@ import {
   Card,
   Divider,
 } from "@mantine/core";
-import { useLoginContext } from "../login/LoginContext";
 import DeactivateMfaModal from "./DeactivateMfaModal";
+import { useLoginContext } from "../LoginContext";
 
 const ProfileMainView = () => {
   const {

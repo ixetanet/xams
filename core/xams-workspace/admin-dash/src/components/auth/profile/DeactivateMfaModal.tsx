@@ -1,7 +1,7 @@
 import React from "react";
 import { Modal, Text, Button, Group, Stack, Alert } from "@mantine/core";
 import { useAuth } from "@ixeta/headless-auth-react";
-import { useLoginContext } from "../login/LoginContext";
+import { useLoginContext } from "../LoginContext";
 
 interface DeactivateMfaModalProps {
   isOpen: boolean;

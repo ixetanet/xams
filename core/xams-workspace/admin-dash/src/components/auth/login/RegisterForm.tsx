@@ -8,7 +8,7 @@ import {
   Stack,
   Alert,
 } from "@mantine/core";
-import { useLoginContext } from "./LoginContext";
+import { useLoginContext } from "../LoginContext";
 
 const RegisterForm = () => {
   const { auth, loadingStates, setLoadingStates } = useLoginContext();

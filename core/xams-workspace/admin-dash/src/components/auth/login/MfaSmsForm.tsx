@@ -9,7 +9,7 @@ import {
   Alert,
   PinInput,
 } from "@mantine/core";
-import { useLoginContext } from "./LoginContext";
+import { useLoginContext } from "../LoginContext";
 
 const MfaSmsForm = () => {
   const { auth, loadingStates, setLoadingStates } = useLoginContext();

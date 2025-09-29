@@ -9,7 +9,7 @@ import {
   Alert,
   Group,
 } from "@mantine/core";
-import { useLoginContext } from "../login/LoginContext";
+import { useLoginContext } from "../LoginContext";
 
 const SetupSmsView = () => {
   const { auth, loadingStates, setLoadingStates } = useLoginContext();
