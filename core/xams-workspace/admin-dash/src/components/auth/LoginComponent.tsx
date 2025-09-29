@@ -50,19 +50,28 @@ const LoginComponent = (props: LoginComponentProps) => {
     auth.setView(props.defaultView);
   }
 
+  // If only one MFA method is available, skip selection step
+  if (auth.mfaFactors.length === 1 && auth.isMfaRequired) {
+    if (auth.mfaFactors[0] === "totp" && auth.view !== "mfa_totp") {
+      auth.setView("mfa_totp");
+    }
+    if (auth.mfaFactors[0] === "sms" && auth.view !== "mfa_sms") {
+      auth.setView("mfa_sms");
+      auth.mfaSmsSend();
+    }
+  }
+
   return (
     <LoginProvider providers={props.providers} auth={auth}>
       <LoginContainer maxWidth={auth.view === "profile" ? "md" : "sm"}>
         {/* User is attempting to login and MFA is required */}
         {auth.isMfaRequired && (
           <>
-            {/* {auth.view !== "mfa_totp" && auth.view !== "mfa_sms" && (
+            {auth.view !== "mfa_totp" && auth.view !== "mfa_sms" && (
               <MfaSelectionForm />
-            )} */}
-            {/* Disable SMS MFA */}
-            {/* {auth.view === "mfa_totp" && <MfaTotpForm />} */}
-            <MfaTotpForm />
-            {/* {auth.view === "mfa_sms" && <MfaSmsForm />} */}
+            )}
+            {auth.view === "mfa_totp" && <MfaTotpForm />}
+            {auth.view === "mfa_sms" && <MfaSmsForm />}
           </>
         )}
 
