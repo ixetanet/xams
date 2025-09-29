@@ -60,6 +60,7 @@ const SetupSmsView = () => {
                 onChange={(e) => auth.setPhoneNumber(e.currentTarget.value)}
                 size="md"
                 disabled={loadingStates.smsCreate}
+                autoFocus
               />
 
               <Group grow>
@@ -79,16 +80,6 @@ const SetupSmsView = () => {
                   Cancel
                 </Button>
               </Group>
-
-              <Button
-                onClick={() => auth.signOut("login")}
-                variant="subtle"
-                size="sm"
-                mt="xs"
-                fullWidth
-              >
-                Logout
-              </Button>
             </Stack>
           </form>
         </Stack>

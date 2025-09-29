@@ -62,7 +62,9 @@ const ProfileMainView = () => {
             {auth.isReLoginRequired && (
               <Alert color="blue" variant="light" mb="md">
                 <Text size="sm">
-                  <strong>Re-authentication Required:</strong> For security reasons, you need to sign in again before deactivating MFA. Please log in with your current credentials.
+                  <strong>Re-authentication Required:</strong> For security
+                  reasons, you need to sign in again before deactivating MFA.
+                  Please log in with your current credentials.
                 </Text>
               </Alert>
             )}
@@ -113,7 +115,7 @@ const ProfileMainView = () => {
                       onClick={() => {
                         setDeactivateModal({
                           isOpen: true,
-                          type: 'totp',
+                          type: "totp",
                         });
                       }}
                       loading={loadingStates.totpUnenroll}
@@ -124,7 +126,8 @@ const ProfileMainView = () => {
                 </Stack>
               </Card>
 
-              <Card withBorder p="md">
+              {/* Disable SMS Enrollment */}
+              {/* <Card withBorder p="md">
                 <Stack gap="md">
                   <Group justify="space-between" align="center">
                     <div>
@@ -163,7 +166,7 @@ const ProfileMainView = () => {
                     </Button>
                   )}
                 </Stack>
-              </Card>
+              </Card> */}
             </Stack>
 
             {!auth.mfaTotpEnrolled && !auth.mfaSmsEnrolled && (

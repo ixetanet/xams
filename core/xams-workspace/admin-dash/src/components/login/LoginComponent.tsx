@@ -11,6 +11,7 @@ import MfaTotpForm from "./MfaTotpForm";
 import RegisterForm from "./RegisterForm";
 
 interface LoginComponentProps {
+  onLoginSuccess: () => void;
   providers: string[];
 }
 
@@ -28,7 +29,7 @@ const LoginComponent = (props: LoginComponentProps) => {
 
   // Login success - redirect to dashboard
   if (auth.isLoggedIn && auth.isEmailVerified) {
-    router.push("/");
+    props.onLoginSuccess();
     return <></>;
   }
 

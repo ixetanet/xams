@@ -9,6 +9,7 @@ import ProfileMainView from "./ProfileMainView";
 import SetupTotpView from "./SetupTotpView";
 import SetupSmsView from "./SetupSmsView";
 import SetupSmsEnrollView from "./SetupSmsEnrollView";
+import LoginComponent from "../login/LoginComponent";
 
 interface ProfileComponentProps {
   providers: string[];
@@ -32,10 +33,14 @@ const ProfileComponent = ({ providers }: ProfileComponentProps) => {
     router.push("/auth/login");
   }
 
+  // Relogin required - for MFA changes
   if (auth.view === "login") {
     return (
       <LoginProvider providers={providers} auth={auth}>
-        <LoginForm />
+        <LoginComponent
+          providers={providers}
+          onLoginSuccess={() => auth.setView("profile")}
+        />
       </LoginProvider>
     );
   }
@@ -44,7 +49,8 @@ const ProfileComponent = ({ providers }: ProfileComponentProps) => {
     <ProfileProvider providers={providers} auth={auth}>
       {auth.view === "setup_mfa_totp" && <SetupTotpView />}
       {auth.view === "setup_mfa_sms" && <SetupSmsView />}
-      {auth.view === "setup_mfa_sms_enroll" && <SetupSmsEnrollView />}
+      {/* Don't allow SMS Enrollment */}
+      {/* {auth.view === "setup_mfa_sms_enroll" && <SetupSmsEnrollView />} */}
       {auth.view === "profile" && <ProfileMainView />}
     </ProfileProvider>
   );

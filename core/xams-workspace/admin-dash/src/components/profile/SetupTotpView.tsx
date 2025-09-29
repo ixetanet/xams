@@ -106,16 +106,6 @@ const SetupTotpView = () => {
                   Cancel
                 </Button>
               </Group>
-
-              <Button
-                onClick={() => auth.signOut("login")}
-                variant="subtle"
-                size="sm"
-                mt="xs"
-                fullWidth
-              >
-                Logout
-              </Button>
             </Stack>
           </form>
         </Stack>
