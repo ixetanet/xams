@@ -457,6 +457,10 @@ export class FirebaseAuthConfig implements AuthConfig {
       const userCredential = await this.mfaResolver.resolveSignIn(
         multiFactorAssertion
       );
+      this.isMfaRequired = false;
+      if (this.authStateCallback) {
+        this.authStateCallback(this.auth.currentUser != null);
+      }
       return {
         success: true,
       };
@@ -716,7 +720,7 @@ export class FirebaseAuthConfig implements AuthConfig {
       this.isMfaRequired = true;
       this.mfaResolver = getMultiFactorResolver(this.auth, this.firebaseError);
       if (this.authStateCallback) {
-        this.authStateCallback(false);
+        this.authStateCallback(this.auth.currentUser != null);
       }
       return "";
     }

@@ -1,7 +1,6 @@
 import { useAuth } from "@ixeta/headless-auth-react";
 import { Loader } from "@mantine/core";
-import { useRouter } from "next/router";
-import React from "react";
+import React, { useEffect } from "react";
 import { LoginProvider } from "./LoginContext";
 import EmailVerificationForm from "./EmailVerificationForm";
 import LoginForm from "./LoginForm";
@@ -9,15 +8,28 @@ import MfaSelectionForm from "./MfaSelectionForm";
 import MfaSmsForm from "./MfaSmsForm";
 import MfaTotpForm from "./MfaTotpForm";
 import RegisterForm from "./RegisterForm";
+import ProfileMainView from "../profile/ProfileMainView";
+import SetupSmsView from "../profile/SetupSmsView";
+import SetupTotpView from "../profile/SetupTotpView";
 
 interface LoginComponentProps {
-  onLoginSuccess: () => void;
+  defaultView: string;
+  onLoginSuccess?: () => void;
   providers: string[];
 }
 
 const LoginComponent = (props: LoginComponentProps) => {
-  const router = useRouter();
   const auth = useAuth();
+
+  useEffect(() => {
+    if (auth.isLoggedIn && auth.isEmailVerified && !auth.isMfaRequired) {
+      if (props.onLoginSuccess) {
+        props.onLoginSuccess();
+      } else {
+        auth.setView(props.defaultView);
+      }
+    }
+  }, [auth.isLoggedIn, auth.isEmailVerified, auth.isMfaRequired]);
 
   if (!auth.isReady) {
     return (
@@ -27,33 +39,22 @@ const LoginComponent = (props: LoginComponentProps) => {
     );
   }
 
-  // Login success - redirect to dashboard
-  if (auth.isLoggedIn && auth.isEmailVerified) {
-    props.onLoginSuccess();
-    return <></>;
-  }
-
-  // If only one MFA factor is available, skip the selection step
-  if (
-    !auth.isLoggedIn &&
-    auth.isMfaRequired &&
-    auth.view !== "mfa_totp" &&
-    auth.view !== "mfa_sms" &&
-    auth.mfaFactors.length === 1
-  ) {
-    auth.setView(auth.mfaFactors[0] === "totp" ? "mfa_totp" : "mfa_sms");
+  if (!auth.isLoggedIn && auth.view === "profile") {
+    auth.setView("login");
   }
 
   return (
     <LoginProvider providers={props.providers} auth={auth}>
       {/* User is attempting to login and MFA is required */}
-      {!auth.isLoggedIn && auth.isMfaRequired && (
+      {auth.isMfaRequired && (
         <>
-          {auth.view !== "mfa_totp" && auth.view !== "mfa_sms" && (
+          {/* {auth.view !== "mfa_totp" && auth.view !== "mfa_sms" && (
             <MfaSelectionForm />
-          )}
-          {auth.view === "mfa_totp" && <MfaTotpForm />}
-          {auth.view === "mfa_sms" && <MfaSmsForm />}
+          )} */}
+          {/* Disable SMS MFA */}
+          {/* {auth.view === "mfa_totp" && <MfaTotpForm />} */}
+          <MfaTotpForm />
+          {/* {auth.view === "mfa_sms" && <MfaSmsForm />} */}
         </>
       )}
 
@@ -67,6 +68,12 @@ const LoginComponent = (props: LoginComponentProps) => {
 
       {/* Email verification required */}
       {auth.isLoggedIn && !auth.isEmailVerified && <EmailVerificationForm />}
+
+      {auth.view === "setup_mfa_totp" && <SetupTotpView />}
+      {auth.view === "setup_mfa_sms" && <SetupSmsView />}
+      {/* Don't allow SMS Enrollment */}
+      {/* {auth.view === "setup_mfa_sms_enroll" && <SetupSmsEnrollView />} */}
+      {auth.view === "profile" && <ProfileMainView />}
     </LoginProvider>
   );
 };
