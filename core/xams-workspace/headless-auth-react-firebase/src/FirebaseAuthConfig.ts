@@ -701,6 +701,11 @@ export class FirebaseAuthConfig implements AuthConfig {
         multiFactorAssertion
       );
 
+      this.isMfaRequired = false;
+      if (this.authStateCallback) {
+        this.authStateCallback(this.auth.currentUser != null);
+      }
+
       return {
         success: true,
       };
