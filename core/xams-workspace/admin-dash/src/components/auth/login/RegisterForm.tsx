@@ -44,11 +44,13 @@ const RegisterForm = () => {
           e.preventDefault();
           setLoadingStates((prev) => ({ ...prev, signUp: true }));
           try {
-            await auth.signUp();
-            await auth.sendEmailVerification({
-              url: emailVerificationRedirectUrl,
-              handleCodeInApp: false,
-            });
+            const success = await auth.signUp();
+            if (success) {
+              await auth.sendEmailVerification({
+                url: emailVerificationRedirectUrl,
+                handleCodeInApp: false,
+              });
+            }
           } finally {
             setLoadingStates((prev) => ({ ...prev, signUp: false }));
           }

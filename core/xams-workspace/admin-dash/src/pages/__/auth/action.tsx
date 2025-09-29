@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { Container, Paper, Title, Text, Stack, Loader, Alert, Button } from "@mantine/core";
+import { Title, Text, Stack, Loader, Alert, Button } from "@mantine/core";
 import { applyActionCode } from "firebase/auth";
 import { firebaseAuth, initializeFirebase } from "../../_app";
 import { useQuery } from "@tanstack/react-query";
 import { FirebaseConfig } from "@/types";
 import { API_CONFIG } from "@ixeta/xams";
+import LoginContainer from "@/components/auth/LoginContainer";
 
 type ActionMode = "verifyEmail" | "resetPassword" | "recoverEmail";
 
@@ -106,31 +107,27 @@ const AuthAction = () => {
   // Loading state while fetching Firebase config
   if (authQuery.isLoading) {
     return (
-      <Container size="xs" style={{ paddingTop: "100px" }}>
-        <Paper p="xl" shadow="md" radius="md">
-          <Stack align="center" gap="lg">
-            <Loader size="lg" />
-            <Text size="sm" c="dimmed">Loading...</Text>
-          </Stack>
-        </Paper>
-      </Container>
+      <LoginContainer>
+        <Stack align="center" gap="lg">
+          <Loader size="lg" />
+          <Text size="sm" c="dimmed">Loading...</Text>
+        </Stack>
+      </LoginContainer>
     );
   }
 
   if (!authQuery.data) {
     return (
-      <Container size="xs" style={{ paddingTop: "100px" }}>
-        <Paper p="xl" shadow="md" radius="md">
-          <Stack gap="lg">
-            <Alert color="red" variant="light">
-              Error loading authentication settings.
-            </Alert>
-            <Button onClick={() => router.push("/login")} fullWidth>
-              Return to Login
-            </Button>
-          </Stack>
-        </Paper>
-      </Container>
+      <LoginContainer>
+        <Stack gap="lg">
+          <Alert color="red" variant="light">
+            Error loading authentication settings.
+          </Alert>
+          <Button onClick={() => router.push("/login")} fullWidth>
+            Return to Login
+          </Button>
+        </Stack>
+      </LoginContainer>
     );
   }
 
@@ -167,34 +164,32 @@ const AuthAction = () => {
   };
 
   return (
-    <Container size="xs" style={{ paddingTop: "100px" }}>
-      <Paper p="xl" shadow="md" radius="md">
-        <Stack gap="lg" align="center">
-          {status === "loading" && <Loader size="lg" />}
+    <LoginContainer>
+      <Stack gap="lg" align="center">
+        {status === "loading" && <Loader size="lg" />}
 
-          <div style={{ textAlign: "center" }}>
-            <Title order={3} mb="xs">
-              {getTitle()}
-            </Title>
-            <Text size="sm" c={status === "error" ? "red" : "dimmed"}>
-              {getMessage()}
-            </Text>
-          </div>
+        <div style={{ textAlign: "center" }}>
+          <Title order={3} mb="xs">
+            {getTitle()}
+          </Title>
+          <Text size="sm" c={status === "error" ? "red" : "dimmed"}>
+            {getMessage()}
+          </Text>
+        </div>
 
-          {status === "error" && (
-            <Button onClick={() => router.push("/login")} fullWidth>
-              Return to Login
-            </Button>
-          )}
+        {status === "error" && (
+          <Button onClick={() => router.push("/login")} fullWidth>
+            Return to Login
+          </Button>
+        )}
 
-          {status === "success" && (
-            <Text size="xs" c="dimmed">
-              You will be redirected in a few seconds...
-            </Text>
-          )}
-        </Stack>
-      </Paper>
-    </Container>
+        {status === "success" && (
+          <Text size="xs" c="dimmed">
+            You will be redirected in a few seconds...
+          </Text>
+        )}
+      </Stack>
+    </LoginContainer>
   );
 };
 
