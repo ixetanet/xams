@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Paper, Title, Text, Stack, Alert } from "@mantine/core";
+import { Button, Title, Text, Stack, Alert } from "@mantine/core";
 import { sendEmailVerification } from "firebase/auth";
 import { firebaseAuth } from "@/pages/_app";
 import { useLoginContext } from "../LoginContext";
@@ -8,15 +8,7 @@ const EmailVerificationForm = () => {
   const { auth, loadingStates, setLoadingStates } = useLoginContext();
 
   return (
-    <div className="min-h-screen flex justify-center items-center p-4">
-      <Paper
-        shadow="sm"
-        radius="lg"
-        p="xl"
-        withBorder
-        className="w-full max-w-sm"
-      >
-        <Stack gap="lg">
+    <Stack gap="lg">
           <div>
             <Title order={3} ta="center" mb="xs">
               Verify your email
@@ -59,9 +51,7 @@ const EmailVerificationForm = () => {
               Resend verification email
             </Button>
           </form>
-        </Stack>
-      </Paper>
-    </div>
+    </Stack>
   );
 };
 

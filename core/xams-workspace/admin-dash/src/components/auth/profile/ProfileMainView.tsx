@@ -1,7 +1,6 @@
 import React from "react";
 import {
   Button,
-  Paper,
   Title,
   Text,
   Stack,
@@ -25,15 +24,8 @@ const ProfileMainView = () => {
   } = useLoginContext();
 
   return (
-    <div className="min-h-screen flex justify-center items-center p-4">
-      <Paper
-        shadow="sm"
-        radius="lg"
-        p="xl"
-        withBorder
-        className="w-full max-w-md"
-      >
-        <Stack gap="lg">
+    <>
+      <Stack gap="lg">
           <Button
             variant="subtle"
             onClick={() => router.back()}
@@ -189,17 +181,16 @@ const ProfileMainView = () => {
           >
             Sign Out
           </Button>
-        </Stack>
-      </Paper>
+    </Stack>
 
-      <DeactivateMfaModal
-        isOpen={deactivateModal.isOpen}
-        type={deactivateModal.type}
-        onClose={() => setDeactivateModal({ isOpen: false, type: null })}
-        loadingStates={loadingStates}
-        setLoadingStates={setLoadingStates}
-      />
-    </div>
+    <DeactivateMfaModal
+      isOpen={deactivateModal.isOpen}
+      type={deactivateModal.type}
+      onClose={() => setDeactivateModal({ isOpen: false, type: null })}
+      loadingStates={loadingStates}
+      setLoadingStates={setLoadingStates}
+    />
+    </>
   );
 };
 

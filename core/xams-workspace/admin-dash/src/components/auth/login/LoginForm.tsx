@@ -3,7 +3,6 @@ import {
   Button,
   TextInput,
   Checkbox,
-  Paper,
   Title,
   Text,
   Divider,
@@ -24,15 +23,7 @@ const LoginForm = () => {
   } = useLoginContext();
 
   return (
-    <div className="min-h-screen flex justify-center items-center p-4">
-      <Paper
-        shadow="sm"
-        radius="lg"
-        p="xl"
-        withBorder
-        className="w-full max-w-sm"
-      >
-        <Stack gap="lg">
+    <Stack gap="lg">
           <div>
             <Title order={2} ta="center" mb="xs">
               Sign in
@@ -146,9 +137,7 @@ const LoginForm = () => {
               Sign up
             </Text>
           </Text>
-        </Stack>
-      </Paper>
-    </div>
+    </Stack>
   );
 };
 

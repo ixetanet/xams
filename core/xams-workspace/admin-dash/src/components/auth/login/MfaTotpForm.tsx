@@ -2,7 +2,6 @@ import React, { useRef, useEffect } from "react";
 import {
   Button,
   TextInput,
-  Paper,
   Title,
   Text,
   Stack,
@@ -27,14 +26,6 @@ const MfaTotpForm = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex justify-center items-center p-4">
-      <Paper
-        shadow="sm"
-        radius="lg"
-        p="xl"
-        withBorder
-        className="w-full max-w-sm"
-      >
         <form
           onSubmit={async (e) => {
             e.preventDefault();
@@ -98,8 +89,6 @@ const MfaTotpForm = () => {
             </div>
           </Stack>
         </form>
-      </Paper>
-    </div>
   );
 };
 

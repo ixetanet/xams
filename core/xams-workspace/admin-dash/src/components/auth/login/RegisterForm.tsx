@@ -2,7 +2,6 @@ import React from "react";
 import {
   Button,
   TextInput,
-  Paper,
   Title,
   Text,
   Stack,
@@ -14,15 +13,7 @@ const RegisterForm = () => {
   const { auth, loadingStates, setLoadingStates } = useLoginContext();
 
   return (
-    <div className="min-h-screen flex justify-center items-center p-4">
-      <Paper
-        shadow="sm"
-        radius="lg"
-        p="xl"
-        withBorder
-        className="w-full max-w-sm"
-      >
-        <Stack gap="lg">
+    <Stack gap="lg">
           <div>
             <Title order={2} ta="center" mb="xs">
               Create account
@@ -91,9 +82,7 @@ const RegisterForm = () => {
               Sign in
             </Text>
           </Text>
-        </Stack>
-      </Paper>
-    </div>
+    </Stack>
   );
 };
 

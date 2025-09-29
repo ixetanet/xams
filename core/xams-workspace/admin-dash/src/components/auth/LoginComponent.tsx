@@ -2,6 +2,7 @@ import { useAuth } from "@ixeta/headless-auth-react";
 import { Loader } from "@mantine/core";
 import React, { useEffect } from "react";
 import { LoginProvider } from "./LoginContext";
+import LoginContainer from "./LoginContainer";
 import EmailVerificationForm from "./login/EmailVerificationForm";
 import LoginForm from "./login/LoginForm";
 import MfaSelectionForm from "./login/MfaSelectionForm";
@@ -45,35 +46,37 @@ const LoginComponent = (props: LoginComponentProps) => {
 
   return (
     <LoginProvider providers={props.providers} auth={auth}>
-      {/* User is attempting to login and MFA is required */}
-      {auth.isMfaRequired && (
-        <>
-          {/* {auth.view !== "mfa_totp" && auth.view !== "mfa_sms" && (
-            <MfaSelectionForm />
-          )} */}
-          {/* Disable SMS MFA */}
-          {/* {auth.view === "mfa_totp" && <MfaTotpForm />} */}
-          <MfaTotpForm />
-          {/* {auth.view === "mfa_sms" && <MfaSmsForm />} */}
-        </>
-      )}
+      <LoginContainer maxWidth={auth.view === "profile" ? "md" : "sm"}>
+        {/* User is attempting to login and MFA is required */}
+        {auth.isMfaRequired && (
+          <>
+            {/* {auth.view !== "mfa_totp" && auth.view !== "mfa_sms" && (
+              <MfaSelectionForm />
+            )} */}
+            {/* Disable SMS MFA */}
+            {/* {auth.view === "mfa_totp" && <MfaTotpForm />} */}
+            <MfaTotpForm />
+            {/* {auth.view === "mfa_sms" && <MfaSmsForm />} */}
+          </>
+        )}
 
-      {/* The user is not logged in or a re-login is required for MFA */}
-      {(!auth.isLoggedIn || auth.isReLoginRequired) && !auth.isMfaRequired && (
-        <>
-          {auth.view === "login" && <LoginForm />}
-          {auth.view === "register" && <RegisterForm />}
-        </>
-      )}
+        {/* The user is not logged in or a re-login is required for MFA */}
+        {(!auth.isLoggedIn || auth.isReLoginRequired) && !auth.isMfaRequired && (
+          <>
+            {auth.view === "login" && <LoginForm />}
+            {auth.view === "register" && <RegisterForm />}
+          </>
+        )}
 
-      {/* Email verification required */}
-      {auth.isLoggedIn && !auth.isEmailVerified && <EmailVerificationForm />}
+        {/* Email verification required */}
+        {auth.isLoggedIn && !auth.isEmailVerified && <EmailVerificationForm />}
 
-      {auth.view === "setup_mfa_totp" && <SetupTotpView />}
-      {auth.view === "setup_mfa_sms" && <SetupSmsView />}
-      {/* Don't allow SMS Enrollment */}
-      {/* {auth.view === "setup_mfa_sms_enroll" && <SetupSmsEnrollView />} */}
-      {auth.view === "profile" && <ProfileMainView />}
+        {auth.view === "setup_mfa_totp" && <SetupTotpView />}
+        {auth.view === "setup_mfa_sms" && <SetupSmsView />}
+        {/* Don't allow SMS Enrollment */}
+        {/* {auth.view === "setup_mfa_sms_enroll" && <SetupSmsEnrollView />} */}
+        {auth.view === "profile" && <ProfileMainView />}
+      </LoginContainer>
     </LoginProvider>
   );
 };

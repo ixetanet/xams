@@ -1,20 +1,12 @@
 import React from "react";
-import { Button, Paper, Title, Stack } from "@mantine/core";
+import { Button, Title, Stack } from "@mantine/core";
 import { useLoginContext } from "../LoginContext";
 
 const MfaSelectionForm = () => {
   const { auth, loadingStates } = useLoginContext();
 
   return (
-    <div className="min-h-screen flex justify-center items-center p-4">
-      <Paper
-        shadow="sm"
-        radius="lg"
-        p="xl"
-        withBorder
-        className="w-full max-w-sm"
-      >
-        <Stack gap="md">
+    <Stack gap="md">
           <Title order={3} ta="center">
             Choose verification method
           </Title>
@@ -62,9 +54,7 @@ const MfaSelectionForm = () => {
           >
             Logout
           </Button>
-        </Stack>
-      </Paper>
-    </div>
+    </Stack>
   );
 };
 

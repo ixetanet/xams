@@ -1,7 +1,6 @@
 import React from "react";
 import {
   Button,
-  Paper,
   Title,
   Text,
   Stack,
@@ -15,15 +14,7 @@ const SetupSmsEnrollView = () => {
   const { auth, loadingStates, setLoadingStates } = useLoginContext();
 
   return (
-    <div className="min-h-screen flex justify-center items-center p-4">
-      <Paper
-        shadow="sm"
-        radius="lg"
-        p="xl"
-        withBorder
-        className="w-full max-w-sm"
-      >
-        <Stack gap="lg">
+    <Stack gap="lg">
           <div>
             <Title order={3} ta="center" mb="xs">
               Verify SMS Code
@@ -106,9 +97,7 @@ const SetupSmsEnrollView = () => {
               </Button>
             </Stack>
           </form>
-        </Stack>
-      </Paper>
-    </div>
+    </Stack>
   );
 };
 
