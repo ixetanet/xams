@@ -32,6 +32,7 @@ export const useAuth = (props?: useAuthProps) => {
   const [isReLoginRequired, setIsReLoginRequired] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
 
   if (authContext === undefined) {
     throw new Error("useAuth must be used within a AuthProvider");
@@ -48,6 +49,7 @@ export const useAuth = (props?: useAuthProps) => {
     setPhoneNumber("");
     setCurrentPassword("");
     setNewPassword("");
+    setResetEmail("");
   };
 
   const onSetView = (view: string) => {
@@ -241,6 +243,12 @@ export const useAuth = (props?: useAuthProps) => {
     });
   };
 
+  const sendPasswordResetEmail = async () => {
+    return await execute(async () => {
+      return await authContext.authConfig.sendPasswordResetEmail(resetEmail);
+    });
+  };
+
   return {
     view,
     setView: onSetView,
@@ -277,6 +285,9 @@ export const useAuth = (props?: useAuthProps) => {
     setNewPassword,
     changePassword,
     sendEmailVerification,
+    resetEmail,
+    setResetEmail,
+    sendPasswordResetEmail,
     ...authContext,
   };
 };

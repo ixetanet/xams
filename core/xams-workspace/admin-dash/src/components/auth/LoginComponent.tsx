@@ -9,6 +9,7 @@ import MfaSelectionForm from "./login/MfaSelectionForm";
 import MfaSmsForm from "./login/MfaSmsForm";
 import MfaTotpForm from "./login/MfaTotpForm";
 import RegisterForm from "./login/RegisterForm";
+import ForgotPasswordForm from "./login/ForgotPasswordForm";
 import ProfileMainView from "./profile/ProfileMainView";
 import SetupSmsView from "./profile/SetupSmsView";
 import SetupTotpView from "./profile/SetupTotpView";
@@ -92,6 +93,7 @@ const LoginComponent = (props: LoginComponentProps) => {
             <>
               {auth.view === "login" && <LoginForm />}
               {auth.view === "register" && <RegisterForm />}
+              {auth.view === "forgot_password" && <ForgotPasswordForm />}
             </>
           )}
 

@@ -81,14 +81,24 @@ const LoginForm = () => {
             size="md"
             disabled={loadingStates.signIn || isAnyProviderLoading()}
           />
-          <Checkbox
-            label="Remember me"
-            checked={auth.remember}
-            onChange={(e) => {
-              auth.setRemember(e.currentTarget.checked);
-            }}
-            disabled={loadingStates.signIn || isAnyProviderLoading()}
-          />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Checkbox
+              label="Remember me"
+              checked={auth.remember}
+              onChange={(e) => {
+                auth.setRemember(e.currentTarget.checked);
+              }}
+              disabled={loadingStates.signIn || isAnyProviderLoading()}
+            />
+            <Text
+              size="sm"
+              c="blue"
+              style={{ cursor: "pointer" }}
+              onClick={() => auth.setView("forgot_password")}
+            >
+              Forgot password?
+            </Text>
+          </div>
         </Stack>
 
         <Button

@@ -32,6 +32,7 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
   sendEmailVerification,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 
 export type FirebaseAuthConfigOptions = {
@@ -771,6 +772,21 @@ export class FirebaseAuthConfig implements AuthConfig {
       }
 
       await sendEmailVerification(currentUser);
+
+      return {
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: this.friendlyError(error),
+      };
+    }
+  };
+
+  sendPasswordResetEmail = async (emailAddress: string) => {
+    try {
+      await sendPasswordResetEmail(this.auth, emailAddress);
 
       return {
         success: true,
