@@ -98,10 +98,14 @@ const LoginComponent = (props: LoginComponentProps) => {
         {/* Email verification required */}
         {auth.isLoggedIn && !auth.isEmailVerified && <EmailVerificationForm />}
 
-        {auth.view === "setup_mfa_totp" && <SetupTotpView />}
-        {auth.view === "setup_mfa_sms" && <SetupSmsView />}
-        {auth.view === "setup_mfa_sms_enroll" && <SetupSmsEnrollView />}
-        {auth.view === "profile" && <ProfileMainView />}
+        {auth.isLoggedIn && auth.isEmailVerified && (
+          <>
+            {auth.view === "setup_mfa_totp" && <SetupTotpView />}
+            {auth.view === "setup_mfa_sms" && <SetupSmsView />}
+            {auth.view === "setup_mfa_sms_enroll" && <SetupSmsEnrollView />}
+            {auth.view === "profile" && <ProfileMainView />}
+          </>
+        )}
       </LoginContainer>
     </LoginProvider>
   );

@@ -31,6 +31,7 @@ import {
   updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  sendEmailVerification,
 } from "firebase/auth";
 
 export type FirebaseAuthConfigOptions = {
@@ -759,6 +760,29 @@ export class FirebaseAuthConfig implements AuthConfig {
     }
   };
 
+  sendEmailVerification = async () => {
+    try {
+      const currentUser = this.auth.currentUser;
+      if (!currentUser) {
+        return {
+          success: false,
+          error: "No user is currently signed in.",
+        };
+      }
+
+      await sendEmailVerification(currentUser);
+
+      return {
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: this.friendlyError(error),
+      };
+    }
+  };
+
   private friendlyError = (error: any): string => {
     this.firebaseError = error;
     const code = error.code;
@@ -938,7 +962,7 @@ export class FirebaseAuthConfig implements AuthConfig {
       case "auth/totp-challenge-timeout":
         return "Your authenticator code has expired. Logout and log back in to try again.";
       case "auth/too-many-requests":
-        return "Too many requests. Please try again later.";
+        return "You've made too many attempts. Please wait a few minutes before trying again.";
       case "auth/unauthorized-continue-uri":
         return "The continue URL is not authorized.";
       case "auth/unsupported-first-factor":

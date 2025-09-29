@@ -235,6 +235,12 @@ export const useAuth = (props?: useAuthProps) => {
     });
   };
 
+  const sendEmailVerification = async () => {
+    return await execute(async () => {
+      return await authContext.authConfig.sendEmailVerification();
+    });
+  };
+
   return {
     view,
     setView: onSetView,
@@ -270,6 +276,7 @@ export const useAuth = (props?: useAuthProps) => {
     newPassword,
     setNewPassword,
     changePassword,
+    sendEmailVerification,
     ...authContext,
   };
 };
