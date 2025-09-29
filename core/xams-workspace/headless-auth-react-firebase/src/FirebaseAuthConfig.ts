@@ -33,6 +33,8 @@ import {
   EmailAuthProvider,
   sendEmailVerification,
   sendPasswordResetEmail,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
   ActionCodeSettings,
 } from "firebase/auth";
 
@@ -788,6 +790,37 @@ export class FirebaseAuthConfig implements AuthConfig {
   sendPasswordResetEmail = async (emailAddress: string) => {
     try {
       await sendPasswordResetEmail(this.auth, emailAddress);
+
+      return {
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: this.friendlyError(error),
+      };
+    }
+  };
+
+  verifyPasswordResetCode = async (oobCode: string) => {
+    try {
+      const email = await verifyPasswordResetCode(this.auth, oobCode);
+
+      return {
+        success: true,
+        data: email,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: this.friendlyError(error),
+      };
+    }
+  };
+
+  confirmPasswordReset = async (oobCode: string, newPassword: string) => {
+    try {
+      await confirmPasswordReset(this.auth, oobCode, newPassword);
 
       return {
         success: true,

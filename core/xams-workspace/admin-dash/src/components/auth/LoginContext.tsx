@@ -164,6 +164,7 @@ export const LoginProvider = ({
     smsUnenroll: false,
     changePassword: false,
     forgotPassword: false,
+    resetPassword: false,
     ...createProviderLoadingStates(),
   });
 

@@ -33,6 +33,10 @@ export const useAuth = (props?: useAuthProps) => {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [resetEmail, setResetEmail] = useState("");
+  const [resetOobCode, setResetOobCode] = useState("");
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [resetConfirmPassword, setResetConfirmPassword] = useState("");
+  const [resetEmailFromCode, setResetEmailFromCode] = useState("");
 
   if (authContext === undefined) {
     throw new Error("useAuth must be used within a AuthProvider");
@@ -50,6 +54,10 @@ export const useAuth = (props?: useAuthProps) => {
     setCurrentPassword("");
     setNewPassword("");
     setResetEmail("");
+    setResetOobCode("");
+    setResetNewPassword("");
+    setResetConfirmPassword("");
+    setResetEmailFromCode("");
   };
 
   const onSetView = (view: string) => {
@@ -249,6 +257,34 @@ export const useAuth = (props?: useAuthProps) => {
     });
   };
 
+  const verifyPasswordResetCodeFn = async (oobCode?: string) => {
+    return await execute(async () => {
+      const resp = await authContext.authConfig.verifyPasswordResetCode(
+        oobCode || resetOobCode
+      );
+      if (resp.success && resp.data) {
+        setResetEmailFromCode(resp.data);
+      }
+      return resp;
+    });
+  };
+
+  const confirmPasswordResetFn = async (oobCode?: string, newPwd?: string) => {
+    return await execute(async () => {
+      const resp = await authContext.authConfig.confirmPasswordReset(
+        oobCode || resetOobCode,
+        newPwd || resetNewPassword
+      );
+      if (resp.success) {
+        setResetOobCode("");
+        setResetNewPassword("");
+        setResetConfirmPassword("");
+        setResetEmailFromCode("");
+      }
+      return resp;
+    });
+  };
+
   return {
     view,
     setView: onSetView,
@@ -270,6 +306,7 @@ export const useAuth = (props?: useAuthProps) => {
     signUp,
     signOut,
     error,
+    setError,
     mfaTotpCreate: mfaTotpCreate,
     mfaTotpEnroll,
     mfaTotpUnenroll,
@@ -288,6 +325,16 @@ export const useAuth = (props?: useAuthProps) => {
     resetEmail,
     setResetEmail,
     sendPasswordResetEmail,
+    resetOobCode,
+    setResetOobCode,
+    resetNewPassword,
+    setResetNewPassword,
+    resetConfirmPassword,
+    setResetConfirmPassword,
+    resetEmailFromCode,
+    setResetEmailFromCode,
+    verifyPasswordResetCode: verifyPasswordResetCodeFn,
+    confirmPasswordReset: confirmPasswordResetFn,
     ...authContext,
   };
 };
