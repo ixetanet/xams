@@ -40,8 +40,14 @@ const LoginComponent = (props: LoginComponentProps) => {
     );
   }
 
+  // Redirect to login if trying to access profile while not logged in
   if (!auth.isLoggedIn && auth.view === "profile") {
     auth.setView("login");
+  }
+
+  // Redirect to profile if already logged in and on login view
+  if (!auth.isReLoginRequired && auth.isLoggedIn && auth.view === "login") {
+    auth.setView(props.defaultView);
   }
 
   return (
@@ -61,12 +67,13 @@ const LoginComponent = (props: LoginComponentProps) => {
         )}
 
         {/* The user is not logged in or a re-login is required for MFA */}
-        {(!auth.isLoggedIn || auth.isReLoginRequired) && !auth.isMfaRequired && (
-          <>
-            {auth.view === "login" && <LoginForm />}
-            {auth.view === "register" && <RegisterForm />}
-          </>
-        )}
+        {(!auth.isLoggedIn || auth.isReLoginRequired) &&
+          !auth.isMfaRequired && (
+            <>
+              {auth.view === "login" && <LoginForm />}
+              {auth.view === "register" && <RegisterForm />}
+            </>
+          )}
 
         {/* Email verification required */}
         {auth.isLoggedIn && !auth.isEmailVerified && <EmailVerificationForm />}
