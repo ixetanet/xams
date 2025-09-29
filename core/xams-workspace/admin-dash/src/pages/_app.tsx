@@ -29,12 +29,7 @@ export const initializeFirebase = (config: FirebaseConfig) => {
   firebaseAuthConfig = new FirebaseAuthConfig(firebaseAuth);
   firebaseAuthConfig.setOptions({
     totpAppName: config.projectId,
-    onSignUpSuccess: async (authConfig) => {
-      if (!firebaseAuth) return;
-      if (firebaseAuth.currentUser) {
-        await sendEmailVerification(firebaseAuth.currentUser);
-      }
-    },
+    onSignUpSuccess: async (authConfig) => {},
     onSignInSuccess: async () => {
       // router.push("/app/coupons");
     },

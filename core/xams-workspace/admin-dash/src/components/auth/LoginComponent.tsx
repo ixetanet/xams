@@ -20,6 +20,7 @@ interface LoginComponentProps {
   onLoginSuccess?: () => void;
   providers: string[];
   smsEnrollmentEnabled?: boolean;
+  emailVerificationRedirectUrl: string;
 }
 
 const LoginComponent = (props: LoginComponentProps) => {
@@ -74,6 +75,7 @@ const LoginComponent = (props: LoginComponentProps) => {
       providers={props.providers}
       auth={auth}
       smsEnrollmentEnabled={props.smsEnrollmentEnabled ?? false}
+      emailVerificationRedirectUrl={props.emailVerificationRedirectUrl}
     >
       <LoginContainer maxWidth={auth.view === "profile" ? "md" : "sm"}>
         {/* User is attempting to login and MFA is required */}

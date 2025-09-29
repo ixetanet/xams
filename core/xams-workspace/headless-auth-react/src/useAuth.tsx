@@ -237,9 +237,9 @@ export const useAuth = (props?: useAuthProps) => {
     });
   };
 
-  const sendEmailVerification = async () => {
+  const sendEmailVerification = async (settings?: any) => {
     return await execute(async () => {
-      return await authContext.authConfig.sendEmailVerification();
+      return await authContext.authConfig.sendEmailVerification(settings);
     });
   };
 

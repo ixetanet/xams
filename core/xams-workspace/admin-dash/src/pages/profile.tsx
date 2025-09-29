@@ -51,6 +51,9 @@ const Profile = () => {
         // onLoginSuccess={() => router.push("/profile")}
         defaultView="profile"
         smsEnrollmentEnabled={authQuery.data.enableSmsMfa}
+        emailVerificationRedirectUrl={
+          authQuery.data.emailVerificationRedirectUrl
+        }
       />
     </AuthProvider>
   );

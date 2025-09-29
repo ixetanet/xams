@@ -37,7 +37,7 @@ export type AuthConfig = {
     currentPassword: string,
     newPassword: string
   ) => Promise<AuthResponse>;
-  sendEmailVerification: () => Promise<AuthResponse>;
+  sendEmailVerification: (settings?: any) => Promise<AuthResponse>;
   sendPasswordResetEmail: (emailAddress: string) => Promise<AuthResponse>;
 };
 

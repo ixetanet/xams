@@ -1,9 +1,25 @@
 import React from "react";
 import { Button, Title, Text, Stack, Alert } from "@mantine/core";
 import { useLoginContext } from "../LoginContext";
+import { FirebaseConfig } from "@/types";
+import { API_CONFIG } from "@ixeta/xams";
+import { useQuery } from "@tanstack/react-query";
 
 const EmailVerificationForm = () => {
   const { auth, loadingStates, setLoadingStates } = useLoginContext();
+
+  const authQuery = useQuery<FirebaseConfig>({
+    queryKey: ["auth-settings"],
+    queryFn: async () => {
+      const resp = await fetch(
+        `${process.env.NEXT_PUBLIC_API}${API_CONFIG}?name=firebase`
+      );
+      if (!resp.ok) {
+        return null;
+      }
+      return resp.json();
+    },
+  });
 
   return (
     <Stack gap="lg">
@@ -28,7 +44,14 @@ const EmailVerificationForm = () => {
           e.preventDefault();
           setLoadingStates((prev) => ({ ...prev, resendEmail: true }));
           try {
-            await auth.sendEmailVerification();
+            if (authQuery.data) {
+              await auth.sendEmailVerification({
+                url: authQuery.data.emailVerificationRedirectUrl,
+                handleCodeInApp: false,
+              });
+            } else {
+              await auth.sendEmailVerification();
+            }
           } finally {
             setLoadingStates((prev) => ({ ...prev, resendEmail: false }));
           }

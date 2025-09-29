@@ -33,6 +33,7 @@ import {
   EmailAuthProvider,
   sendEmailVerification,
   sendPasswordResetEmail,
+  ActionCodeSettings,
 } from "firebase/auth";
 
 export type FirebaseAuthConfigOptions = {
@@ -761,7 +762,7 @@ export class FirebaseAuthConfig implements AuthConfig {
     }
   };
 
-  sendEmailVerification = async () => {
+  sendEmailVerification = async (settings?: any) => {
     try {
       const currentUser = this.auth.currentUser;
       if (!currentUser) {
@@ -771,7 +772,7 @@ export class FirebaseAuthConfig implements AuthConfig {
         };
       }
 
-      await sendEmailVerification(currentUser);
+      await sendEmailVerification(currentUser, settings as ActionCodeSettings);
 
       return {
         success: true,
