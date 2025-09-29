@@ -48,8 +48,9 @@ const Profile = () => {
     <AuthProvider authConfig={firebaseAuthConfig}>
       <LoginComponent
         providers={authQuery.data.providers}
-        // onLoginSuccess={() => router.push("/auth/profile")}
+        // onLoginSuccess={() => router.push("/profile")}
         defaultView="profile"
+        smsEnrollmentEnabled={authQuery.data.enableSmsMfa}
       />
     </AuthProvider>
   );

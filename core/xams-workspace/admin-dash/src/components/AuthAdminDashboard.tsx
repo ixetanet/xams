@@ -61,7 +61,7 @@ const AuthAdminDashboard = () => {
                 label={firebaseAuth?.currentUser?.email || "User"}
                 leftSection={<Avatar size="sm" />}
                 rightSection={<IconChevronRight size={14} stroke={1.5} />}
-                onClick={() => router.push("/auth/profile")}
+                onClick={() => router.push("/profile")}
                 p="md"
               />
             </Box>

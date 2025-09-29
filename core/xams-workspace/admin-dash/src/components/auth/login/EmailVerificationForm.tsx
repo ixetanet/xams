@@ -9,48 +9,48 @@ const EmailVerificationForm = () => {
 
   return (
     <Stack gap="lg">
-          <div>
-            <Title order={3} ta="center" mb="xs">
-              Verify your email
-            </Title>
-            <Text size="sm" ta="center" c="dimmed">
-              We&apos;ve sent a verification link to your email address. Please
-              check your inbox.
-            </Text>
-          </div>
+      <div>
+        <Title order={3} ta="center" mb="xs">
+          Verify your email
+        </Title>
+        <Text size="sm" ta="center" c="dimmed">
+          We&apos;ve sent a verification link to your email address. Please
+          check your inbox.
+        </Text>
+      </div>
 
-          {auth.error && (
-            <Alert color="red" variant="light">
-              {auth.error}
-            </Alert>
-          )}
+      {auth.error && (
+        <Alert color="red" variant="light">
+          {auth.error}
+        </Alert>
+      )}
 
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              setLoadingStates((prev) => ({ ...prev, resendEmail: true }));
-              try {
-                if (firebaseAuth == null) {
-                  return;
-                }
-                if (firebaseAuth.currentUser === null) {
-                  return;
-                }
-                await sendEmailVerification(firebaseAuth.currentUser);
-              } finally {
-                setLoadingStates((prev) => ({ ...prev, resendEmail: false }));
-              }
-            }}
-          >
-            <Button
-              type="submit"
-              size="md"
-              fullWidth
-              loading={loadingStates.resendEmail}
-            >
-              Resend verification email
-            </Button>
-          </form>
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setLoadingStates((prev) => ({ ...prev, resendEmail: true }));
+          try {
+            if (firebaseAuth == null) {
+              return;
+            }
+            if (firebaseAuth.currentUser === null) {
+              return;
+            }
+            await sendEmailVerification(firebaseAuth.currentUser);
+          } finally {
+            setLoadingStates((prev) => ({ ...prev, resendEmail: false }));
+          }
+        }}
+      >
+        <Button
+          type="submit"
+          size="md"
+          fullWidth
+          loading={loadingStates.resendEmail}
+        >
+          Resend verification email
+        </Button>
+      </form>
     </Stack>
   );
 };
