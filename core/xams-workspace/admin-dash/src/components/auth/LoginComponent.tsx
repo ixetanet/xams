@@ -12,11 +12,13 @@ import RegisterForm from "./login/RegisterForm";
 import ProfileMainView from "./profile/ProfileMainView";
 import SetupSmsView from "./profile/SetupSmsView";
 import SetupTotpView from "./profile/SetupTotpView";
+import SetupSmsEnrollView from "./profile/SetupSmsEnrollView";
 
 interface LoginComponentProps {
   defaultView: string;
   onLoginSuccess?: () => void;
   providers: string[];
+  smsEnrollmentEnabled?: boolean;
 }
 
 const LoginComponent = (props: LoginComponentProps) => {
@@ -62,7 +64,11 @@ const LoginComponent = (props: LoginComponentProps) => {
   }
 
   return (
-    <LoginProvider providers={props.providers} auth={auth}>
+    <LoginProvider
+      providers={props.providers}
+      auth={auth}
+      smsEnrollmentEnabled={props.smsEnrollmentEnabled ?? false}
+    >
       <LoginContainer maxWidth={auth.view === "profile" ? "md" : "sm"}>
         {/* User is attempting to login and MFA is required */}
         {auth.isMfaRequired && (
@@ -89,8 +95,7 @@ const LoginComponent = (props: LoginComponentProps) => {
 
         {auth.view === "setup_mfa_totp" && <SetupTotpView />}
         {auth.view === "setup_mfa_sms" && <SetupSmsView />}
-        {/* Don't allow SMS Enrollment */}
-        {/* {auth.view === "setup_mfa_sms_enroll" && <SetupSmsEnrollView />} */}
+        {auth.view === "setup_mfa_sms_enroll" && <SetupSmsEnrollView />}
         {auth.view === "profile" && <ProfileMainView />}
       </LoginContainer>
     </LoginProvider>

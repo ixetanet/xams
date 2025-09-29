@@ -6,4 +6,5 @@ export interface FirebaseConfig {
   messagingSenderId: string;
   appId: string;
   providers: string[];
+  enableSmsMfa: boolean;
 }

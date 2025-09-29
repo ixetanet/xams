@@ -21,6 +21,7 @@ const ProfileMainView = () => {
     setLoadingStates,
     deactivateModal,
     setDeactivateModal,
+    smsEnrollmentEnabled,
   } = useLoginContext();
 
   return (
@@ -118,53 +119,55 @@ const ProfileMainView = () => {
               </Stack>
             </Card>
 
-            <Card withBorder p="md">
-              <Stack gap="md">
-                <Group justify="space-between" align="center">
-                  <div>
-                    <Text fw={500}>SMS Authentication</Text>
-                    <Text size="sm" c="dimmed">
-                      Receive verification codes via SMS
-                    </Text>
-                  </div>
-                  {auth.mfaSmsEnrolled && (
-                    <Badge color="green" variant="light">
-                      Enabled
-                    </Badge>
+            {smsEnrollmentEnabled && (
+              <Card withBorder p="md">
+                <Stack gap="md">
+                  <Group justify="space-between" align="center">
+                    <div>
+                      <Text fw={500}>SMS Authentication</Text>
+                      <Text size="sm" c="dimmed">
+                        Receive verification codes via SMS
+                      </Text>
+                    </div>
+                    {auth.mfaSmsEnrolled && (
+                      <Badge color="green" variant="light">
+                        Enabled
+                      </Badge>
+                    )}
+                  </Group>
+                  {!auth.mfaSmsEnrolled ? (
+                    <Button
+                      fullWidth
+                      onClick={() => auth.setView("setup_mfa_sms")}
+                    >
+                      Setup SMS Authentication
+                    </Button>
+                  ) : (
+                    <Button
+                      fullWidth
+                      variant="outline"
+                      color="red"
+                      onClick={() => {
+                        setDeactivateModal({
+                          isOpen: true,
+                          type: "sms",
+                        });
+                      }}
+                      loading={loadingStates.smsUnenroll}
+                    >
+                      Deactivate SMS Authentication
+                    </Button>
                   )}
-                </Group>
-                {!auth.mfaSmsEnrolled ? (
-                  <Button
-                    fullWidth
-                    onClick={() => auth.setView("setup_mfa_sms")}
-                  >
-                    Setup SMS Authentication
-                  </Button>
-                ) : (
-                  <Button
-                    fullWidth
-                    variant="outline"
-                    color="red"
-                    onClick={() => {
-                      setDeactivateModal({
-                        isOpen: true,
-                        type: "sms",
-                      });
-                    }}
-                    loading={loadingStates.smsUnenroll}
-                  >
-                    Deactivate SMS Authentication
-                  </Button>
-                )}
-              </Stack>
-            </Card>
+                </Stack>
+              </Card>
+            )}
           </Stack>
 
           {!auth.mfaTotpEnrolled && !auth.mfaSmsEnrolled && (
             <Alert color="orange" variant="light" mt="md">
               <Text size="sm">
-                <strong>Security Recommendation:</strong> Enable at least one
-                MFA method to secure your account.
+                <strong>Security Recommendation:</strong> Enable MFA to secure
+                your account.
               </Text>
             </Alert>
           )}

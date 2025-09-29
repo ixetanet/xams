@@ -16,14 +16,15 @@ interface LoginContextType {
   isAnyProviderLoading: () => boolean;
   deactivateModal: {
     isOpen: boolean;
-    type: 'totp' | 'sms' | null;
+    type: "totp" | "sms" | null;
   };
   setDeactivateModal: React.Dispatch<
     React.SetStateAction<{
       isOpen: boolean;
-      type: 'totp' | 'sms' | null;
+      type: "totp" | "sms" | null;
     }>
   >;
+  smsEnrollmentEnabled: boolean;
 }
 
 const LoginContext = createContext<LoginContextType | undefined>(undefined);
@@ -32,12 +33,14 @@ interface LoginProviderProps {
   auth: useAuthType;
   children: ReactNode;
   providers: string[];
+  smsEnrollmentEnabled: boolean;
 }
 
 export const LoginProvider = ({
   children,
   providers,
   auth,
+  smsEnrollmentEnabled,
 }: LoginProviderProps) => {
   const router = useRouter();
 
@@ -161,7 +164,7 @@ export const LoginProvider = ({
 
   const [deactivateModal, setDeactivateModal] = useState<{
     isOpen: boolean;
-    type: 'totp' | 'sms' | null;
+    type: "totp" | "sms" | null;
   }>({
     isOpen: false,
     type: null,
@@ -184,6 +187,7 @@ export const LoginProvider = ({
     isAnyProviderLoading,
     deactivateModal,
     setDeactivateModal,
+    smsEnrollmentEnabled,
   };
 
   return (
