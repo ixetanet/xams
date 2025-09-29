@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import {
   Button,
   TextInput,
@@ -12,6 +12,18 @@ import { useLoginContext } from "../LoginContext";
 
 const SetupSmsView = () => {
   const { auth, loadingStates, setLoadingStates } = useLoginContext();
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Focus the phone input when component mounts
+    const timer = setTimeout(() => {
+      if (phoneInputRef.current) {
+        phoneInputRef.current.focus();
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <Stack gap="lg">
@@ -45,13 +57,13 @@ const SetupSmsView = () => {
           >
             <Stack gap="lg">
               <TextInput
+                ref={phoneInputRef}
                 label="Phone Number"
                 placeholder="+1234567890"
                 value={auth.phoneNumber}
                 onChange={(e) => auth.setPhoneNumber(e.currentTarget.value)}
                 size="md"
                 disabled={loadingStates.smsCreate}
-                autoFocus
               />
 
               <Group grow>

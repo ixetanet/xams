@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import {
   Button,
   Title,
@@ -12,6 +12,18 @@ import { useLoginContext } from "../LoginContext";
 
 const SetupSmsEnrollView = () => {
   const { auth, loadingStates, setLoadingStates } = useLoginContext();
+  const pinInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Focus the first pin input when component mounts
+    const timer = setTimeout(() => {
+      if (pinInputRef.current) {
+        pinInputRef.current.focus();
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <Stack gap="lg">
@@ -49,11 +61,13 @@ const SetupSmsEnrollView = () => {
             </Text>
             <div className="flex justify-center">
               <PinInput
+                ref={pinInputRef}
                 length={6}
                 size="md"
                 value={auth.mfaCode}
                 onChange={(value) => auth.setMfaCode(value)}
                 disabled={loadingStates.smsEnroll}
+                autoFocus
               />
             </div>
           </div>

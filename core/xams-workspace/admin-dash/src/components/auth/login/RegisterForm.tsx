@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import {
   Button,
   TextInput,
@@ -11,6 +11,18 @@ import { useLoginContext } from "../LoginContext";
 
 const RegisterForm = () => {
   const { auth, loadingStates, setLoadingStates } = useLoginContext();
+  const emailInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Focus the email input when component mounts
+    const timer = setTimeout(() => {
+      if (emailInputRef.current) {
+        emailInputRef.current.focus();
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <Stack gap="lg">
@@ -42,6 +54,7 @@ const RegisterForm = () => {
           >
             <Stack gap="md">
               <TextInput
+                ref={emailInputRef}
                 label="Email address"
                 placeholder="Enter your email"
                 value={auth.emailAddress}
