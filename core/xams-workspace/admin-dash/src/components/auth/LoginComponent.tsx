@@ -48,7 +48,12 @@ const LoginComponent = (props: LoginComponentProps) => {
   }
 
   // Redirect to profile if already logged in and on login view
-  if (!auth.isReLoginRequired && auth.isLoggedIn && auth.view === "login") {
+  if (
+    !auth.isReLoginRequired &&
+    auth.isLoggedIn &&
+    auth.view === "login" &&
+    auth.view !== props.defaultView
+  ) {
     auth.setView(props.defaultView);
   }
 

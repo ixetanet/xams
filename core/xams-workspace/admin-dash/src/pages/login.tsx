@@ -4,11 +4,11 @@ import { Loader } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
 import { AuthProvider } from "@ixeta/headless-auth-react";
-import { firebaseApp, initializeFirebase, firebaseAuthConfig } from "../_app";
 import LoginComponent from "@/components/auth/LoginComponent";
+import { firebaseApp, initializeFirebase, firebaseAuthConfig } from "./_app";
 import { useRouter } from "next/router";
 
-const Profile = () => {
+const Login = () => {
   const router = useRouter();
   const authQuery = useQuery<FirebaseConfig>({
     queryKey: ["auth-settings"],
@@ -48,11 +48,12 @@ const Profile = () => {
     <AuthProvider authConfig={firebaseAuthConfig}>
       <LoginComponent
         providers={authQuery.data.providers}
-        // onLoginSuccess={() => router.push("/auth/profile")}
-        defaultView="profile"
+        onLoginSuccess={() => router.push("/")}
+        defaultView={"login"}
+        smsEnrollmentEnabled={authQuery.data.enableSmsMfa}
       />
     </AuthProvider>
   );
 };
 
-export default Profile;
+export default Login;

@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "export",
-  basePath: "/xams",
+  basePath: "/x",
   images: {
     unoptimized: true,
   },

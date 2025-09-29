@@ -50,7 +50,7 @@ export default function Home() {
   if (Object.keys(authQuery.data).length !== 0 && firebaseApp != null) {
     const fireBaseAuth = getAuth(firebaseApp);
     if (fireBaseAuth.currentUser === null) {
-      router.push("/auth/login");
+      router.push("/login");
       return <></>;
     } else {
       return (
