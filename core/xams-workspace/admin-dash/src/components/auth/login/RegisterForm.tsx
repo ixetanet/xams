@@ -7,7 +7,7 @@ const RegisterForm = () => {
     auth,
     loadingStates,
     setLoadingStates,
-    emailVerificationRedirectUrl,
+    redirectUrl: emailVerificationRedirectUrl,
   } = useLoginContext();
   const emailInputRef = useRef<HTMLInputElement>(null);
 

@@ -46,7 +46,7 @@ const EmailVerificationForm = () => {
           try {
             if (authQuery.data) {
               await auth.sendEmailVerification({
-                url: authQuery.data.emailVerificationRedirectUrl,
+                url: authQuery.data.redirectUrl,
                 handleCodeInApp: false,
               });
             } else {

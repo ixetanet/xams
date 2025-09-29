@@ -25,7 +25,7 @@ interface LoginContextType {
     }>
   >;
   smsEnrollmentEnabled: boolean;
-  emailVerificationRedirectUrl: string;
+  redirectUrl: string;
 }
 
 const LoginContext = createContext<LoginContextType | undefined>(undefined);
@@ -35,7 +35,7 @@ interface LoginProviderProps {
   children: ReactNode;
   providers: string[];
   smsEnrollmentEnabled: boolean;
-  emailVerificationRedirectUrl: string;
+  redirectUrl: string;
 }
 
 export const LoginProvider = ({
@@ -43,7 +43,7 @@ export const LoginProvider = ({
   providers,
   auth,
   smsEnrollmentEnabled,
-  emailVerificationRedirectUrl,
+  redirectUrl: redirectUrl,
 }: LoginProviderProps) => {
   const router = useRouter();
 
@@ -193,7 +193,7 @@ export const LoginProvider = ({
     deactivateModal,
     setDeactivateModal,
     smsEnrollmentEnabled,
-    emailVerificationRedirectUrl,
+    redirectUrl: redirectUrl,
   };
 
   return (
