@@ -4,7 +4,6 @@ import { Loader } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
 import { AuthProvider } from "@ixeta/headless-auth-react";
-import LoginComponent from "@/components/auth/LoginComponent";
 import {
   firebaseApp,
   initializeFirebase,
@@ -13,6 +12,7 @@ import {
 } from "./_app";
 import { useRouter } from "next/router";
 import { verifyEmail } from "@/utils/verifyEmailUtil";
+import { LoginComponent } from "@ixeta/xams-firebase";
 
 const Login = () => {
   const router = useRouter();

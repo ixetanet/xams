@@ -6,9 +6,11 @@ import React from "react";
 import { AuthProvider, useAuth } from "@ixeta/headless-auth-react";
 import { firebaseApp, initializeFirebase, firebaseAuthConfig } from "./_app";
 import { useRouter } from "next/router";
-import LoginContainer from "@/components/auth/LoginContainer";
-import ResetPasswordForm from "@/components/auth/login/ResetPasswordForm";
-import { LoginProvider } from "@/components/auth/LoginContext";
+import {
+  LoginContainer,
+  LoginProvider,
+  ResetPasswordForm,
+} from "@ixeta/xams-firebase";
 
 const ResetPasswordContent = () => {
   const router = useRouter();

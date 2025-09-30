@@ -6,7 +6,7 @@ import { firebaseAuth, initializeFirebase } from "../../_app";
 import { useQuery } from "@tanstack/react-query";
 import { FirebaseConfig } from "@/types";
 import { API_CONFIG, getQueryParam } from "@ixeta/xams";
-import LoginContainer from "@/components/auth/LoginContainer";
+import LoginContainer from "../../../../../ixeta-xams-firebase/src/components/auth/LoginContainer";
 
 type ActionMode = "verifyEmail" | "resetPassword" | "recoverEmail";
 

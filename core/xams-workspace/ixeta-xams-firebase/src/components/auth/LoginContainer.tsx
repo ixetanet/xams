@@ -6,7 +6,10 @@ interface LoginContainerProps {
   maxWidth?: "sm" | "md";
 }
 
-const LoginContainer = ({ children, maxWidth = "sm" }: LoginContainerProps) => {
+export const LoginContainer = ({
+  children,
+  maxWidth = "sm",
+}: LoginContainerProps) => {
   const maxWidthClass = maxWidth === "md" ? "max-w-md" : "max-w-sm";
 
   return (

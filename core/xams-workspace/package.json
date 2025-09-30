@@ -2,6 +2,7 @@
   "name": "my-workspaces-powered-project",
   "workspaces": [
     "ixeta-xams",
+    "ixeta-xams-firebase",
     "examples-app",
     "admin-dash",
     "headless-auth-react",

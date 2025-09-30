@@ -15,7 +15,7 @@ interface ResetPasswordFormProps {
   oobCode: string;
 }
 
-const ResetPasswordForm = ({ oobCode }: ResetPasswordFormProps) => {
+export const ResetPasswordForm = ({ oobCode }: ResetPasswordFormProps) => {
   const { auth, loadingStates, setLoadingStates, router } = useLoginContext();
   const [isVerifying, setIsVerifying] = useState(true);
   const [resetSuccess, setResetSuccess] = useState(false);
@@ -102,7 +102,9 @@ const ResetPasswordForm = ({ oobCode }: ResetPasswordFormProps) => {
               Resetting password for <strong>{auth.resetEmailFromCode}</strong>
             </>
           )}
-          {!isVerifying && !auth.resetEmailFromCode && "Enter your new password below."}
+          {!isVerifying &&
+            !auth.resetEmailFromCode &&
+            "Enter your new password below."}
         </Text>
       </div>
 

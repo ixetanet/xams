@@ -24,7 +24,7 @@ interface LoginComponentProps {
   fallbackRedirectUrl?: string; // No redirect url provided in query param
 }
 
-const LoginComponent = (props: LoginComponentProps) => {
+export const LoginComponent = (props: LoginComponentProps) => {
   const auth = useAuth();
   const redirectUrl = getQueryParam("redirecturl");
 

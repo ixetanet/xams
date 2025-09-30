@@ -12,6 +12,7 @@
     "@ixeta/headless-auth-react": "*",
     "@ixeta/headless-auth-react-firebase": "*",
     "@ixeta/xams": "*",
+    "@ixeta/xams-firebase": "*",
     "@mantine/core": "^8.3.0",
     "@mantine/dates": "^8.3.0",
     "@mantine/hooks": "^8.3.0",
