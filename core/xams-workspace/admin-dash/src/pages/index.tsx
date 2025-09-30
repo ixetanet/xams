@@ -1,21 +1,12 @@
-import {
-  AdminDashboard,
-  API_CONFIG,
-  AppContextProvider,
-  AuthContextProvider,
-} from "@ixeta/xams";
+import { AdminDashboard, API_CONFIG } from "@ixeta/xams";
 import { Button, Loader } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
-import { getAuth } from "firebase/auth";
 import { FirebaseConfig } from "@/types";
-import { useRouter } from "next/router";
 import { firebaseApp, firebaseAuthConfig, initializeFirebase } from "./_app";
-import { FirebaseApp, initializeApp } from "firebase/app";
 import AuthAdminDashboard from "@/components/AuthAdminDashboard";
 import { AuthProvider } from "@ixeta/headless-auth-react";
 
 export default function Home() {
-  const router = useRouter();
   const authQuery = useQuery<FirebaseConfig>({
     queryKey: ["auth-settings"],
     queryFn: async () => {
@@ -48,17 +39,11 @@ export default function Home() {
 
   // If there are auth settings
   if (Object.keys(authQuery.data).length !== 0 && firebaseApp != null) {
-    const fireBaseAuth = getAuth(firebaseApp);
-    if (fireBaseAuth.currentUser === null) {
-      router.push("/login");
-      return <></>;
-    } else {
-      return (
-        <AuthProvider authConfig={firebaseAuthConfig}>
-          <AuthAdminDashboard />
-        </AuthProvider>
-      );
-    }
+    return (
+      <AuthProvider authConfig={firebaseAuthConfig}>
+        <AuthAdminDashboard />
+      </AuthProvider>
+    );
   }
 
   return <AdminDashboard />;

@@ -3,12 +3,8 @@ import { Button, TextInput, Title, Text, Stack, Alert } from "@mantine/core";
 import { useLoginContext } from "../LoginContext";
 
 const RegisterForm = () => {
-  const {
-    auth,
-    loadingStates,
-    setLoadingStates,
-    redirectUrl: emailVerificationRedirectUrl,
-  } = useLoginContext();
+  const { auth, loadingStates, setLoadingStates, redirectUrls } =
+    useLoginContext();
   const emailInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -46,10 +42,7 @@ const RegisterForm = () => {
           try {
             const success = await auth.signUp();
             if (success) {
-              await auth.sendEmailVerification({
-                url: emailVerificationRedirectUrl,
-                handleCodeInApp: false,
-              });
+              await auth.sendEmailVerification();
             }
           } finally {
             setLoadingStates((prev) => ({ ...prev, signUp: false }));

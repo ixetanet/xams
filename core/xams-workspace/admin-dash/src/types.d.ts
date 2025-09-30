@@ -7,5 +7,5 @@ export interface FirebaseConfig {
   appId: string;
   providers: string[];
   enableSmsMfa: boolean;
-  redirectUrl: string;
+  redirectUrls: string[];
 }

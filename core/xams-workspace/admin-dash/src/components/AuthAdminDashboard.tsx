@@ -32,6 +32,11 @@ const AuthAdminDashboard = () => {
     );
   }
 
+  if (!auth.isLoggedIn) {
+    router.push("/login");
+    return <></>;
+  }
+
   return (
     <AuthContextProvider
       apiUrl={process.env.NEXT_PUBLIC_API as string}

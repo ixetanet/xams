@@ -38,7 +38,11 @@ const Login = () => {
   }
 
   if (!authQuery.data) {
-    return <div>Error loading auth settings</div>;
+    return (
+      <div className="w-full h-full flex justify-center items-center">
+        Error loading auth settings
+      </div>
+    );
   }
 
   // Initialize Firebase if not already initialized
@@ -47,19 +51,21 @@ const Login = () => {
   }
 
   if (firebaseAuthConfig == null) {
-    return <div>Loading...</div>;
+    return (
+      <div className="w-full h-full flex justify-center items-center">
+        Loading...
+      </div>
+    );
   }
 
   return (
     <AuthProvider authConfig={firebaseAuthConfig}>
       <LoginComponent
         providers={authQuery.data.providers}
-        onLoginSuccess={async () => {
-          router.push("/");
-        }}
         defaultView={"login"}
         smsEnrollmentEnabled={authQuery.data.enableSmsMfa}
-        redirectUrl={authQuery.data.redirectUrl}
+        redirectUrls={authQuery.data.redirectUrls}
+        fallbackRedirectUrl="/x"
       />
     </AuthProvider>
   );

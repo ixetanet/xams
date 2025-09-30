@@ -14,27 +14,44 @@ import ProfileMainView from "./profile/ProfileMainView";
 import SetupSmsView from "./profile/SetupSmsView";
 import SetupTotpView from "./profile/SetupTotpView";
 import SetupSmsEnrollView from "./profile/SetupSmsEnrollView";
+import { getQueryParam } from "@ixeta/xams";
 
 interface LoginComponentProps {
   defaultView: string;
-  onLoginSuccess?: () => Promise<void>;
   providers: string[];
   smsEnrollmentEnabled?: boolean;
-  redirectUrl: string;
+  redirectUrls: string[];
+  fallbackRedirectUrl: string; // No redirect url provided in query param
 }
 
 const LoginComponent = (props: LoginComponentProps) => {
   const auth = useAuth();
+  const redirectUrl = getQueryParam("redirecturl");
 
   useEffect(() => {
     if (auth.isLoggedIn && auth.isEmailVerified && !auth.isMfaRequired) {
-      if (props.onLoginSuccess) {
-        props.onLoginSuccess();
+      const authRedirectUrl = localStorage.getItem("auth-redirecturl");
+      if (authRedirectUrl != null && authRedirectUrl !== "") {
+        localStorage.removeItem("auth-redirecturl");
+        window.location.href = authRedirectUrl;
       } else {
         auth.setView(props.defaultView);
       }
     }
   }, [auth.isLoggedIn, auth.isEmailVerified, auth.isMfaRequired]);
+
+  // Validate redirecturl
+  if (
+    redirectUrl != null &&
+    redirectUrl !== "" &&
+    !props.redirectUrls.includes(redirectUrl)
+  ) {
+    return (
+      <div className="w-full h-full flex justify-center items-center">
+        Invalid redirect URL
+      </div>
+    );
+  }
 
   if (!auth.isReady) {
     return (
@@ -42,6 +59,29 @@ const LoginComponent = (props: LoginComponentProps) => {
         <Loader size="md" />
       </div>
     );
+  }
+
+  // If a redirect url is provided, store it in localStorage for use after login
+  // If no redirect url is provided, check storage for one
+  // If there's still none, use the fallback url
+  // When the redirect happens, the stored url is cleared
+  if (redirectUrl != null && redirectUrl !== "") {
+    localStorage.setItem("auth-redirecturl", redirectUrl);
+  }
+  const authRedirectUrl = localStorage.getItem("auth-redirecturl");
+  if (authRedirectUrl == null) {
+    if (window.location.port !== "") {
+      // Include port in localhost
+      localStorage.setItem(
+        "auth-redirecturl",
+        `${window.location.protocol}//${window.location.hostname}:${window.location.port}${props.fallbackRedirectUrl}`
+      );
+    } else {
+      localStorage.setItem(
+        "auth-redirecturl",
+        `${window.location.protocol}//${window.location.hostname}${props.fallbackRedirectUrl}`
+      );
+    }
   }
 
   // Redirect to login if trying to access profile while not logged in
@@ -70,12 +110,17 @@ const LoginComponent = (props: LoginComponentProps) => {
     }
   }
 
+  // Logged in and everything is set up, redirect occurs in useEffect
+  if (auth.isLoggedIn && auth.isEmailVerified && !auth.isMfaRequired) {
+    return <></>;
+  }
+
   return (
     <LoginProvider
       providers={props.providers}
       auth={auth}
       smsEnrollmentEnabled={props.smsEnrollmentEnabled ?? false}
-      redirectUrl={props.redirectUrl}
+      redirectUrls={props.redirectUrls}
     >
       <LoginContainer maxWidth={auth.view === "profile" ? "md" : "sm"}>
         {/* User is attempting to login and MFA is required */}

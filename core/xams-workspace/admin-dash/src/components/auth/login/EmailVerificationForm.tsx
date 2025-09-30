@@ -8,19 +8,6 @@ import { useQuery } from "@tanstack/react-query";
 const EmailVerificationForm = () => {
   const { auth, loadingStates, setLoadingStates } = useLoginContext();
 
-  const authQuery = useQuery<FirebaseConfig>({
-    queryKey: ["auth-settings"],
-    queryFn: async () => {
-      const resp = await fetch(
-        `${process.env.NEXT_PUBLIC_API}${API_CONFIG}?name=firebase`
-      );
-      if (!resp.ok) {
-        return null;
-      }
-      return resp.json();
-    },
-  });
-
   return (
     <Stack gap="lg">
       <div>
@@ -44,14 +31,7 @@ const EmailVerificationForm = () => {
           e.preventDefault();
           setLoadingStates((prev) => ({ ...prev, resendEmail: true }));
           try {
-            if (authQuery.data) {
-              await auth.sendEmailVerification({
-                url: authQuery.data.redirectUrl,
-                handleCodeInApp: false,
-              });
-            } else {
-              await auth.sendEmailVerification();
-            }
+            await auth.sendEmailVerification();
           } finally {
             setLoadingStates((prev) => ({ ...prev, resendEmail: false }));
           }

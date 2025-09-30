@@ -298,6 +298,9 @@ export class FirebaseAuthConfig implements AuthConfig {
       return false;
     }
 
+    // Always refresh user properties from backend
+    await user.reload();
+
     // Check if user signed in with any OAuth providers (not password/phone)
     const hasOAuthProvider = user.providerData.some(
       (provider) =>
