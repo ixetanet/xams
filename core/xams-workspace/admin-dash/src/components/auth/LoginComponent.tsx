@@ -21,7 +21,7 @@ interface LoginComponentProps {
   providers: string[];
   smsEnrollmentEnabled?: boolean;
   redirectUrls: string[];
-  fallbackRedirectUrl: string; // No redirect url provided in query param
+  fallbackRedirectUrl?: string; // No redirect url provided in query param
 }
 
 const LoginComponent = (props: LoginComponentProps) => {
@@ -69,7 +69,7 @@ const LoginComponent = (props: LoginComponentProps) => {
     localStorage.setItem("auth-redirecturl", redirectUrl);
   }
   const authRedirectUrl = localStorage.getItem("auth-redirecturl");
-  if (authRedirectUrl == null) {
+  if (authRedirectUrl == null && props.fallbackRedirectUrl) {
     if (window.location.port !== "") {
       // Include port in localhost
       localStorage.setItem(
@@ -111,8 +111,17 @@ const LoginComponent = (props: LoginComponentProps) => {
   }
 
   // Logged in and everything is set up, redirect occurs in useEffect
-  if (auth.isLoggedIn && auth.isEmailVerified && !auth.isMfaRequired) {
-    return <></>;
+  if (
+    auth.isLoggedIn &&
+    auth.isEmailVerified &&
+    !auth.isMfaRequired &&
+    authRedirectUrl
+  ) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <Loader size="md" />
+      </div>
+    );
   }
 
   return (

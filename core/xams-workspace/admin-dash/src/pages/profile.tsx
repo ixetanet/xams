@@ -59,7 +59,6 @@ const Profile = () => {
         defaultView="profile"
         smsEnrollmentEnabled={authQuery.data.enableSmsMfa}
         redirectUrls={authQuery.data.redirectUrls}
-        fallbackRedirectUrl="/x/profile"
       />
     </AuthProvider>
   );
