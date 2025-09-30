@@ -252,6 +252,12 @@ export const navigation: Array<NavGroup> = [
       // { title: 'Performance', href: '/performance' },
     ],
   },
+    {
+    title: 'Authentication',
+    links: [
+      { title: 'Firebase', href: '/firebaseauth' },
+    ],
+  },
   // {
   //   title: 'React Components',
   //   links: [

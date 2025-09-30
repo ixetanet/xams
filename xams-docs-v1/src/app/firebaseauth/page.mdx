@@ -1,0 +1,218 @@
+import firebaseAuth from '@/images/firebase_auth.png'
+export const metadata = {
+  title: 'Firebase Authentication',
+  description: 'How to implement Firebase Authentication in Xams',
+}
+
+# Firebase Authentication
+
+Quickly and easily setup Firebase Authentication in your Xams application. {{ className: 'lead' }}
+
+Xams offers extensible support for Firebase authentication that includes a pre-built brandable login page and auth flows including multi-factor authentication (MFA).
+
+<DocImage image={firebaseAuth} />
+
+## Install NuGet Packages
+
+Install the FirebaseAdmin SDK and Xams.Firebase NuGet package in your project.
+
+```bash
+dotnet add package FirebaseAdmin
+dotnet add package Xams.Firebase
+```
+
+## Download Firebase Key
+
+To download the private key for your Firebase service account, follow these official steps as documented by Firebase and Google Cloud:
+
+1. Go to your Firebase project in the Firebase console.
+2. Open "Project settings".
+3. Click the "Service accounts" tab.
+4. In the "Firebase Admin SDK" section, click "Generate new private key".
+5. Confirm the action, and a JSON file containing the private key will be downloaded to your computer.
+6. Add the JSON file to your project directory, for example in a `keys` folder.
+7. Ensure the file is copied to the output directory by setting its properties in your project file or IDE.
+
+## Configure AppUser
+
+Ensure the User entity has the required Firebase fields.
+
+```c# {{ title: 'Project / Entities / AppUser.cs' }}
+public class AppUser : User
+{
+    [UIRequired]
+    [MaxLength(100)]
+    public string? EmailAddress { get; set; }
+    
+    [UIRequired]
+    [MaxLength(50)]
+    public string? FirebaseId { get; set; }
+}
+```
+
+Provide AppUser in the DbContext.
+
+```c# {{ title: 'Project / DataContext.cs' }}
+public class DataContext : XamsDbContext<AppUser>
+{
+    ...
+}
+```
+
+## Setup Authentication
+
+In Program.cs add the following code to setup api authentication.
+
+```c# {{ title: 'Project / Program.cs' }}
+builder.Services.AddAuthorization();
+
+FirebaseApp.Create(options: new AppOptions()
+{
+    Credential = GoogleCredential.FromFile($"./keys/firebase-{environment.ToLower()}.json")
+});
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.AddXamsFirebaseAuth(firebaseProjectId);
+        options.AddXamsSignalRAuth();
+    });
+```
+
+## Setup Api
+
+Make the following additions to Program.cs to setup the api.
+
+```c# {{ title: 'Project / Program.cs' }}
+var app = builder.Build();
+
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Before static files
+// This allows for redirects to work properly on a custom domain
+// See option 3: https://firebase.google.com/docs/auth/web/redirect-best-practices
+app.AddFirebaseAuthProxy(firebaseProjectId);
+
+app.UseStaticFiles();
+
+// After authentication & authorization
+app.AddXamsApi(options =>
+{
+    options.UseDashboard = true;
+    options.RequireAuthorization = true;
+    options.GetUserId = UserUtil.GetUserId;
+    options.FirebaseConfig = builder.Configuration.GetSection("FirebaseConfig").Get<FirebaseConfig>();
+
+});
+
+// Add a verifyemail endpoint
+app.AddXamsFirebaseApi();
+```
+
+## GetUserId Function
+
+Create the following UserUtil class in your project to extract the user ID from the authenticated user's claims, create the Xams user and potentially assign them a role.
+
+```c# {{ title: 'Project / UserUtil.cs' }}
+public class UserUtil
+{
+    public static async Task<Guid> GetUserId(HttpContext httpContext)
+    {
+        var userIdClaim = httpContext.User.Claims
+            .Where(x => x.Type == ClaimTypes.NameIdentifier)
+            .Select(x => x.Value).FirstOrDefault();
+        var emailClaim = httpContext.User.Claims
+            .Where(x => x.Type == ClaimTypes.Email)
+            .Select(x => x.Value).FirstOrDefault();
+
+        if (userIdClaim == null)
+        {
+            throw new Exception("UserId not found");
+        }
+        
+        using (var db = new DataContext())
+        {
+            var user = await GetUser(db, userIdClaim, emailClaim);
+            try
+            {
+                // Attempt to create the user
+                if (user == null)
+                {
+                    user = await CreateUser(db, userIdClaim, emailClaim);
+                }
+            }
+            catch (Exception e)
+            {
+                // Wait a variable amount of time in case multiple
+                // requests are trying to create the user at once
+                var rnd = new Random(DateTime.Now.Millisecond);
+                await Task.Delay(rnd.Next(20, 150));
+                // Reattempt to retrieve
+                user = await GetUser(db, userIdClaim, emailClaim);
+                if (user == null)
+                {
+                    user = await CreateUser(db, userIdClaim, emailClaim);
+                }
+            }
+
+            return user.UserId;
+        }
+    }
+
+    private static async Task<AppUser?> GetUser(DataContext db, string? userIdClaim, string? emailClaim)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(x => x.FirebaseId == userIdClaim) ?? 
+                   await db.Users.FirstOrDefaultAsync(x => x.EmailAddress == emailClaim);
+        return user;
+    }
+
+    private static async Task<AppUser> CreateUser(DataContext db, string userIdClaim, string? emailClaim)
+    {
+        var user = new AppUser();
+        user.FirebaseId = userIdClaim;
+        user.Name = emailClaim;
+        user.EmailAddress = emailClaim;
+        user.CreatedDate = DateTime.UtcNow;
+        db.Add(user);
+        await db.SaveChangesAsync();
+
+        var userRole = new UserRole<AppUser, Role>();
+        userRole.UserId = user.UserId;
+        // Set initial user role, change as needed
+        userRole.RoleId = new Guid("0526627a-ac19-4228-a512-8a817edd4e95"); 
+        db.Add(userRole);
+        await db.SaveChangesAsync();
+        return user;
+    }
+}
+```
+
+
+
+## AppSettings.json
+
+Add your Firebase configuration to appsettings.json.
+
+```json
+{
+  "FirebaseConfig": {
+    "apiKey": "xxxx",
+    "authDomain": "xxxx.firebaseapp.com",
+    "projectId": "xxxx",
+    "storageBucket": "xxxx.appspot.com",
+    "messagingSenderId": "xxxx",
+    "appId": "1:xxxx:web:xxxx",
+    "measurementId": "G-XXXX",
+    "providers": ["google", "facebook", "apple", "microsoft"],
+    "enableSmsMfa": true,
+    "redirectUrls": ["http://localhost:3000/x", "https://yourdomain.com/x"]
+  }
+}
+```
+
+## Complete
+
+Now if you navigate to the admin dash you should see the Firebase login page. Ie: `https://localhost:8000/x`
