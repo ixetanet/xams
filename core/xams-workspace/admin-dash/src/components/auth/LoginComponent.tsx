@@ -17,7 +17,7 @@ import SetupSmsEnrollView from "./profile/SetupSmsEnrollView";
 
 interface LoginComponentProps {
   defaultView: string;
-  onLoginSuccess?: () => void;
+  onLoginSuccess?: () => Promise<void>;
   providers: string[];
   smsEnrollmentEnabled?: boolean;
   redirectUrl: string;

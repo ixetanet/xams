@@ -12,13 +12,9 @@ public class AuditBulkService : IBulkService
 {
     public async Task<Response<object?>> Execute(BulkServiceContext context)
     {
-        if (!Cache.Instance.IsAuditEnabled)
-        {
-            return ServiceResult.Success();
-        }
         // If there have been any changes to any audit records, update the 
         // System.AuditLastRefresh value to the current time
-        // This will cause the audit records to be refreshed by the AudJobService
+        // This will cause the audit records to be refreshed by the AuditJobService
         var auditUpdates = context
             .AllServiceContexts
             .Any(x => x.TableName == "Audit" && x.DataOperation != DataOperation.Read);

@@ -1,10 +1,11 @@
-namespace Xams.Core.Attributes;
-
-public class UIOrderAttribute : Attribute
+namespace Xams.Core.Attributes
 {
-    public int Order { get; set; }
-    public UIOrderAttribute(int order)
+    public class UIOrderAttribute : Attribute
     {
-        this.Order = order;
+        public int Order { get; set; }
+        public UIOrderAttribute(int order)
+        {
+            this.Order = order;
+        }
     }
 }

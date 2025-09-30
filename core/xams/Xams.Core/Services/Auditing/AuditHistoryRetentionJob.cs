@@ -15,17 +15,14 @@ public class AuditHistoryRetentionJob : IServiceJob
 {
     public async Task<Response<object?>> Execute(JobServiceContext context)
     {
-        if (!Cache.Instance.IsAuditEnabled)
-        {
-            return ServiceResult.Success();
-        }
-        
         Console.WriteLine("Deleting Audit History outside of retention period");
         var db = context.GetDbContext<IXamsDbContext>();
         Type auditHistoryType = Cache.Instance.GetTableMetadata("AuditHistory").Type;
         
+        var retentionDays = int.Parse((await Queries.GetCreateSetting(db, AuditStartupService.AuditRetentionSetting, "30") ?? "30"));
+        
         DynamicLinq dynamicLinq = new DynamicLinq(db, auditHistoryType);
-        var query = dynamicLinq.Query.Where("CreatedDate < @0", DateTime.UtcNow.AddDays(-Cache.Instance.AuditHistoryRetentionDays));
+        var query = dynamicLinq.Query.Where("CreatedDate < @0", DateTime.UtcNow.AddDays(-retentionDays));
         var results = await query.ToDynamicArrayAsync();
         
         foreach (var result in results)

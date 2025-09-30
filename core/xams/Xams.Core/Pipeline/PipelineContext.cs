@@ -14,6 +14,7 @@ public class PipelineContext
     public Guid UserId { get; internal set; }
     public string TableName { get; internal set; } = "";
     public object? Entity { get; internal set; }
+    public string[] Permissions { get; internal set; } = [];
     public object? PreEntity { get; internal set; }
     public DataOperation DataOperation { get; internal set; }
     public Dictionary<string, JsonElement> InputParameters { get; internal set; } = new();

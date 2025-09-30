@@ -12,7 +12,6 @@ namespace Xams.Core.Services.Auditing;
 public class AuditStartupService : IServiceStartup
 {
     public static readonly string AuditRetentionSetting = "AUDIT_HISTORY_RETENTION_DAYS";
-    public static readonly string AuditEnabledSetting = "AUDIT_ENABLED";
 
     public async Task<Response<object?>> Execute(StartupContext startupContext)
     {
@@ -39,6 +38,7 @@ public class AuditStartupService : IServiceStartup
         {
             Console.WriteLine($"Creating Audit Data");
             var db = context.DataService.GetDbContext<IXamsDbContext>();
+            db.SetAuditEnabled(false);
 
             // Query for all the audit and audit field records
             var auditMetadata = Cache.Instance.GetTableMetadata("Audit");
@@ -63,14 +63,12 @@ public class AuditStartupService : IServiceStartup
 
             // If the table no longer exists - delete audit records
             List<object> removeAudits = new List<object>();
-            foreach (var tableName in lookup.Select(x => x.TableName).Distinct())
+            foreach (var audit in audits)
             {
-                // If the table no longer exists, remove the audit record
-                if (!Cache.Instance.TableMetadata.ContainsKey(tableName))
+                if (!Cache.Instance.TableMetadata.ContainsKey(audit.GetValue<string>("Name")))
                 {
-                    var entity = lookup.First(x => x.TableName == tableName).Entity;
-                    removeAudits.Add(entity);
-                    db.Remove(entity);
+                    removeAudits.Add(audit);
+                    db.Remove(audit);
                 }
             }
 
@@ -85,12 +83,14 @@ public class AuditStartupService : IServiceStartup
                 // Remove the audit record from lookup
                 lookup.RemoveAll(x => x.AuditId == entity.GetValue<Guid>("AuditId"));
             }
-
-
+            
             // Delete specific fields that have been removed
             foreach (var item in lookup)
             {
-                if (Cache.Instance.GetTableMetadata(item.TableName).Type.GetProperty(item.FieldName) == null)
+                var type = Cache.Instance.GetTableMetadata(item.TableName).Type;
+                var property = type.GetProperty(item.FieldName); 
+                // Exclude navigation properties
+                if (property == null || type.GetProperty($"{item.FieldName}Id") != null)
                 {
                     db.Remove(item.Entity);
                 }
@@ -101,7 +101,7 @@ public class AuditStartupService : IServiceStartup
             foreach (var kvp in Cache.Instance.TableMetadata)
             {
                 // If the audit record already exists, skip
-                var audit = lookup.FirstOrDefault(x => x.TableName == kvp.Key);
+                var audit = audits.FirstOrDefault(x => x.GetValue<string>("Name") == kvp.Key); 
                 if (audit != null)
                 {
                     continue;
@@ -122,12 +122,20 @@ public class AuditStartupService : IServiceStartup
             // Save to create audit records and get ids
             await db.SaveChangesAsync();
 
+            audits = (await auditQuery.ToDynamicListAsync()).ToList<object>();
             // Create new fields for all new audits
             foreach (var audit in newAudits)
             {
-                foreach (var entityProperty in Cache.Instance.GetTableMetadata(audit.TableName).Type
-                             .GetEntityProperties())
+                var entityProperties = Cache.Instance.GetTableMetadata(audit.TableName)
+                    .Type.GetEntityProperties();
+                foreach (var entityProperty in entityProperties)
                 {
+                    if (!entityProperty.IsPrimitive() && 
+                        entityProperties.Any(x => x.Name == $"{entityProperty.Name}Id"))
+                    {
+                        // Skip navigation properties
+                        continue;
+                    }
                     var auditField = new Dictionary<string, dynamic?>();
                     auditField["AuditId"] = audit.Entity.GetValue<Guid>("AuditId");
                     auditField["Name"] = entityProperty.Name;
@@ -156,7 +164,7 @@ public class AuditStartupService : IServiceStartup
                     }
 
                     var newAuditField = new Dictionary<string, dynamic?>();
-                    newAuditField["AuditId"] = lookup.First(x => x.TableName == kvp.Key).AuditId;
+                    newAuditField["AuditId"] = audits.First(x => x.GetValue<string>("Name") == kvp.Key).GetValue<Guid>("AuditId");
                     newAuditField["Name"] = entityProperty.Name;
                     var entity = EntityUtil.DictionaryToEntity(auditFieldMetadata.Type, newAuditField);
                     db.Add(entity);
@@ -219,8 +227,6 @@ public class AuditStartupService : IServiceStartup
             .Select(x => (object)x).ToList();
         var auditFields = (await DynamicLinq.FindAll(db, auditFieldType))
             .Select(x => (object)x).ToList();
-        Cache.Instance.IsAuditEnabled =
-            bool.Parse(await Queries.GetCreateSetting(db, AuditEnabledSetting, "false") ?? "false");
 
         foreach (var audit in audits)
         {
@@ -269,10 +275,7 @@ public class AuditStartupService : IServiceStartup
     public async Task GetAuditSettings(StartupContext context)
     {
         var db = context.DataService.GetDbContext<IXamsDbContext>();
-        int retentionDays = int.Parse(await Queries.GetCreateSetting(db, AuditRetentionSetting, "30") ?? "30");
-        Cache.Instance.AuditHistoryRetentionDays = retentionDays;
-        bool auditEnabled = bool.Parse(await Queries.GetCreateSetting(db, AuditEnabledSetting, "false") ?? "false");
-        Cache.Instance.IsAuditEnabled = auditEnabled;
+        await Queries.GetCreateSetting(db, AuditRetentionSetting, "30");
     }
 
     public class NewAudit

@@ -258,8 +258,13 @@ internal static class EntityExtensions
             return null;
         }
 
+        // If a core entity has been inherited get that entity, ie: User, Team, etc.
+        var metadata = Cache.Instance.GetTableMetadata(propertyType);
+        propertyType = metadata.Type;
+
         return propertyType;
     }
+    
     public static bool IsValidEntityProperty(this PropertyInfo propertyInfo)
     {
         Type propertyType = propertyInfo.PropertyType;

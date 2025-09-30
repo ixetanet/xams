@@ -11,11 +11,16 @@ public static class Permissions
         User
     }
 
-    public static PermissionLevel? GetHighestPermission(string[]? permissions)
+    public static PermissionLevel? GetHighestPermission(string[]? permissions, string tableName = "")
     {
         if (permissions == null)
         {
             return null;
+        }
+
+        if (!string.IsNullOrEmpty(tableName))
+        {
+            permissions = permissions.Where(x => x.StartsWith($"TABLE_{tableName}_")).ToArray();    
         }
 
         var system = permissions.FirstOrDefault(x => x.EndsWith("_SYSTEM"));

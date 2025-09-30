@@ -57,6 +57,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Xams.Core\Xams.Core.csproj" />
+      <ProjectReference Include="..\Xams.Firebase\Xams.Firebase.csproj" />
     </ItemGroup>
 
 </Project>

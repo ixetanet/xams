@@ -23,6 +23,8 @@ public class PipeResultReadOutput : BasePipelineStage
                 dict.Remove("OwningTeamId");
             }
         }
+
+        context.ReadOutput.parameters = context.OutputParameters;
         
         return Task.FromResult(new Response<object?>()
         {

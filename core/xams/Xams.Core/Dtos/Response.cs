@@ -1,40 +1,41 @@
 using Xams.Core.Interfaces;
 
-namespace Xams.Core.Dtos;
-
-public class Response<T> : IResponse<T>
+namespace Xams.Core.Dtos
 {
-    private bool _succeeded;
-
-    public bool Succeeded
+    public class Response<T> : IResponse<T>
     {
-        get
+        private bool _succeeded;
+
+        public bool Succeeded
         {
-            return _succeeded;
+            get
+            {
+                return _succeeded;
+            }
+            set
+            {
+                _succeeded = value;
+            }
         }
-        set
-        {
-            _succeeded = value;
-        }
+
+        public string? FriendlyMessage { get; set; }
+        public string? LogMessage { get; set; }
+        public T? Data { get; set; }
+        public ResponseType ResponseType { get; set; } = ResponseType.Json;
     }
 
-    public string? FriendlyMessage { get; set; }
-    public string? LogMessage { get; set; }
-    public T? Data { get; set; }
-    public ResponseType ResponseType { get; set; } = ResponseType.Json;
-}
-
-public class FileData
-{
-    public string FileName { get; set; } = "file";
+    public class FileData
+    {
+        public string FileName { get; set; } = "file";
         
-    public Stream Stream { get; set; }
+        public Stream Stream { get; set; }
         
-    public string ContentType { get; set; } = "application/octet-stream";
-}
+        public string ContentType { get; set; } = "application/octet-stream";
+    }
 
-public enum ResponseType
-{
-    Json,
-    File
+    public enum ResponseType
+    {
+        Json,
+        File
+    }
 }

@@ -43,7 +43,6 @@ public static class PermissionCache
     /// </summary>
     public static ReadOnlyDictionary<Guid, List<Guid>> UserTeams => _userTeams.AsReadOnly();
     
-    // public static ReadOnlyDictionary<Guid, List<Guid>> ReadOnly => UserTeams.AsReadOnly();
 
     /// <summary>
     /// Cache known user ids. When a user is first created\given permissions in a multiserver environment, that user's

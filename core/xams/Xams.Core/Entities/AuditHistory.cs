@@ -12,12 +12,13 @@ public class AuditHistory
     [UIReadOnly]
     [MaxLength(250)]
     public required string Name { get; set; }
+    [UIDisplayName("Table Name")]
     [UIReadOnly]
     [MaxLength(250)]
     public string? TableName { get; set; }
     [UIReadOnly]
     [MaxLength(250)]
-    public Guid? EntityId { get; set; }
+    public string? EntityId { get; set; }
     [UIReadOnly]
     [MaxLength(10)]
     public required string Operation { get; set; }

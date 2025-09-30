@@ -5,8 +5,14 @@ import { useQuery } from "@tanstack/react-query";
 import React from "react";
 import { AuthProvider } from "@ixeta/headless-auth-react";
 import LoginComponent from "@/components/auth/LoginComponent";
-import { firebaseApp, initializeFirebase, firebaseAuthConfig } from "./_app";
+import {
+  firebaseApp,
+  initializeFirebase,
+  firebaseAuthConfig,
+  firebaseAuth,
+} from "./_app";
 import { useRouter } from "next/router";
+import { verifyEmail } from "@/utils/verifyEmailUtil";
 
 const Login = () => {
   const router = useRouter();
@@ -48,7 +54,9 @@ const Login = () => {
     <AuthProvider authConfig={firebaseAuthConfig}>
       <LoginComponent
         providers={authQuery.data.providers}
-        onLoginSuccess={() => router.push("/")}
+        onLoginSuccess={async () => {
+          router.push("/");
+        }}
         defaultView={"login"}
         smsEnrollmentEnabled={authQuery.data.enableSmsMfa}
         redirectUrl={authQuery.data.redirectUrl}

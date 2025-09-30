@@ -1,3 +1,5 @@
+// ReSharper disable UnusedType.Global
+
 using System.Linq.Dynamic.Core;
 using Microsoft.Extensions.Logging;
 using Xams.Core.Attributes;
@@ -7,11 +9,19 @@ using Xams.Core.Dtos;
 using Xams.Core.Interfaces;
 using Xams.Core.Utils;
 
+
 namespace Xams.Core.Services.Permission;
 
 [ServiceJob(nameof(PermissionCacheJob), "permission-cache", "00:00:05", JobSchedule.Interval, DaysOfWeek.All, "System")]
 public class PermissionCacheJob : IServiceJob
 {
+    private ILogger<PermissionCacheJob> Logger;
+
+    public PermissionCacheJob(ILogger<PermissionCacheJob> logger)
+    {
+        Logger = logger;
+    }
+
     public async Task<Response<object?>> Execute(JobServiceContext context)
     {
         // Retrieve all the security cache records since the last retrieval date
@@ -21,7 +31,7 @@ public class PermissionCacheJob : IServiceJob
         var query = dLinq.Query.Where("Name == @0 && DateTime > @1", "SECURITY_CACHE", PermissionCache.LastUpdateTime);
         var refreshDateTime = DateTime.UtcNow;
         var secrurityQueue = await query.ToDynamicListAsync();
-        
+
         foreach (var item in secrurityQueue)
         {
             string[] values = item.Value.Split(",");
@@ -30,8 +40,9 @@ public class PermissionCacheJob : IServiceJob
             var id = Guid.Empty;
             if (values.Length > 2)
             {
-                Guid.TryParse(values[2], out id); ;    
+                Guid.TryParse(values[2], out id);
             }
+
             string oldPermissionName = string.Empty;
             string newPermissionName = string.Empty;
             if (tableName == "Permission")
@@ -39,8 +50,8 @@ public class PermissionCacheJob : IServiceJob
                 oldPermissionName = values[2];
                 newPermissionName = values[3];
             }
-            
-            
+
+
             if (operation == "Delete")
             {
                 if (tableName == "Role")
@@ -101,8 +112,86 @@ public class PermissionCacheJob : IServiceJob
                 }
             }
         }
-        
+
         PermissionCache.LastUpdateTime = refreshDateTime;
+
+        // Track users who need disconnection (to batch the disconnections)
+        var usersToDisconnect = new HashSet<Guid>();
+
+        // Call OnConnected or OnDisconnected on any hubs where users have gained or lost permissions
+        foreach (var idUserConnection in SignalRHub.UserConnections)
+        {
+            lock (idUserConnection.Value.LockObj)
+            {
+                var userId = idUserConnection.Key;
+                foreach (var connectionHub in idUserConnection.Value.ConnectionHubs)
+                {
+                    // For any connected users that have lost permissions to hubs, call OnDisconnected
+                    foreach (var hubName in connectionHub.Value)
+                    {
+                        var permissions = PermissionCache.GetUserPermissions(userId, [$"HUB_{hubName}"]).GetAwaiter()
+                            .GetResult();
+                        if (permissions.Length > 0)
+                        {
+                            continue;
+                        }
+
+                        // Mark user for disconnection (will be batched later)
+                        usersToDisconnect.Add(userId);
+                    }
+                }
+
+                // For any connected users that have gained permissions to hubs, call OnConnected
+                foreach (var serviceHubInfo in Cache.Instance.ServiceHubs.Values)
+                {
+                    var hubName = serviceHubInfo.ServiceHubAttribute.Name;
+                    foreach (var connectionId in idUserConnection.Value.ConnectionIds)
+                    {
+                        if (!idUserConnection.Value.ConnectionHubs.TryGetValue(connectionId, out var hub))
+                        {
+                            Logger.LogError(
+                                $"User {userId} connection {connectionId} does not have connection hub {hubName}");
+                            continue;
+                        }
+
+                        // User is already connected to this hub
+                        if (hub.Contains(hubName))
+                        {
+                            continue;
+                        }
+
+                        // Check if the user has permission to this hub
+                        var permissions = PermissionCache.GetUserPermissions(userId, [$"HUB_{hubName}"]).GetAwaiter()
+                            .GetResult();
+                        if (permissions.Length == 0)
+                        {
+                            continue;
+                        }
+
+                        // Mark user for disconnection (will be batched later)
+                        usersToDisconnect.Add(userId);
+                    }
+                }
+            }
+        }
+
+        // Batch disconnect all users who had permission changes
+        if (usersToDisconnect.Any())
+        {
+            var disconnectionTasks = usersToDisconnect.Select(async userId =>
+            {
+                try
+                {
+                    await SignalRHub.ForceDisconnectUser(userId, "Permission changes");
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError(e, $"Failed to disconnect user {userId}");
+                }
+            });
+
+            await Task.WhenAll(disconnectionTasks);
+        }
 
         try
         {
@@ -115,7 +204,7 @@ public class PermissionCacheJob : IServiceJob
                 db.Remove(item);
                 saveChanges = true;
             }
-            
+
             if (saveChanges)
             {
                 await db.SaveChangesAsync();
@@ -124,9 +213,10 @@ public class PermissionCacheJob : IServiceJob
         }
         catch (Exception e)
         {
-            context.Logger.LogWarning(e, "Failed to remove old security cache records in System table, possibility of multiple servers deleting at the same time.");
+            context.Logger.LogWarning(e,
+                "Failed to remove old security cache records in System table, possibility of multiple servers deleting at the same time.");
         }
-        
+
         return ServiceResult.Success();
     }
 }

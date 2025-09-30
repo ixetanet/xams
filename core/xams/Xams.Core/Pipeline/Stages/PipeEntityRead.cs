@@ -9,24 +9,9 @@ public class PipeEntityRead : BasePipelineStage
 {
     public override async Task<Response<object?>> Execute(PipelineContext context)
     {
-        var permissions = await Permissions.GetUserTablePermissions(context.UserId, context.TableName, ["READ"]);
-        // If the teamsView parameter is set to true then only return records
-        // the user can view due to their team ownership
-        if (context.InputParameters.ContainsKey("teamsView") &&
-            context.InputParameters["teamsView"].GetBoolean())
-        {
-            for (int i = 0; i < permissions.Length; i++)
-            {
-                if (permissions[i] == $"TABLE_{context.ReadInput?.tableName}_READ_SYSTEM")
-                {
-                    permissions[i] = $"TABLE_{context.ReadInput?.tableName}_READ_TEAM";
-                }
-            }
-        }
-        
         var readResponse = await context.DataRepository.Read(context.UserId, context.ReadInput, new ReadOptions()
         {
-            Permissions = permissions
+            Permissions = context.Permissions
         });
         
         if (readResponse.Succeeded)

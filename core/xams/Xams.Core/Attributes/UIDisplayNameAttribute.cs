@@ -1,23 +1,24 @@
-namespace Xams.Core.Attributes;
-
-public class UIDisplayNameAttribute : Attribute
+namespace Xams.Core.Attributes
 {
-    public string Name { get; set; }
-    public string Tag { get; set; }
-    public UIDisplayNameAttribute(string name, string tag = "")
+    public class UIDisplayNameAttribute : Attribute
     {
-        this.Name = name;
-        this.Tag = tag;
-    }
+        public string Name { get; set; }
+        public string Tag { get; set; }
+        public UIDisplayNameAttribute(string name, string tag = "")
+        {
+            this.Name = name;
+            this.Tag = tag;
+        }
 
-    public UIDisplayNameAttribute(Field[] fields)
-    {
+        public UIDisplayNameAttribute(Field[] fields)
+        {
             
+        }
     }
-}
 
-public struct Field()
-{
-    public string Name { get; set; }
-    public string DisplayName { get; set; }
+    public struct Field()
+    {
+        public string Name { get; set; }
+        public string DisplayName { get; set; }
+    }
 }

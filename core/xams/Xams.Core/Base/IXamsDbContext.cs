@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Xams.Core.Entities;
+using Xams.Core.Interfaces;
 
 namespace Xams.Core.Base;
 
@@ -27,6 +28,9 @@ public interface IXamsDbContext : IDisposable
     internal IQueryable<AuditField> AuditFieldsBase { get; }
     internal IQueryable<AuditHistory> AuditHistoriesBase { get; }
     internal IQueryable<AuditHistoryDetail> AuditHistoryDetailsBase { get; }
+    internal IQueryable<Log> LogsBase { get; }
+    
+    DbSet<Log> Logs { get; }
 
     public bool SaveChangesCalledWithPendingChanges();
     DatabaseFacade Database { get; }
@@ -85,4 +89,8 @@ public interface IXamsDbContext : IDisposable
     internal bool IsTeamCustom();
     internal bool IsRoleCustom();
     internal bool IsSettingCustom();
+    internal void SetDataService(IDataService dataService);
+    internal IDataService GetDataService();
+    internal void SetAuditEnabled(bool enabled);
+    internal bool GetAuditEnabled();
 }

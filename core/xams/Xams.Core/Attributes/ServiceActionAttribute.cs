@@ -1,11 +1,12 @@
-namespace Xams.Core.Attributes;
-
-public class ServiceActionAttribute : Attribute
+namespace Xams.Core.Attributes
 {
-    public string Name { get; set; }
-
-    public ServiceActionAttribute(string name)
+    public class ServiceActionAttribute : Attribute
     {
-        Name = name;
+        public string Name { get; set; }
+
+        public ServiceActionAttribute(string name)
+        {
+            Name = name;
+        }
     }
 }

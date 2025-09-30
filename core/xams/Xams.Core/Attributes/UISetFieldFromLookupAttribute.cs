@@ -1,14 +1,15 @@
-namespace Xams.Core.Attributes;
-
-/// <summary>
-/// Sets a string field on the entity to the lookupname value of a related entity
-/// </summary>
-public class UISetFieldFromLookupAttribute : Attribute
+namespace Xams.Core.Attributes
 {
-    public string LookupIdProperty { get; set; }
-    
-    public UISetFieldFromLookupAttribute(string lookupIdProperty)
+    /// <summary>
+    /// Sets a string field on the entity to the lookupname value of a related entity
+    /// </summary>
+    public class UISetFieldFromLookupAttribute : Attribute
     {
-        LookupIdProperty = lookupIdProperty;
+        public string LookupIdProperty { get; set; }
+    
+        public UISetFieldFromLookupAttribute(string lookupIdProperty)
+        {
+            LookupIdProperty = lookupIdProperty;
+        }
     }
 }

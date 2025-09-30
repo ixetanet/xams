@@ -1,16 +1,17 @@
 // ReSharper disable InconsistentNaming
-namespace Xams.Core.Attributes;
-
-public class UIReadOnlyAttribute : Attribute
+namespace Xams.Core.Attributes
 {
-    public string[] Fields { get; private set; }
-    public UIReadOnlyAttribute()
+    public class UIReadOnlyAttribute : Attribute
     {
-        Fields = [];
-    }
+        public string[] Fields { get; private set; }
+        public UIReadOnlyAttribute()
+        {
+            Fields = [];
+        }
 
-    public UIReadOnlyAttribute(params string[] fields)
-    {
-        Fields = fields;
+        public UIReadOnlyAttribute(params string[] fields)
+        {
+            Fields = fields;
+        }
     }
 }

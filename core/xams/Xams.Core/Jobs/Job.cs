@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Serilog.Context;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
 using Xams.Core.Contexts;
@@ -90,8 +91,8 @@ public class Job
         {
             throw new Exception($"Couldn't find job type for {Name}");
         }
-                            
-        var serviceJobInstance = Activator.CreateInstance(serviceJob);
+        
+        var serviceJobInstance = ActivatorUtilities.CreateInstance(scope.ServiceProvider, serviceJob);
         MethodInfo? methodInfo = serviceJob.GetMethod("Execute");
 
         if (methodInfo == null)
@@ -106,6 +107,10 @@ public class Job
         Guid jobHistoryId = JobHistoryId ?? Guid.NewGuid();
         Type jobHistoryType = Cache.Instance.GetTableMetadata("JobHistory").Type;
         JobPing? jobPing = null;
+        
+        // Push JobHistoryId to Serilog context so all logs within this job execution have JobHistoryId
+        using var logContext = LogContext.PushProperty("JobHistoryId", jobHistoryId);
+        
         try
         {
             // Get the last Job history record for this server

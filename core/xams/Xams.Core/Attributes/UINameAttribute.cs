@@ -1,6 +1,7 @@
-namespace Xams.Core.Attributes;
-
-public class UINameAttribute : Attribute
+namespace Xams.Core.Attributes
 {
+    public class UINameAttribute : Attribute
+    {
     
+    }
 }

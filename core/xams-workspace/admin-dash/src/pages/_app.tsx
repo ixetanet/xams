@@ -19,6 +19,7 @@ import { FirebaseApp, initializeApp } from "firebase/app";
 import { Auth, getAuth, sendEmailVerification } from "firebase/auth";
 import { FirebaseAuthConfig } from "@ixeta/headless-auth-react-firebase";
 import { FirebaseConfig } from "@/types";
+import { verifyEmail } from "@/utils/verifyEmailUtil";
 
 export let firebaseApp: FirebaseApp | null = null;
 export let firebaseAuthConfig: FirebaseAuthConfig;
@@ -31,11 +32,13 @@ export const initializeFirebase = (config: FirebaseConfig) => {
     totpAppName: config.projectId,
     onSignUpSuccess: async (authConfig) => {},
     onSignInSuccess: async () => {
-      // router.push("/app/coupons");
+      if (firebaseApp == null) return;
+      firebaseAuth = getAuth(firebaseApp);
+      if (firebaseAuth?.currentUser != null) {
+        await verifyEmail(firebaseAuth?.currentUser?.email ?? "");
+      }
     },
-    onSignOutSuccess: async () => {
-      // router.push("/");
-    },
+    onSignOutSuccess: async () => {},
   });
 };
 

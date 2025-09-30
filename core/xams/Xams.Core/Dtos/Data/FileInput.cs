@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Http;
 
-namespace Xams.Core.Dtos.Data;
-
-public class FileInput : ActionInput
+namespace Xams.Core.Dtos.Data
 {
-    public IFormFile file { get; set; }
+    public class FileInput : ActionInput
+    {
+        public IFormFile file { get; set; }
         
+    }
 }

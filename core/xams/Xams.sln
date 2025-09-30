@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xams.Core", "Xams.Core\Xams
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xams.Console", "Xams.Console\Xams.Console.csproj", "{884026A7-E7EC-46BC-9705-4DC6F27D178E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xams.Firebase", "Xams.Firebase\Xams.Firebase.csproj", "{9F40EADF-293D-452D-8C9C-36E3697819C9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{884026A7-E7EC-46BC-9705-4DC6F27D178E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{884026A7-E7EC-46BC-9705-4DC6F27D178E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{884026A7-E7EC-46BC-9705-4DC6F27D178E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F40EADF-293D-452D-8C9C-36E3697819C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F40EADF-293D-452D-8C9C-36E3697819C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F40EADF-293D-452D-8C9C-36E3697819C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F40EADF-293D-452D-8C9C-36E3697819C9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

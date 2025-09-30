@@ -65,6 +65,12 @@ public class QueryFactory
             {
                 join.alias ??= join.toTable;
 
+                // Required to make the join 
+                if (!join.fields.Contains(join.toField))
+                {
+                    join.fields = [..join.fields, join.toField];
+                }
+
                 var joinReadInput = new ReadInput()
                 {
                     tableName = join.toTable,
@@ -102,12 +108,13 @@ public class QueryFactory
         {
             throw new Exception("Permissions are required");
         }
+        
+        var highestPermission = Permissions.GetHighestPermission(_queryOptions.Permissions, readInput.tableName);
 
         // Only select the fields that are needed for select and filter
         Query query;
         if (readInput.tableName == "User")
         {
-            var highestPermission = Permissions.GetHighestPermission(_queryOptions.Permissions);
             if (highestPermission == Permissions.PermissionLevel.System)
             {
                 query = new Query(_dbContext, readInput.fields, fieldPrefix).From("User");
@@ -135,7 +142,6 @@ public class QueryFactory
         }
         else if (readInput.tableName == "Team")
         {
-            var highestPermission = Permissions.GetHighestPermission(_queryOptions.Permissions);
             if (highestPermission == Permissions.PermissionLevel.System)
             {
                 query = new Query(_dbContext, readInput.fields, fieldPrefix).From("Team");
@@ -167,8 +173,7 @@ public class QueryFactory
                                    null;
             bool hasOwningTeamId = targetType.GetProperties().FirstOrDefault(x => x.Name == "OwningTeamId") !=
                                    null;
-
-            var highestPermission = Permissions.GetHighestPermission(_queryOptions.Permissions);
+            
             // If this table has a OwningUserId or OwningTeamId field, we need to union the two queries together
             if ((hasOwningUserId || hasOwningTeamId) && highestPermission == Permissions.PermissionLevel.Team)
             {
@@ -186,7 +191,7 @@ public class QueryFactory
                 }
 
                 // Security - Filter by user permissions
-                AddSecurityFilter(subQuery, joinOn, hasOwningUserId, hasOwningTeamId);
+                AddSecurityFilter(subQuery, joinOn, hasOwningUserId, hasOwningTeamId, highestPermission);
 
                 queries.Add(subQuery);
             }
@@ -218,7 +223,6 @@ public class QueryFactory
                     && modelEntity.GetDiscriminatorPropertyName() == property.Name)
                     continue; 
                 
-
                 rootFields.Add(property.Name);
             }
 
@@ -285,7 +289,7 @@ public class QueryFactory
         }
     }
 
-    private void AddSecurityFilter(Query query, string joinOn, bool hasOwningUserId, bool hasOwningTeamId)
+    private void AddSecurityFilter(Query query, string joinOn, bool hasOwningUserId, bool hasOwningTeamId, Permissions.PermissionLevel? highestPermission)
     {
         // Can this table only be managed with System level access?
         if (!hasOwningUserId && !hasOwningTeamId && !_queryOptions.Permissions.Any(x => x.EndsWith("_SYSTEM")))
@@ -295,8 +299,6 @@ public class QueryFactory
         }
 
         // User can read user owned, Team can read user and team owned, System can read all
-        Permissions.PermissionLevel? highestPermission = Permissions.GetHighestPermission(_queryOptions.Permissions);
-
         if (highestPermission != null)
         {
             // If the user only has user level permissions and this entity doesn't have an OwningUser field return no results

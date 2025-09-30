@@ -1,11 +1,12 @@
 using System.Text.Json;
 
-namespace Xams.Core.Dtos.Data;
-
-public class Input
+namespace Xams.Core.Dtos.Data
 {
-    public object? id { get; set; } // primary id field 
-    public string? tableName { get; set; } // Could be null in the case of a batch operation
-    public Dictionary<string,dynamic>? fields { get; set; } // Could be null in the case of a batch operation
-    public Dictionary<string, JsonElement>? parameters { get; set; }
+    public class Input
+    {
+        public object? id { get; set; } // primary id field 
+        public string? tableName { get; set; } // Could be null in the case of a batch operation
+        public Dictionary<string,dynamic>? fields { get; set; } // Could be null in the case of a batch operation
+        public Dictionary<string, JsonElement>? parameters { get; set; }
+    }
 }

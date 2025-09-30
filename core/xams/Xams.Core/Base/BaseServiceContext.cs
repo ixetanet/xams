@@ -1,7 +1,11 @@
 using System.Linq.Dynamic.Core;
 using System.Text.Json;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xams.Core.Attributes;
+using Xams.Core.Contexts;
+using Xams.Core.Dtos;
 using Xams.Core.Interfaces;
 using Xams.Core.Jobs;
 using Xams.Core.Pipeline;
@@ -269,6 +273,17 @@ public class BaseServiceContext(PipelineContext pipelineContext)
         
         return jobOptions.JobHistoryId.Value;
     }
+    
+    /// <summary>
+    /// Return the hub instance to send messages to clients.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public async Task<Response<object?>> HubSend<T>(object message) where T : class, IServiceHub
+    {
+        return await DataService.HubSend<T>(message);
+    }
 
     private async Task ExecuteJobOnAllServers(JobOptions options)
     {
@@ -299,7 +314,6 @@ public class BaseServiceContext(PipelineContext pipelineContext)
             new DynamicLinq(db, Cache.Instance.GetTableMetadata("Server").Type);
         IQueryable query = dLinq.Query;
         query = query
-            .Where("LastPing > @0", DateTime.UtcNow.AddSeconds(-30))
             .Where("Name == @0", options.JobServer)
             .OrderBy("LastPing desc")
             .Take(1);

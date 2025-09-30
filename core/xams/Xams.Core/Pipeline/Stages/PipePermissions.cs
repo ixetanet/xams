@@ -221,8 +221,8 @@ public class PipePermissions : BasePipelineStage
     private async Task<Response<object?>> CheckSecurity(PipelineContext context)
     {
         // Does the user have permission to perform the operation on the table?
-        var tablePermissions = await GetTablePermissions(context);
-        var tablePermissionCheck = await TablePermissionCheck(context, tablePermissions);
+        context.Permissions = await GetTablePermissions(context);
+        var tablePermissionCheck = await TablePermissionCheck(context);
         if (!tablePermissionCheck.Succeeded)
         {
             return tablePermissionCheck;
@@ -255,12 +255,27 @@ public class PipePermissions : BasePipelineStage
         };
     }
 
-    private async Task<Response<object?>> TablePermissionCheck(PipelineContext context, string[] permissions)
+    private async Task<Response<object?>> TablePermissionCheck(PipelineContext context)
     {
         if (context.DataOperation is DataOperation.Read)
         {
             string[] tables = QueryUtil.GetTables(context.ReadInput);
-            var tablePermissions = permissions.ToTablePermissions(); 
+            var tablePermissions = context.Permissions.ToTablePermissions(); 
+            
+            // If the teamsView parameter is set to true then only return records
+            // the user can view due to their team ownership
+            if (context.InputParameters.ContainsKey("teamsView") &&
+                context.InputParameters["teamsView"].GetBoolean())
+            {
+                for (int i = 0; i < context.Permissions.Length; i++)
+                {
+                    if (context.Permissions[i] == $"TABLE_{context.ReadInput?.tableName}_READ_SYSTEM")
+                    {
+                        context.Permissions[i] = $"TABLE_{context.ReadInput?.tableName}_READ_TEAM";
+                    }
+                }
+            }
+            
             foreach (var table in tables)
             {
                 if (tablePermissions.FirstOrDefault(x => x.Table == table) == null)
@@ -280,7 +295,7 @@ public class PipePermissions : BasePipelineStage
             
         }
 
-        if (permissions.Length == 0)
+        if (context.Permissions.Length == 0)
         {
             return new Response<object?>()
             {

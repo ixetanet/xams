@@ -79,6 +79,15 @@ public class PipePermissionRules : BasePipelineStage
                         FriendlyMessage = $"Cannot create permissions that start with JOB."
                     };
                 }
+                
+                if (name.StartsWith("HUB"))
+                {
+                    return new Response<object?>()
+                    {
+                        Succeeded = false,
+                        FriendlyMessage = $"Cannot create permissions that start with HUB."
+                    };
+                }
 
                 if (name.Contains(" "))
                 {

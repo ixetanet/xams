@@ -275,13 +275,13 @@ export class FirebaseAuthConfig implements AuthConfig {
 
   onAuthStateChanged = (callback: (isLoggedIn: boolean) => void) => {
     this.authStateCallback = callback;
-    const unsubscribe = this.auth.onAuthStateChanged((user) => {
+    const unsubscribe = this.auth.onAuthStateChanged(async (user) => {
       if (user) {
         console.log("User is signed in.");
-        callback(true);
         if (this.options?.onSignInSuccess) {
-          this.options.onSignInSuccess(this);
+          await this.options.onSignInSuccess(this);
         }
+        callback(true);
       } else {
         console.log("No user is signed in.");
         callback(false);
@@ -292,7 +292,23 @@ export class FirebaseAuthConfig implements AuthConfig {
 
   isEmailVerified = async () => {
     await this.auth.authStateReady();
-    return this.auth.currentUser?.emailVerified ?? false;
+    const user = this.auth.currentUser;
+
+    if (!user) {
+      return false;
+    }
+
+    // Check if user signed in with any OAuth providers (not password/phone)
+    const hasOAuthProvider = user.providerData.some(
+      provider => provider.providerId !== 'password' && provider.providerId !== 'phone'
+    );
+
+    // OAuth providers have already verified the email
+    if (hasOAuthProvider) {
+      return true;
+    }
+
+    return user.emailVerified;
   };
 
   mfaRequired = async () => {

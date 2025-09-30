@@ -21,8 +21,6 @@ public class JobStartupService : IServiceStartup
         _dataService = startupContext.ServiceProvider.GetRequiredService<IDataService>();
         await CreateJobs();
         
-        await GetJobRetentionSettings(startupContext);
-        
         // This starts execution of the jobs
         // Recreate the scope and service provider to ensure the service provider is not disposed
         JobService.Initialize(startupContext.ServiceProvider.CreateScope().ServiceProvider);
@@ -112,10 +110,4 @@ public class JobStartupService : IServiceStartup
         
     }
 
-    public async Task GetJobRetentionSettings(StartupContext context)
-    {
-        var db = context.DataService.GetDbContext<IXamsDbContext>();
-        var retentionDays = int.Parse((await Queries.GetCreateSetting(db, SettingName, "30") ?? "30"));
-        Cache.Instance.JobHistoryRetentionDays = retentionDays;
-    }
 }

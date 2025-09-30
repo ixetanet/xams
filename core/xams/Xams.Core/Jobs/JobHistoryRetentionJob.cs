@@ -18,8 +18,10 @@ public class JobHistoryRetentionJob : IServiceJob
         var db = context.GetDbContext<IXamsDbContext>();
         Type jobHistoryType = Cache.Instance.GetTableMetadata("JobHistory").Type;
         
+        var retentionDays = int.Parse((await Queries.GetCreateSetting(db, JobStartupService.SettingName, "30") ?? "30"));
+        
         DynamicLinq dynamicLinq = new DynamicLinq(db, jobHistoryType);
-        var query = dynamicLinq.Query.Where("CreatedDate < @0", DateTime.UtcNow.AddDays(-Cache.Instance.JobHistoryRetentionDays));
+        var query = dynamicLinq.Query.Where("CreatedDate < @0", DateTime.UtcNow.AddDays(-retentionDays));
         var results = await query.ToDynamicArrayAsync();
         
         foreach (var result in results)

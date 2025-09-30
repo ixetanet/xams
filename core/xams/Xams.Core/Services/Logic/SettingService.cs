@@ -31,10 +31,10 @@ public class SettingService : IServiceLogic
         string[] integerSettings =
         [
             JobStartupService.SettingName, AuditStartupService.AuditRetentionSetting,
+            LogStartupService.SettingName,
         ];
         string[] boolSettings =
         [
-            AuditStartupService.AuditEnabledSetting,
         ];
         
         if (context.DataOperation is Create or Update)
@@ -68,13 +68,6 @@ public class SettingService : IServiceLogic
                     return ServiceResult.Error($"Setting value must be a boolean.");    
                 }
             }
-
-            if (AuditStartupService.AuditEnabledSetting == settingName)
-            {
-                // Update the audit cache refresh setting to force refresh of cache
-                await Queries.UpdateSystemRecord(db, "AuditLastRefresh", DateTime.UtcNow.ToString("O"));
-            }
-            
         }
 
         if (context.DataOperation is Delete)
