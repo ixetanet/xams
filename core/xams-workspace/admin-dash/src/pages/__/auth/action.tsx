@@ -5,14 +5,16 @@ import { applyActionCode } from "firebase/auth";
 import { firebaseAuth, initializeFirebase } from "../../_app";
 import { useQuery } from "@tanstack/react-query";
 import { FirebaseConfig } from "@/types";
-import { API_CONFIG } from "@ixeta/xams";
+import { API_CONFIG, getQueryParam } from "@ixeta/xams";
 import LoginContainer from "@/components/auth/LoginContainer";
 
 type ActionMode = "verifyEmail" | "resetPassword" | "recoverEmail";
 
 const AuthAction = () => {
   const router = useRouter();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "success" | "error">(
+    "loading"
+  );
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [actionMode, setActionMode] = useState<ActionMode | null>(null);
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
@@ -33,7 +35,11 @@ const AuthAction = () => {
 
   useEffect(() => {
     // Initialize Firebase if not already initialized
-    if (authQuery.data && Object.keys(authQuery.data).length !== 0 && firebaseAuth === null) {
+    if (
+      authQuery.data &&
+      Object.keys(authQuery.data).length !== 0 &&
+      firebaseAuth === null
+    ) {
       console.log("Initializing Firebase with config:", authQuery.data);
       initializeFirebase(authQuery.data);
       setIsFirebaseReady(true);
@@ -49,7 +55,9 @@ const AuthAction = () => {
       if (status === "loading" && authQuery.data && !isFirebaseReady) {
         console.error("Firebase failed to initialize after 10 seconds");
         setStatus("error");
-        setErrorMessage("Failed to initialize authentication. Please try again later.");
+        setErrorMessage(
+          "Failed to initialize authentication. Please try again later."
+        );
       }
     }, 10000);
 
@@ -69,6 +77,10 @@ const AuthAction = () => {
 
       const { mode, oobCode, continueUrl } = router.query;
       console.log("Action page processing:", { mode, hasOobCode: !!oobCode });
+
+      if (continueUrl) {
+        localStorage.setItem("auth-redirecturl", continueUrl as string);
+      }
 
       if (!mode || !oobCode) {
         setStatus("error");
@@ -121,15 +133,21 @@ const AuthAction = () => {
         if (error.code === "auth/invalid-action-code") {
           setErrorMessage("This link has expired or has already been used.");
         } else if (error.code === "auth/expired-action-code") {
-          setErrorMessage("This verification link has expired. Please request a new one.");
+          setErrorMessage(
+            "This verification link has expired. Please request a new one."
+          );
         } else if (error.code === "auth/user-disabled") {
           setErrorMessage("This account has been disabled.");
         } else if (error.code === "auth/user-not-found") {
           setErrorMessage("No account found with this email.");
         } else if (error.code === "auth/network-request-failed") {
-          setErrorMessage("Network error. Please check your connection and try again.");
+          setErrorMessage(
+            "Network error. Please check your connection and try again."
+          );
         } else {
-          setErrorMessage(error.message || "An error occurred. Please try again.");
+          setErrorMessage(
+            error.message || "An error occurred. Please try again."
+          );
         }
       }
     };
@@ -143,7 +161,9 @@ const AuthAction = () => {
       <LoginContainer>
         <Stack align="center" gap="lg">
           <Loader size="lg" />
-          <Text size="sm" c="dimmed">Loading...</Text>
+          <Text size="sm" c="dimmed">
+            Loading...
+          </Text>
         </Stack>
       </LoginContainer>
     );

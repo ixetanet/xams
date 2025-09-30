@@ -42,7 +42,14 @@ const RegisterForm = () => {
           try {
             const success = await auth.signUp();
             if (success) {
-              await auth.sendEmailVerification();
+              const authRedirectUrl = localStorage.getItem("auth-redirecturl");
+              if (authRedirectUrl) {
+                await auth.sendEmailVerification({
+                  url: authRedirectUrl,
+                });
+              } else {
+                await auth.sendEmailVerification();
+              }
             }
           } finally {
             setLoadingStates((prev) => ({ ...prev, signUp: false }));
