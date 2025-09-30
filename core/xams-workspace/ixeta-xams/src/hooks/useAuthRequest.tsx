@@ -185,6 +185,17 @@ const useAuthRequest = (props?: useAuthRequestProps) => {
     }
   };
 
+  const apiConfig = async <T,>(name: string) => {
+    const resp = await fetch(`${authContext?.apiUrl}/config?name=${name}`, {
+      method: "GET",
+    });
+    if (!resp.ok) {
+      return null;
+    }
+    const json = (await resp.json()) as T;
+    return json;
+  };
+
   const apiWhoAmI = async <T,>() => {
     const resp = await makeRequest<T>({
       url: API_DATA_WHOAMI,
@@ -425,6 +436,7 @@ const useAuthRequest = (props?: useAuthRequestProps) => {
   return useMemo(
     () => ({
       execute: makeRequest,
+      config: apiConfig,
       whoAmI: apiWhoAmI,
       hasAllPermissions: apiHasAllPermissions,
       hasAnyPermissions: apiHasAnyPermissions,
