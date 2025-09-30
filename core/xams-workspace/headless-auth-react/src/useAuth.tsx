@@ -6,6 +6,7 @@ export type AuthStateChangeContext = {
   isLoggedIn: boolean;
   isMfaRequired: boolean;
   isEmailVerified: boolean;
+  hasPasswordProvider: boolean;
   mfaTotpEnrolled: boolean;
   mfaSmsEnrolled: boolean;
   mfaFactors: Factor[];

@@ -300,7 +300,8 @@ export class FirebaseAuthConfig implements AuthConfig {
 
     // Check if user signed in with any OAuth providers (not password/phone)
     const hasOAuthProvider = user.providerData.some(
-      provider => provider.providerId !== 'password' && provider.providerId !== 'phone'
+      (provider) =>
+        provider.providerId !== "password" && provider.providerId !== "phone"
     );
 
     // OAuth providers have already verified the email
@@ -309,6 +310,20 @@ export class FirebaseAuthConfig implements AuthConfig {
     }
 
     return user.emailVerified;
+  };
+
+  hasPasswordProvider = async () => {
+    await this.auth.authStateReady();
+    const user = this.auth.currentUser;
+
+    if (!user) {
+      return false;
+    }
+
+    // Check if user has password provider
+    return user.providerData.some(
+      (provider) => provider.providerId === "password"
+    );
   };
 
   mfaRequired = async () => {

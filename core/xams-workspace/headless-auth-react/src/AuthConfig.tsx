@@ -20,6 +20,7 @@ export type AuthConfig = {
   handleRedirectResult: () => Promise<AuthResponse>;
   onAuthStateChanged: (callback: (isLoggedIn: boolean) => void) => () => void;
   isEmailVerified: () => Promise<boolean>;
+  hasPasswordProvider: () => Promise<boolean>;
   mfaRequired: () => Promise<boolean>;
   mfaFactors: () => Promise<Factor[]>;
   mfaTotpEnrolled: () => Promise<boolean>;

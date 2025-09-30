@@ -23,6 +23,7 @@ export type AuthContextType = {
   isMfaRequired: boolean;
   mfaFactors: Factor[];
   isEmailVerified: boolean;
+  hasPasswordProvider: boolean;
   mfaTotpEnrolled: boolean;
   mfaSmsEnrolled: boolean;
   setMfaTotpEnrolled: React.Dispatch<React.SetStateAction<boolean>>;
@@ -42,6 +43,7 @@ type AuthProviderProps = {
 export const AuthProvider = ({ authConfig, children }: AuthProviderProps) => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | undefined>(undefined);
   const [isEmailVerified, setIsEmailVerified] = useState<boolean>(false);
+  const [hasPasswordProvider, setHasPasswordProvider] = useState<boolean>(false);
   const [isMfaRequired, setIsMfaRequired] = useState<boolean>(false);
   const [mfaFactors, setMfaFactors] = useState<Factor[]>([]);
   const [mfaTotpEnrolled, setMfaTotpEnrolled] = useState<boolean>(false);
@@ -71,9 +73,11 @@ export const AuthProvider = ({ authConfig, children }: AuthProviderProps) => {
 
     if (isLoggedIn) {
       const isEmailVerified = await authConfig.isEmailVerified();
+      const hasPasswordProvider = await authConfig.hasPasswordProvider();
       const hasMfaTotp = await authConfig.mfaTotpEnrolled();
       const hasSmsTotp = await authConfig.mfaSmsEnrolled();
       setIsEmailVerified(isEmailVerified);
+      setHasPasswordProvider(hasPasswordProvider);
       setIsLoggedIn(isLoggedIn);
       setMfaTotpEnrolled(hasMfaTotp);
       setMfaSmsEnrolled(hasSmsTotp);
@@ -81,6 +85,7 @@ export const AuthProvider = ({ authConfig, children }: AuthProviderProps) => {
       onAuthStateChangedRef.current({
         isLoggedIn: isLoggedIn,
         isEmailVerified: isEmailVerified,
+        hasPasswordProvider: hasPasswordProvider,
         mfaTotpEnrolled: hasMfaTotp,
         mfaSmsEnrolled: hasSmsTotp,
         isMfaRequired: isMfaRequired,
@@ -89,6 +94,7 @@ export const AuthProvider = ({ authConfig, children }: AuthProviderProps) => {
     } else {
       setIsLoggedIn(isLoggedIn);
       setIsEmailVerified(false);
+      setHasPasswordProvider(false);
       setMfaTotpEnrolled(false);
       setMfaSmsEnrolled(false);
       setIsMfaRequired(isMfaRequired);
@@ -96,6 +102,7 @@ export const AuthProvider = ({ authConfig, children }: AuthProviderProps) => {
       onAuthStateChangedRef.current({
         isLoggedIn: isLoggedIn,
         isEmailVerified: false,
+        hasPasswordProvider: false,
         mfaTotpEnrolled: false,
         mfaSmsEnrolled: false,
         isMfaRequired: isMfaRequired,
@@ -126,6 +133,7 @@ export const AuthProvider = ({ authConfig, children }: AuthProviderProps) => {
         isMfaRequired: isMfaRequired,
         mfaFactors: mfaFactors,
         isEmailVerified: isEmailVerified,
+        hasPasswordProvider: hasPasswordProvider,
         mfaTotpEnrolled: mfaTotpEnrolled,
         mfaSmsEnrolled: mfaSmsEnrolled,
         setMfaTotpEnrolled: setMfaTotpEnrolled,

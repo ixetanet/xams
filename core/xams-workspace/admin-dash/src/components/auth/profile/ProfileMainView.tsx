@@ -183,29 +183,33 @@ const ProfileMainView = () => {
 
         <Divider />
 
-        <div>
-          <Title order={4} mb="md">
-            Password
-          </Title>
-          <Card withBorder p="md">
-            <Stack gap="md">
-              <div>
-                <Text fw={500}>Change Password</Text>
-                <Text size="sm" c="dimmed">
-                  Update your account password
-                </Text>
-              </div>
-              <Button
-                fullWidth
-                onClick={() => setIsChangePasswordModalOpen(true)}
-              >
-                Change Password
-              </Button>
-            </Stack>
-          </Card>
-        </div>
+        {auth.hasPasswordProvider && (
+          <>
+            <div>
+              <Title order={4} mb="md">
+                Password
+              </Title>
+              <Card withBorder p="md">
+                <Stack gap="md">
+                  <div>
+                    <Text fw={500}>Change Password</Text>
+                    <Text size="sm" c="dimmed">
+                      Update your account password
+                    </Text>
+                  </div>
+                  <Button
+                    fullWidth
+                    onClick={() => setIsChangePasswordModalOpen(true)}
+                  >
+                    Change Password
+                  </Button>
+                </Stack>
+              </Card>
+            </div>
 
-        <Divider />
+            <Divider />
+          </>
+        )}
 
         <Button
           variant="outline"
