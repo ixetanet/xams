@@ -215,7 +215,7 @@ Add your Firebase configuration to appsettings.json:
 
 ## Google Provider
 
-To configure Google as an authentication provider:
+To configure Google as an authentication provider and enable custom domain redirects:
 
 1. **Go to Google Cloud Console**
    - Open the Google Cloud Console and select your project linked to your Firebase app.
@@ -224,16 +224,16 @@ To configure Google as an authentication provider:
    - In the left sidebar, click on "APIs & Services," then choose "Credentials."
    - Under "OAuth 2.0 Client IDs," find the web client associated with your Firebase project and click the pencil/edit icon.
 
-3. **Add Your Redirect URL**
+3. **Add Your Redirect URL (Required for Custom Domains)**
    - The default redirect URL for Firebase Authentication will look like:
      ```
      https://YOUR_PROJECT_ID.firebaseapp.com/__/auth/handler
      ```
-   - When using a custom domain that points to your Xams ASP.NET project, your redirect URL will be:
+   - **For custom domains** (required when using Google authentication with your own domain), add your Xams ASP.NET project URL:
      ```
      https://YOUR_CUSTOM_DOMAIN/__/auth/handler
      ```
-     The `/__/auth/handler` endpoint is automatically provided by the Xams framework when you configure Firebase authentication with `app.AddFirebaseAuthProxy()`.
+     The `/__/auth/handler` endpoint is automatically provided by the Xams framework when you configure Firebase authentication with `app.AddFirebaseAuthProxy()`. This implements [Option 3 from Firebase's redirect best practices](https://firebase.google.com/docs/auth/web/redirect-best-practices) - proxying the auth handler through your application backend. This configuration is essential for Google OAuth to properly redirect users back to your custom domain after authentication.
    - For local development, use:
      ```
      https://localhost:PORT/__/auth/handler
