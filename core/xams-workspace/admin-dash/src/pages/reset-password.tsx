@@ -64,7 +64,7 @@ const ResetPasswordContent = () => {
       providers={authQuery.data.providers}
       auth={auth}
       smsEnrollmentEnabled={authQuery.data.enableSmsMfa}
-      redirectUrl={authQuery.data.redirectUrl}
+      redirectUrls={authQuery.data.redirectUrls}
     >
       <LoginContainer>
         <ResetPasswordForm oobCode={oobCode as string} />
