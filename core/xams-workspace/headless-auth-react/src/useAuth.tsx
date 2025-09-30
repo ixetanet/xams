@@ -229,10 +229,7 @@ export const useAuth = (props?: useAuthProps) => {
     });
   };
 
-  const changePassword = async (
-    currentPwd?: string,
-    newPwd?: string
-  ) => {
+  const changePassword = async (currentPwd?: string, newPwd?: string) => {
     return await execute(async () => {
       const resp = await authContext.authConfig.changePassword(
         currentPwd || currentPassword,

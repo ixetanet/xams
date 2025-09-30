@@ -260,3 +260,17 @@ Navigate to the admin dashboard to verify Firebase authentication is working:
 Example: `https://localhost:8000/x`
 
 You should see the Firebase login page with your configured authentication providers.
+
+## React Setup
+
+Install the dependent npm packages:
+
+```bash
+npm install firebase@^11.6.0 @ixeta/headless-auth-react @ixeta/headless-auth-react-firebase
+```
+
+Set the environment variables in your React app:
+
+```typescript
+NEXT_PUBLIC_API=https://localhost:7102/
+```

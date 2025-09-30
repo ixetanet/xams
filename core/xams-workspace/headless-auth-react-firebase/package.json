@@ -1,6 +1,6 @@
 {
   "name": "@ixeta/headless-auth-react-firebase",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Xams React Components",
   "source": "src/index.ts",
   "types": "dist/types/index.d.ts",
@@ -26,8 +26,11 @@
     "ui",
     "auth"
   ],
+  "dependencies": {
+    
+  },
   "peerDependencies": {
-    "@ixeta/headless-auth-react": "^0.0.1",
+    "@ixeta/headless-auth-react": "*",
     "firebase": "^11.6.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

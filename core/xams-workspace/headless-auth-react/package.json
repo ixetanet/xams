@@ -1,6 +1,6 @@
 {
   "name": "@ixeta/headless-auth-react",
-  "version": "0.0.1",
+  "version": "1.0.1",
   "description": "Xams React Components",
   "source": "src/index.ts",
   "types": "dist/types/index.d.ts",

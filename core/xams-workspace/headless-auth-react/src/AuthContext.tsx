@@ -36,14 +36,15 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 );
 
 type AuthProviderProps = {
-  authConfig: AuthConfig;
+  authConfig: AuthConfig | null;
   children: ReactNode;
 };
 
 export const AuthProvider = ({ authConfig, children }: AuthProviderProps) => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | undefined>(undefined);
   const [isEmailVerified, setIsEmailVerified] = useState<boolean>(false);
-  const [hasPasswordProvider, setHasPasswordProvider] = useState<boolean>(false);
+  const [hasPasswordProvider, setHasPasswordProvider] =
+    useState<boolean>(false);
   const [isMfaRequired, setIsMfaRequired] = useState<boolean>(false);
   const [mfaFactors, setMfaFactors] = useState<Factor[]>([]);
   const [mfaTotpEnrolled, setMfaTotpEnrolled] = useState<boolean>(false);
@@ -54,6 +55,7 @@ export const AuthProvider = ({ authConfig, children }: AuthProviderProps) => {
   const onAuthStateChangedRef = useRef((_: AuthStateChangeContext) => {});
 
   const handleRedirectResult = async () => {
+    if (!authConfig) return;
     if (authConfig.handleRedirectResult) {
       const resp = await authConfig.handleRedirectResult();
       if (!resp.success) {
@@ -63,6 +65,7 @@ export const AuthProvider = ({ authConfig, children }: AuthProviderProps) => {
   };
 
   const handleAuthStateChanged = async (isLoggedIn: boolean) => {
+    if (!authConfig) return;
     clearRef.current();
     const isMfaRequired = await authConfig.mfaRequired();
     let mfaFactors: Factor[] = [];
@@ -112,6 +115,7 @@ export const AuthProvider = ({ authConfig, children }: AuthProviderProps) => {
   };
 
   useEffect(() => {
+    if (!authConfig) return;
     handleRedirectResult();
     const unsubscribe = authConfig.onAuthStateChanged((isLoggedIn) => {
       handleAuthStateChanged(isLoggedIn);
@@ -124,7 +128,7 @@ export const AuthProvider = ({ authConfig, children }: AuthProviderProps) => {
   return (
     <AuthContext.Provider
       value={{
-        authConfig: authConfig,
+        authConfig: authConfig ?? ({} as AuthConfig),
         setErrorRef: setErrorRef,
         clearRef: clearRef,
         onAuthStateChangedRef: onAuthStateChangedRef,
