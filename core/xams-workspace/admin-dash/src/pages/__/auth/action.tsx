@@ -15,6 +15,7 @@ const AuthAction = () => {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [actionMode, setActionMode] = useState<ActionMode | null>(null);
+  const [isFirebaseReady, setIsFirebaseReady] = useState(false);
 
   // Fetch Firebase config
   const authQuery = useQuery<FirebaseConfig>({
@@ -33,15 +34,41 @@ const AuthAction = () => {
   useEffect(() => {
     // Initialize Firebase if not already initialized
     if (authQuery.data && Object.keys(authQuery.data).length !== 0 && firebaseAuth === null) {
+      console.log("Initializing Firebase with config:", authQuery.data);
       initializeFirebase(authQuery.data);
+      setIsFirebaseReady(true);
+    } else if (firebaseAuth !== null) {
+      console.log("Firebase already initialized");
+      setIsFirebaseReady(true);
     }
   }, [authQuery.data]);
 
+  // Add timeout to detect initialization issues
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (status === "loading" && authQuery.data && !isFirebaseReady) {
+        console.error("Firebase failed to initialize after 10 seconds");
+        setStatus("error");
+        setErrorMessage("Failed to initialize authentication. Please try again later.");
+      }
+    }, 10000);
+
+    return () => clearTimeout(timeout);
+  }, [status, authQuery.data, isFirebaseReady]);
+
   useEffect(() => {
     const handleAction = async () => {
-      if (!router.isReady || !firebaseAuth) return;
+      if (!router.isReady || !isFirebaseReady || !firebaseAuth) {
+        console.log("Action page waiting:", {
+          routerReady: router.isReady,
+          firebaseReady: isFirebaseReady,
+          firebaseAuth: !!firebaseAuth,
+        });
+        return;
+      }
 
       const { mode, oobCode, continueUrl } = router.query;
+      console.log("Action page processing:", { mode, hasOobCode: !!oobCode });
 
       if (!mode || !oobCode) {
         setStatus("error");
@@ -54,6 +81,7 @@ const AuthAction = () => {
       try {
         switch (mode) {
           case "verifyEmail":
+            console.log("Applying action code for email verification");
             await applyActionCode(firebaseAuth, oobCode as string);
             setStatus("success");
 
@@ -86,15 +114,20 @@ const AuthAction = () => {
             setErrorMessage("Unsupported action type.");
         }
       } catch (error: any) {
+        console.error("Action page error:", error);
         setStatus("error");
 
         // Handle specific Firebase error codes
         if (error.code === "auth/invalid-action-code") {
           setErrorMessage("This link has expired or has already been used.");
+        } else if (error.code === "auth/expired-action-code") {
+          setErrorMessage("This verification link has expired. Please request a new one.");
         } else if (error.code === "auth/user-disabled") {
           setErrorMessage("This account has been disabled.");
         } else if (error.code === "auth/user-not-found") {
           setErrorMessage("No account found with this email.");
+        } else if (error.code === "auth/network-request-failed") {
+          setErrorMessage("Network error. Please check your connection and try again.");
         } else {
           setErrorMessage(error.message || "An error occurred. Please try again.");
         }
@@ -102,7 +135,7 @@ const AuthAction = () => {
     };
 
     handleAction();
-  }, [router.isReady, router.query, firebaseAuth]);
+  }, [router.isReady, router.query, isFirebaseReady]);
 
   // Loading state while fetching Firebase config
   if (authQuery.isLoading) {
