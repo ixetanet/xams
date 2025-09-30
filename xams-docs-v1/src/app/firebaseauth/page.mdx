@@ -6,36 +6,36 @@ export const metadata = {
 
 # Firebase Authentication
 
-Quickly and easily setup Firebase Authentication in your Xams application. {{ className: 'lead' }}
+Integrate Firebase Authentication with your Xams application for secure user management. {{ className: 'lead' }}
 
-Xams offers extensible support for Firebase authentication that includes a pre-built brandable login page and auth flows including multi-factor authentication (MFA).
+Xams provides built-in Firebase authentication support with a customizable login page and comprehensive auth flows including multi-factor authentication (MFA). {{ className: 'lead' }}
 
 <DocImage image={firebaseAuth} />
 
-## Install NuGet Packages
+## Install Required Packages
 
-Install the FirebaseAdmin SDK and Xams.Firebase NuGet package in your project.
+Install the FirebaseAdmin SDK and Xams.Firebase NuGet packages.
 
 ```bash
 dotnet add package FirebaseAdmin
 dotnet add package Xams.Firebase
 ```
 
-## Download Firebase Key
+## Download Service Account Key
 
-To download the private key for your Firebase service account, follow these official steps as documented by Firebase and Google Cloud:
+Generate and configure your Firebase service account private key:
 
-1. Go to your Firebase project in the Firebase console.
-2. Open "Project settings".
-3. Click the "Service accounts" tab.
-4. In the "Firebase Admin SDK" section, click "Generate new private key".
-5. Confirm the action, and a JSON file containing the private key will be downloaded to your computer.
-6. Add the JSON file to your project directory, for example in a `keys` folder.
-7. Ensure the file is copied to the output directory by setting its properties in your project file or IDE.
+1. Navigate to your Firebase project in the Firebase console
+2. Open **Project settings**
+3. Select the **Service accounts** tab
+4. Click **Generate new private key** in the Firebase Admin SDK section
+5. Confirm to download the JSON key file
+6. Add the JSON file to your project (e.g., in a `keys` folder)
+7. Configure the file to copy to output directory in your project settings
 
-## Configure AppUser
+## Configure User Entity
 
-Ensure the User entity has the required Firebase fields.
+Add the required Firebase fields to your User entity:
 
 ```c# {{ title: 'Project / Entities / AppUser.cs' }}
 public class AppUser : User
@@ -50,7 +50,7 @@ public class AppUser : User
 }
 ```
 
-Provide AppUser in the DbContext.
+Register AppUser in your DbContext:
 
 ```c# {{ title: 'Project / DataContext.cs' }}
 public class DataContext : XamsDbContext<AppUser>
@@ -59,9 +59,9 @@ public class DataContext : XamsDbContext<AppUser>
 }
 ```
 
-## Setup Authentication
+## Configure Authentication
 
-In Program.cs add the following code to setup api authentication.
+Add Firebase authentication to Program.cs:
 
 ```c# {{ title: 'Project / Program.cs' }}
 builder.Services.AddAuthorization();
@@ -80,9 +80,9 @@ builder.Services
     });
 ```
 
-## Setup Api
+## Configure API Endpoints
 
-Make the following additions to Program.cs to setup the api.
+Configure the Xams API with Firebase support in Program.cs:
 
 ```c# {{ title: 'Project / Program.cs' }}
 var app = builder.Build();
@@ -91,14 +91,14 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Before static files
-// This allows for redirects to work properly on a custom domain
-// See option 3: https://firebase.google.com/docs/auth/web/redirect-best-practices
+// Add proxy for Firebase auth redirects (before static files)
+// Enables proper redirect handling on custom domains
+// Reference: https://firebase.google.com/docs/auth/web/redirect-best-practices
 app.AddFirebaseAuthProxy(firebaseProjectId);
 
 app.UseStaticFiles();
 
-// After authentication & authorization
+// Configure Xams API with Firebase integration
 app.AddXamsApi(options =>
 {
     options.UseDashboard = true;
@@ -108,13 +108,13 @@ app.AddXamsApi(options =>
 
 });
 
-// Add a verifyemail endpoint
+// Add Firebase-specific endpoints (e.g., email verification)
 app.AddXamsFirebaseApi();
 ```
 
-## GetUserId Function
+## User Authentication Helper
 
-Create the following UserUtil class in your project to extract the user ID from the authenticated user's claims, create the Xams user and potentially assign them a role.
+Create a UserUtil class to handle user authentication, automatically creating Xams users from Firebase claims:
 
 ```c# {{ title: 'Project / UserUtil.cs' }}
 public class UserUtil
@@ -138,7 +138,7 @@ public class UserUtil
             var user = await GetUser(db, userIdClaim, emailClaim);
             try
             {
-                // Attempt to create the user
+                // Create user if not found
                 if (user == null)
                 {
                     user = await CreateUser(db, userIdClaim, emailClaim);
@@ -146,11 +146,11 @@ public class UserUtil
             }
             catch (Exception e)
             {
-                // Wait a variable amount of time in case multiple
-                // requests are trying to create the user at once
+                // Handle concurrent user creation attempts
+                // Add random delay to prevent race conditions
                 var rnd = new Random(DateTime.Now.Millisecond);
                 await Task.Delay(rnd.Next(20, 150));
-                // Reattempt to retrieve
+                // Retry retrieval and creation
                 user = await GetUser(db, userIdClaim, emailClaim);
                 if (user == null)
                 {
@@ -181,8 +181,8 @@ public class UserUtil
 
         var userRole = new UserRole<AppUser, Role>();
         userRole.UserId = user.UserId;
-        // Set initial user role, change as needed
-        userRole.RoleId = new Guid("0526627a-ac19-4228-a512-8a817edd4e95"); 
+        // Assign default role (customize as needed)
+        userRole.RoleId = new Guid("0526627a-ac19-4228-a512-8a817edd4e95");
         db.Add(userRole);
         await db.SaveChangesAsync();
         return user;
@@ -192,9 +192,9 @@ public class UserUtil
 
 
 
-## AppSettings.json
+## Firebase Configuration
 
-Add your Firebase configuration to appsettings.json.
+Add your Firebase configuration to appsettings.json:
 
 ```json
 {
@@ -213,6 +213,10 @@ Add your Firebase configuration to appsettings.json.
 }
 ```
 
-## Complete
+## Test Your Configuration
 
-Now if you navigate to the admin dash you should see the Firebase login page. Ie: `https://localhost:8000/x`
+Navigate to the admin dashboard to verify Firebase authentication is working:
+
+Example: `https://localhost:8000/x`
+
+You should see the Firebase login page with your configured authentication providers.
