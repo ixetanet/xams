@@ -266,7 +266,7 @@ You should see the Firebase login page with your configured authentication provi
 Install the dependent npm packages:
 
 ```bash
-npm install firebase@^11.6.0 @ixeta/headless-auth-react @ixeta/headless-auth-react-firebase
+npm install firebase@^11.6.0 @ixeta/xams-firebase
 ```
 
 Set the environment variables in your React app:
@@ -274,3 +274,114 @@ Set the environment variables in your React app:
 ```typescript
 NEXT_PUBLIC_API=https://localhost:7102/
 ```
+
+
+In `_app.tsx` be sure to include `import "@ixeta/xams-firebase/styles.css";` and wrap your app with the `XamFirebaseAuthProvider`.
+The `auth-recaptcha` div is required for phone authentication.
+
+```typescript
+import "@/styles/globals.css";
+import type { AppProps } from "next/app";
+import "@mantine/core/styles.css";
+import "@mantine/dates/styles.css";
+import { createTheme, MantineProvider } from "@mantine/core";
+import {
+  AppContextProvider,
+  AuthContextProvider,
+  getQueryParam,
+} from "@ixeta/xams";
+import "@ixeta/xams/styles.css";
+import "@ixeta/xams/global.css";
+import { useRouter } from "next/router";
+import { AuthProvider } from "@ixeta/headless-auth-react";
+import { XamsFirebaseAuthProvider } from "@ixeta/xams-firebase";
+
+const theme = createTheme({});
+
+export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+  const userId = getQueryParam("userid", router.asPath);
+
+  return (
+    <MantineProvider theme={theme}>
+      <XamsFirebaseAuthProvider apiUrl={process.env.NEXT_PUBLIC_API ?? ""}>
+        {(context) => (
+          <AuthProvider authConfig={context.firebaseAuthConfig}>
+            <AuthContextProvider
+              apiUrl={process.env.NEXT_PUBLIC_API as string}
+              headers={{
+                UserId: userId as string,
+              }}
+              onUnauthorized={() => {
+                context.firebaseAuthConfig?.signOut();
+                if (router.isReady) {
+                  router.push("/");
+                }
+              }}
+              getAccessToken={context.firebaseAuthConfig?.getAccessToken}
+            >
+              <AppContextProvider>
+                <Component {...pageProps} />
+                <div id="auth-recaptcha" className="invisible" />
+              </AppContextProvider>
+            </AuthContextProvider>
+          </AuthProvider>
+        )}
+      </XamsFirebaseAuthProvider>
+    </MantineProvider>
+  );
+}
+```
+
+Create the following pages.
+
+```tsx {{ title: 'src/pages/login.tsx' }}
+import React from "react";
+import { useRouter } from "next/router";
+import { LoginPage } from "@ixeta/xams-firebase";
+
+const Login = () => {
+  const router = useRouter();
+  // Modify to redirect to desired app page after login
+  return <LoginPage onLoginSuccess={() => router.push("/")} />;
+};
+
+export default Login;
+
+```
+
+```tsx {{ title: 'src/pages/profile.tsx' }}
+import React from "react";
+import { ProfilePage } from "@ixeta/xams-firebase";
+
+const Profile = () => {
+  return <ProfilePage />;
+};
+
+export default Profile;
+```
+
+```tsx {{ title: 'src/pages/reset-password.tsx' }}
+import React from "react";
+import { ResetPasswordPage } from "@ixeta/xams-firebase";
+
+const ResetPassword = () => {
+  return <ResetPasswordPage />;
+};
+
+export default ResetPassword;
+```
+
+```tsx {{ title: 'src/pages/__/auth/action.tsx' }}
+import React from "react";
+import { ActionPage } from "@ixeta/xams-firebase";
+
+const AuthAction = () => {
+  return <ActionPage />;
+};
+
+export default AuthAction;
+```
+
+In the Firebase console in Authentication -> Templates. Click Edit Template to edit one of the email templates, then click `customize action URL` and set the url to your Xams API url. e.g. `https://localhost:3000/__/auth/action`
+
