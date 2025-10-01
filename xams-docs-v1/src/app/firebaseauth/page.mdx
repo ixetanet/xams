@@ -263,21 +263,20 @@ You should see the Firebase login page with your configured authentication provi
 
 ## React Setup
 
-Install the dependent npm packages:
+Install the required npm packages:
 
 ```bash
 npm install firebase@^11.6.0 @ixeta/xams-firebase
 ```
 
-Set the environment variables in your React app:
+Configure your React application environment variables:
 
 ```typescript
 NEXT_PUBLIC_API=https://localhost:7102/
 ```
 
 
-In `_app.tsx` be sure to include `import "@ixeta/xams-firebase/styles.css";` and wrap your app with the `XamFirebaseAuthProvider`.
-The `auth-recaptcha` div is required for phone authentication.
+In your `_app.tsx` file, import the Firebase styles and wrap your application with the `XamsFirebaseAuthProvider`. The `auth-recaptcha` div element is required for phone authentication functionality.
 
 ```typescript
 import "@/styles/globals.css";
@@ -333,7 +332,7 @@ export default function App({ Component, pageProps }: AppProps) {
 }
 ```
 
-Create the following pages.
+Create the authentication pages for login, user profile management, password reset, and Firebase action handling:
 
 ```tsx {{ title: 'src/pages/login.tsx' }}
 import React from "react";
@@ -383,5 +382,12 @@ const AuthAction = () => {
 export default AuthAction;
 ```
 
-In the Firebase console in Authentication -> Templates. Click Edit Template to edit one of the email templates, then click `customize action URL` and set the url to your Xams API url. e.g. `https://localhost:3000/__/auth/action`
+Configure the Firebase email template action URL to redirect to your Xams application:
+
+1. Navigate to **Authentication → Templates** in the Firebase console
+2. Select an email template and click **Edit Template**
+3. Click **Customize action URL**
+4. Set the URL to your application's action handler (e.g., `https://localhost:3000/__/auth/action`)
+
+This URL handles email verification, password reset, and other Firebase authentication actions.
 
