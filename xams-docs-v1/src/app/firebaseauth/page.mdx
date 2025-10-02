@@ -10,6 +10,8 @@ Integrate Firebase Authentication with your Xams application for secure user man
 
 Xams provides built-in Firebase authentication support with a customizable login page and comprehensive auth flows including multi-factor authentication (MFA). {{ className: 'lead' }}
 
+The fastest way to get started is to use the [Xams Firebase template](https://github.com/ixetanet/xams-template-firebase) which includes a complete example with React frontend.
+
 <DocImage image={firebaseAuth} />
 
 ## Install Required Packages
@@ -207,8 +209,7 @@ Add your Firebase configuration to appsettings.json:
     "appId": "1:xxxx:web:xxxx",
     "measurementId": "G-XXXX",
     "providers": ["google", "facebook", "apple", "microsoft"],
-    "enableSmsMfa": true,
-    "redirectUrls": ["http://localhost:3000/x", "https://yourdomain.com/x"]
+    "enableSmsMfa": true
   }
 }
 ```
