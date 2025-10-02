@@ -1,5 +1,22 @@
 # Release Notes
 
+## 1.0.10
+
+- Added Firebase Auth admin dash login
+- Added Field History tab to Audit
+- Added ServiceJobs accept dependency injection
+- Fixed auditing to work with primary keys other than Guids
+- Fixed AuditHistoryDetail records to read only
+- Fixed Auditing on create of record throws exception when using custom\extended Team with XamsDbContext
+- Fixed Join queries requiring joinTo field to be provided in fields
+- Fixed permissions check on joined tables
+- Fixed GetHighestPermission in QueryFactory not filtering the permission to only look for the permission of a specific table
+- Fixed unable to create role
+- Fixed error message on attempt to delete\update entity that doesn’t exist
+- Fixed Datatable not loading last columns on initial load
+- Fixed Auditing now occurs on all EF saves versus only what goes through the Xams pipeline
+- Fixed Output parameters on read
+
 ## 1.0.9
 
 - Added Lookups lazy load values by default
