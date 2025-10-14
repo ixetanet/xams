@@ -1,0 +1,112 @@
+export const metadata = {
+  title: 'Service Startup',
+  description:
+    'Service Startup executes logic when the application starts.',
+}
+
+# Service Startup
+
+Service Startup executes logic when the application starts. {{ className: 'lead' }}
+Service Startup classes are automatically discovered and executed by the framework. {{ className: 'lead' }}
+
+## Create Service Startup
+
+Create a new file in the project in the Logic or Startup folder.
+
+```c# {{ title: 'Project / Startup / RoleStartup.cs' }}
+[ServiceStartup(StartupOperation.Post)]
+public class RoleStartup : IServiceStartup
+{
+    public async Task<Response<object?>> Execute(StartupContext context)
+    {
+        // Your startup logic here
+
+        return ServiceResult.Success();
+    }
+}
+```
+
+The ServiceStartup attribute takes the following parameters:
+
+- <b>StartupOperation</b>: `Pre` executes before system records are created, `Post` executes after (use `Post` unless you need `Pre`)
+- <b>Order</b> (optional): Execution order when multiple startup services run at the same stage (lower executes first, default: 0)
+
+## StartupContext
+
+```c# {{ title: 'Project / Startup / MyStartup.cs' }}
+[ServiceStartup(StartupOperation.Post)]
+public class MyStartup : IServiceStartup
+{
+    public async Task<Response<object?>> Execute(StartupContext context)
+    {
+        // Get database context
+        DataContext db = context.GetDbContext<DataContext>();
+
+        // Access service provider for dependency injection
+        var myService = context.ServiceProvider.GetRequiredService<IMyService>();
+
+        // Access SecurityBuilder for role/permission setup
+        await context.SecurityBuilder
+            .Role("Admin")
+                .Permission("PERMISSION_NAME")
+            .Execute();
+
+        return ServiceResult.Success();
+    }
+}
+```
+
+## Initialize Roles and Permissions
+
+Use the SecurityBuilder to initialize roles and assign permissions. Roles are created if they don't exist. Permissions must already exist (automatically created by the framework for entities).
+
+```c# {{ title: 'Project / Startup / RoleStartup.cs' }}
+[ServiceStartup(StartupOperation.Post)]
+public class RoleStartup : IServiceStartup
+{
+    public async Task<Response<object?>> Execute(StartupContext context)
+    {
+        await context.SecurityBuilder
+            .Role("Public User")
+                .Permission("TABLE_Account_UPDATE_TEAM")
+                .Permission("TABLE_Account_READ_SYSTEM")
+            .Role("Platform Admin")
+                .Permission("TABLE_Account_CREATE_SYSTEM")
+                .Permission("TABLE_Account_UPDATE_SYSTEM")
+                .Permission("TABLE_Account_DELETE_SYSTEM")
+                .Permission("TABLE_Account_READ_SYSTEM")
+                .Permission("TABLE_Offer_READ_SYSTEM")
+                .Permission("TABLE_Offer_CREATE_SYSTEM")
+                .Permission("TABLE_Offer_UPDATE_SYSTEM")
+                .Permission("TABLE_Offer_DELETE_SYSTEM")
+            .Execute();
+
+        return ServiceResult.Success();
+    }
+}
+```
+
+Table permissions follow the convention `TABLE_(TableName)_(Operation)_(Level)`. For example: `TABLE_Widget_READ_SYSTEM`, `TABLE_Account_UPDATE_TEAM`. See the [Security](/security) documentation for more details.
+
+## Dependency Injection
+
+Service Startup classes support constructor-based dependency injection:
+
+```c# {{ title: 'Project / Startup / MyStartup.cs' }}
+[ServiceStartup(StartupOperation.Post)]
+public class MyStartup : IServiceStartup
+{
+    private readonly IEmailService _emailService;
+
+    public MyStartup(IEmailService emailService)
+    {
+        _emailService = emailService;
+    }
+
+    public async Task<Response<object?>> Execute(StartupContext context)
+    {
+        await _emailService.SendAdminNotification("Application started");
+        return ServiceResult.Success();
+    }
+}
+```

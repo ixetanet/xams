@@ -239,6 +239,7 @@ export const navigation: Array<NavGroup> = [
       { title: 'Entities', href: '/entities' },
       { title: 'Security', href: '/security' },
       { title: 'Service Logic', href: '/servicelogic' },
+      { title: 'Service Startup', href: '/servicestartup' },
       { title: 'Actions', href: '/actions' },
       { title: 'Scheduled Jobs', href: '/scheduledjobs' },
       { title: 'Realtime', href: '/realtime' },
