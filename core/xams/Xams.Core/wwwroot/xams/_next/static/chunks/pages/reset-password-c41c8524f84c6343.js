@@ -1,0 +1,1 @@
+(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[537],{9196:(_,s,e)=>{(window.__NEXT_P=window.__NEXT_P||[]).push(["/reset-password",function(){return e(9514)}])},9514:(_,s,e)=>{"use strict";e.r(s),e.d(s,{default:()=>n});var r=e(6514);e(5834);var u=e(110);let n=()=>(0,r.jsx)(u.Yk,{})}},_=>{_.O(0,[255,593,792],()=>_(_.s=9196)),_N_E=_.O()}]);

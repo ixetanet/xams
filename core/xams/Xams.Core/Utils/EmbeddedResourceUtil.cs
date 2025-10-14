@@ -29,7 +29,7 @@ public static class EmbeddedResourceUtil
         if (_embeddedFileProvider == null)
         {
             var assembly = typeof(EmbeddedResourceUtil).Assembly;
-            _embeddedFileProvider = new ManifestEmbeddedFileProvider(assembly, "wwwroot/x");
+            _embeddedFileProvider = new ManifestEmbeddedFileProvider(assembly, "wwwroot/xams");
         }
         return _embeddedFileProvider;
     }
@@ -40,7 +40,7 @@ public static class EmbeddedResourceUtil
     }
 
     /// <summary>
-    /// Adds static files from embedded resources at /x path with Next.js routing support
+    /// Adds static files from embedded resources at /xams path with Next.js routing support
     /// </summary>
     /// <param name="app">The application builder</param>
     /// <param name="options"></param>
@@ -60,11 +60,11 @@ public static class EmbeddedResourceUtil
             await EmbeddedRoutingUtil.SetupEmbeddedRoutes(context, next, embeddedFileProvider);
         });
 
-        // Serve embedded static files at /x path
+        // Serve embedded static files at /xams path
         app.UseStaticFiles(new StaticFileOptions
         {
             FileProvider = embeddedFileProvider,
-            RequestPath = "/x"
+            RequestPath = "/xams"
         });
 
         return app;

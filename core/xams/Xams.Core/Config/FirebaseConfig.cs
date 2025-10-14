@@ -10,6 +10,5 @@ public class FirebaseConfig
     public required string appId { get; set; }
     public required string measurementId { get; set; }
     public required string[] providers { get; set; } = [];
-    public required string redirectUrl { get; set; }
     public bool enableSmsMfa { get; set; } = false;
 }

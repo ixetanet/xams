@@ -163,12 +163,12 @@ namespace Xams.Core
             
             group.MapGet("config", (HttpContext httpContext, [FromQuery] string name) =>
             {
-                if (name == "firebase")
+                if (name == "firebase" && opts.FirebaseConfig != null)
                 {
-                    return Results.Json(opts.FirebaseConfig == null ? new { } : opts.FirebaseConfig);
+                    return Results.Json(opts.FirebaseConfig);
                 }
 
-                return Results.Ok();
+                return Results.Json(new {});
             });
             
             var whoAmI = group.MapGet("whoami",

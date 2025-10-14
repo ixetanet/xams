@@ -260,7 +260,14 @@ namespace Xams.Core.Utils
                     }
                     else if (targetType == typeof(Guid))
                     {
-                        convertedValue = new Guid(value);
+                        // Try to parse the GUID. If it fails or is empty, skip for non-nullable
+                        if (string.IsNullOrWhiteSpace(value) || !Guid.TryParse(value, out Guid parsedGuid))
+                        {
+                            // Skip setting this property - leave as default (Guid.Empty)
+                            // This is particularly important for primary keys in create operations
+                            continue;
+                        }
+                        convertedValue = parsedGuid;
                     }
                     else
                     {
@@ -516,7 +523,7 @@ namespace Xams.Core.Utils
         [
             "Option", "Permission", "Role", "RolePermission`1", "Team",
             "TeamRole`2", "TeamUser`2", "User", "UserRole`2", "Setting", "Job", "JobHistory", "Audit", "AuditField",
-            "AuditHistory", "AuditHistoryDetail", "System", "Server"
+            "AuditHistory", "AuditHistoryDetail", "System", "Server", "Log"
         ];
         public static bool IsSystemEntity(Type entityType)
         {

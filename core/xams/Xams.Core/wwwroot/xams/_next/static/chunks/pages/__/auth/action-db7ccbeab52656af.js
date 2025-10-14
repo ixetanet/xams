@@ -1,0 +1,1 @@
+(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[636],{718:(_,u,e)=>{(window.__NEXT_P=window.__NEXT_P||[]).push(["/__/auth/action",function(){return e(3895)}])},3895:(_,u,e)=>{"use strict";e.r(u),e.d(u,{default:()=>t});var n=e(6514);e(5834);var s=e(110);let t=()=>(0,n.jsx)(s.gb,{})}},_=>{_.O(0,[255,593,792],()=>_(_.s=718)),_N_E=_.O()}]);

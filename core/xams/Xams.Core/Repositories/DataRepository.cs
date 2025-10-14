@@ -202,6 +202,7 @@ namespace Xams.Core.Repositories
                 if (readInput.denormalize == true)
                 {
                     results = Denormalize(results, readInput);
+                    results = RemoveAutoAddedFieldsForDenormalize(results, readInput);
                 }
 
                 return new Response<ReadOutput>()
@@ -568,6 +569,138 @@ namespace Xams.Core.Repositories
                         }
 
                         DenormalizeJoins(alias, relatedRecords, joinedRecords, readInput);
+                    }
+                }
+            }
+
+            return results;
+        }
+
+        private List<dynamic> RemoveAutoAddedFieldsForDenormalize(List<dynamic> results, ReadInput originalReadInput)
+        {
+            if (originalReadInput.denormalize != true || originalReadInput.joins == null)
+            {
+                return results;
+            }
+
+            // Optimization: Create HashSets for O(1) lookups instead of O(n) array Contains
+            var rootFieldsSet = new HashSet<string>(originalReadInput.fields);
+
+            // Pre-compute join lookup dictionary and field sets for O(1) access
+            var joinLookup = new Dictionary<string, Join>();
+            var joinFieldSets = new Dictionary<string, HashSet<string>>();
+            foreach (var join in originalReadInput.joins)
+            {
+                string alias = join.alias ?? join.toTable;
+                joinLookup[alias] = join;
+                joinFieldSets[alias] = new HashSet<string>(join.fields);
+            }
+
+            // Determine which fields were auto-added
+            HashSet<string> autoAddedRootFields = new HashSet<string>();
+            Dictionary<string, HashSet<string>> autoAddedJoinFields = new Dictionary<string, HashSet<string>>();
+
+            // Check for auto-added primary key in root
+            var rootMetadata = Cache.Instance.GetTableMetadata(originalReadInput.tableName);
+            if (!rootFieldsSet.Contains(rootMetadata.PrimaryKey) && !rootFieldsSet.Contains("*"))
+            {
+                autoAddedRootFields.Add(rootMetadata.PrimaryKey);
+            }
+
+            // Check for auto-added fromFields and primary keys in joins
+            foreach (var join in originalReadInput.joins)
+            {
+                string alias = join.alias ?? join.toTable;
+                var joinFields = joinFieldSets[alias];
+
+                // Check if fromField was auto-added to root
+                if (join.fromTable == originalReadInput.tableName)
+                {
+                    if (!rootFieldsSet.Contains(join.fromField) && !rootFieldsSet.Contains("*"))
+                    {
+                        autoAddedRootFields.Add(join.fromField);
+                    }
+                }
+                else
+                {
+                    // Handle nested joins - use pre-computed lookup
+                    if (joinLookup.TryGetValue(join.fromTable, out var parentJoin))
+                    {
+                        string parentAlias = parentJoin.alias ?? parentJoin.toTable;
+                        var parentJoinFields = joinFieldSets[parentAlias];
+
+                        if (!autoAddedJoinFields.TryGetValue(parentAlias, out var parentAutoFields))
+                        {
+                            parentAutoFields = new HashSet<string>();
+                            autoAddedJoinFields[parentAlias] = parentAutoFields;
+                        }
+
+                        if (!parentJoinFields.Contains(join.fromField) && !parentJoinFields.Contains("*"))
+                        {
+                            parentAutoFields.Add(join.fromField);
+                        }
+                    }
+                }
+
+                // Check if primary key was auto-added to join
+                var joinMetadata = Cache.Instance.GetTableMetadata(join.toTable);
+                if (!joinFields.Contains(joinMetadata.PrimaryKey) && !joinFields.Contains("*"))
+                {
+                    if (!autoAddedJoinFields.TryGetValue(alias, out var autoFields))
+                    {
+                        autoFields = new HashSet<string>();
+                        autoAddedJoinFields[alias] = autoFields;
+                    }
+                    autoFields.Add(joinMetadata.PrimaryKey);
+                }
+
+                // Check if toField was auto-added (it's auto-added in QueryFactory lines 70-73)
+                if (!joinFields.Contains(join.toField))
+                {
+                    if (!autoAddedJoinFields.TryGetValue(alias, out var autoFields))
+                    {
+                        autoFields = new HashSet<string>();
+                        autoAddedJoinFields[alias] = autoFields;
+                    }
+                    autoFields.Add(join.toField);
+                }
+            }
+
+            // Optimization: Early exit if no fields need to be removed
+            if (autoAddedRootFields.Count == 0 && autoAddedJoinFields.Count == 0)
+            {
+                return results;
+            }
+
+            // Optimization: Cast once upfront instead of lazy enumeration
+            var resultDictionaries = results.Cast<IDictionary<string, object?>>().ToList();
+
+            // Remove auto-added fields from results
+            foreach (var result in resultDictionaries)
+            {
+                // Remove auto-added root fields
+                foreach (var field in autoAddedRootFields)
+                {
+                    result.Remove(field);
+                }
+
+                // Remove auto-added fields from joined records
+                foreach (var kvp in autoAddedJoinFields)
+                {
+                    string alias = kvp.Key;
+                    HashSet<string> fieldsToRemove = kvp.Value;
+
+                    // Optimization: Use TryGetValue pattern and cast once
+                    if (result.TryGetValue(alias, out var joinedValue) && joinedValue is IEnumerable<object> joinedRecords)
+                    {
+                        var joinRecordDictionaries = joinedRecords.Cast<IDictionary<string, object?>>().ToList();
+                        foreach (var joinRecord in joinRecordDictionaries)
+                        {
+                            foreach (var field in fieldsToRemove)
+                            {
+                                joinRecord.Remove(field);
+                            }
+                        }
                     }
                 }
             }

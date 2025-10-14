@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -44,6 +45,9 @@ public class QueryFactory
 
         // If the query doesn't include OwningUserId or OwningTeamId, add it
         AddOwnerFields(readInputCopy);
+
+        // If denormalize is enabled, ensure join fields are included
+        AddJoinFieldsForDenormalize(readInputCopy);
 
         // Ensure all fields are distinct
         readInputCopy.fields = readInputCopy.fields.Distinct().ToArray();
@@ -286,6 +290,55 @@ public class QueryFactory
         if (metadata.HasOwningTeamField && !readInput.fields.Contains("OwningTeamId"))
         {
             readInput.fields = readInput.fields.Append("OwningTeamId").ToArray();
+        }
+    }
+
+    private void AddJoinFieldsForDenormalize(ReadInput readInput)
+    {
+        if (readInput.denormalize != true || readInput.joins == null)
+        {
+            return;
+        }
+
+        // Add primary key to root fields (needed for identifying unique records during denormalization)
+        var rootMetadata = Cache.Instance.GetTableMetadata(readInput.tableName);
+        if (!readInput.fields.Contains(rootMetadata.PrimaryKey) && !readInput.fields.Contains("*"))
+        {
+            readInput.fields = readInput.fields.Append(rootMetadata.PrimaryKey).ToArray();
+        }
+
+        foreach (var join in readInput.joins)
+        {
+            // Ensure fromField is in the appropriate fields array (needed for matching records)
+            if (join.fromTable == readInput.tableName)
+            {
+                // Add to root fields
+                if (!readInput.fields.Contains(join.fromField) && !readInput.fields.Contains("*"))
+                {
+                    readInput.fields = [..readInput.fields, join.fromField];
+                }
+            }
+            else
+            {
+                // Handle nested joins where fromTable is another join's alias
+                var parentJoin = readInput.joins.FirstOrDefault(j => (j.alias ?? j.toTable) == join.fromTable);
+                if (parentJoin != null)
+                {
+                    if (!parentJoin.fields.Contains(join.fromField) && !parentJoin.fields.Contains("*"))
+                    {
+                        parentJoin.fields = [..parentJoin.fields, join.fromField];
+                    }
+                }
+            }
+
+            // Add primary key to join fields (needed for identifying unique joined records)
+            var joinMetadata = Cache.Instance.GetTableMetadata(join.toTable);
+            if (!join.fields.Contains(joinMetadata.PrimaryKey) && !join.fields.Contains("*"))
+            {
+                join.fields = [..join.fields, joinMetadata.PrimaryKey];
+            }
+
+            // Note: toField is already auto-added at lines 70-73 in the Create() method
         }
     }
 
@@ -545,16 +598,46 @@ public class QueryFactory
                     continue;
                 }
 
-                filter.@operator = string.IsNullOrEmpty(filter.@operator) ? "==" : filter.@operator;
-                Regex regUtcOffset = new Regex("~[-+]+[0-9][0-9]?");
-                var match = regUtcOffset.Match(filter.value ?? "");
-                filter.value = filter.value?.Replace(match.Value, "") ?? "";
-                var conditionField = $"{table}{field}{(isNullable ? ".Value" : "")}";
-
+                // If the value contains a 'T' and 'Z' it's likely an ISO 8601 UTC date time, use exact
+                if (filter.value.Contains("T") && filter.value.Contains("Z"))
+                {
+                    
+                    if (DateTime.TryParse(filter.value, out DateTime dateTime))
+                    {
+                        var utc = dateTime.Kind == DateTimeKind.Utc ? dateTime : dateTime.ToUniversalTime();
+                        filter.@operator = string.IsNullOrEmpty(filter.@operator) ? "==" : filter.@operator;
+                        if (IsValidOperator(filter.@operator))
+                        {
+                            conditions.Add($"{table}{field} {filter.@operator} @{index}");
+                            values.Add(utc);
+                        }
+                    }
+                    else
+                    {
+                        // If the date time can't be parsed, ensure no results are returned
+                        conditions.Add($"1 == @{index}");
+                        values.Add(2);
+                    }
+                    index++;
+                    continue;
+                }
+                
                 // The query can send the user's local date time offset in the format of "~-12" or "~+12"
                 // But we only want to take this into account if the date time field has a time part
                 var dateTimeFormatAttribute = property.GetCustomAttribute<UIDateFormatAttribute>();
-                if (!string.IsNullOrEmpty(match.Value) && dateTimeFormatAttribute?.HasTimePart() == true)
+                var hasTimePart = dateTimeFormatAttribute?.HasTimePart();
+
+                filter.@operator = string.IsNullOrEmpty(filter.@operator) ? "==" : filter.@operator;
+                Regex regUtcOffset = new Regex("~[-+]+[0-9][0-9]?");
+                var match = regUtcOffset.Match(filter.value ?? "");
+                if (!string.IsNullOrEmpty(match.Value))
+                {
+                    filter.value = filter.value?.Replace(match.Value, "") ?? "";    
+                }
+                
+                var conditionField = $"{table}{field}{(isNullable ? ".Value" : "")}";
+                
+                if (!string.IsNullOrEmpty(match.Value) && hasTimePart == true)
                 {
                     conditionField += $".AddHours({match.Value.Replace("~", "")})";
                 }
@@ -563,6 +646,10 @@ public class QueryFactory
                 if (filter.value.Contains("/"))
                 {
                     parts = filter.value.Split("/");
+                }
+                else if (filter.value.Contains("-"))
+                {
+                    parts = filter.value.Split("-");
                 }
 
                 int valuesCount = values.Count;
@@ -575,28 +662,29 @@ public class QueryFactory
                     }
 
                     // If there's no date time format attribute, the date time will be shown in tables as 'MM/dd/yyyy'
-                    if (filter.value.Contains("/") || dateTimeFormatAttribute == null)
+                    if (filter.value.Contains('/') || filter.value.Contains('-') || dateTimeFormatAttribute == null)
                     {
+                        // Use 2025-10-01 (ISO 8601 - YYYY-MM-DD)
                         part = part.TrimStart('0');
+                        // Year Part
+                        if (j == 0 || part.All(char.IsDigit) && part.Length == 4)
+                        {
+                            index = values.Count != valuesCount ? index + 1 : index;
+                            conditions.Add($"{conditionField}.Year {filter.@operator} @{index}");
+                            values.Add(part);
+                        }
                         // Month Part
-                        if (j == 0 && part.All(char.IsDigit) && part.Length <= 2)
+                        else if (j == 1 && part.All(char.IsDigit) && part.Length <= 2)
                         {
                             index = values.Count != valuesCount ? index + 1 : index;
                             conditions.Add($"{conditionField}.Month {filter.@operator} @{index}");
                             values.Add(part);
                         }
                         // Day part
-                        else if (j == 1 && part.All(char.IsDigit) && part.Length <= 2)
+                        else if (j == 2 && part.All(char.IsDigit) && part.Length <= 2)
                         {
                             index = values.Count != valuesCount ? index + 1 : index;
                             conditions.Add($"{conditionField}.Day {filter.@operator} @{index}");
-                            values.Add(part);
-                        }
-                        // Year part
-                        else if (j == 2 || part.All(char.IsDigit) && part.Length == 4)
-                        {
-                            index = values.Count != valuesCount ? index + 1 : index;
-                            conditions.Add($"{conditionField}.Year {filter.@operator} @{index}");
                             values.Add(part);
                         }
                     }
@@ -988,29 +1076,6 @@ public class QueryFactory
             throw new Exception("Wildcard * can only be used to select all fields");
         }
 
-        // Ensure primary key is included if denormalize is true
-        if (readInput.denormalize == true && (readInput.fields == null
-                                              || !(readInput.fields.Contains(Cache.Instance
-                                                       .GetTableMetadata(readInput.tableName).PrimaryKey)
-                                                   || readInput.fields.FirstOrDefault(x => x == "*") != null)))
-        {
-            throw new Exception("Denormalize requires the primary key to be included in the fields");
-        }
-
-        // Ensure primary key is included in all joins if denormalize is true
-        if (readInput is { denormalize: true, joins: not null })
-        {
-            foreach (var join in readInput.joins)
-            {
-                if (!(join.fields.Contains(Cache.Instance.GetTableMetadata(join.toTable).PrimaryKey) ||
-                      join.fields.FirstOrDefault(x => x == "*") != null))
-                {
-                    throw new Exception("Denormalize requires the primary key to be included in all joins");
-                }
-            }
-        }
-
-
         ValidateFilters(readInput, readInput.filters);
 
         if (readInput.joins != null)
@@ -1039,6 +1104,15 @@ public class QueryFactory
                     }
                 }
 
+                // Validate join type
+                if (!string.IsNullOrEmpty(join.type))
+                {
+                    string joinTypeLower = join.type.ToLower();
+                    if (joinTypeLower != "inner" && joinTypeLower != "left")
+                    {
+                        throw new Exception($"Join type must be 'inner' or 'left', not '{join.type}'");
+                    }
+                }
 
                 // Verify from table exists in query
                 bool isAliasJoin = readInput.joins.FirstOrDefault(x => x != join && x.alias == join.fromTable) != null;

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xams.Core.Attributes;
+using Xams.Core.Builders;
 using Xams.Core.Contexts;
 using Xams.Core.Dtos;
 using Xams.Core.Interfaces;
@@ -25,6 +26,7 @@ public class BaseServiceContext(PipelineContext pipelineContext)
     public Guid ExecutingUserId => PipelineContext.UserId;
     public Dictionary<string, JsonElement> Parameters => PipelineContext.InputParameters;
     public ILogger Logger => PipelineContext.DataService.GetLogger();
+    public SecurityBuilder SecurityBuilder => new SecurityBuilder(GetDbContext<IXamsDbContext>());
 
     /// <summary>
     /// Create entity record and execute service logic.

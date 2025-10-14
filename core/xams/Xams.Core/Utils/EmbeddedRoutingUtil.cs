@@ -9,7 +9,7 @@ public static class EmbeddedRoutingUtil
     private static readonly ConcurrentDictionary<string, bool> FileExistsCache = new();
 
     /// <summary>
-    /// Sets up Next.js static export routing for embedded resources at /x path
+    /// Sets up Next.js static export routing for embedded resources at /xams path
     /// Handles client-side routing by rewriting URLs to their corresponding .html files
     /// </summary>
     public static async Task SetupEmbeddedRoutes(
@@ -19,8 +19,8 @@ public static class EmbeddedRoutingUtil
     {
         var path = context.Request.Path.Value;
 
-        // Only process /x paths
-        if (path == null || !path.StartsWith("/x"))
+        // Only process /xams paths
+        if (path == null || !path.StartsWith("/xams"))
         {
             await next();
             return;
@@ -33,13 +33,13 @@ public static class EmbeddedRoutingUtil
             return;
         }
 
-        // Remove /x prefix for file provider lookups
-        var relativePath = path.Substring(2).TrimStart('/');
+        // Remove /xams prefix for file provider lookups
+        var relativePath = path.Substring(5).TrimStart('/');
 
-        // If the root /x path is requested, serve index.html
+        // If the root /xams path is requested, serve index.html
         if (string.IsNullOrEmpty(relativePath))
         {
-            context.Request.Path = "/x/index.html";
+            context.Request.Path = "/xams/index.html";
             await next();
             return;
         }
@@ -58,19 +58,11 @@ public static class EmbeddedRoutingUtil
         if (fileExists)
         {
             // Rewrite to the actual .html file
-            context.Request.Path = $"/x/{htmlFilePath}";
+            context.Request.Path = $"/xams/{htmlFilePath}";
             await next();
             return;
         }
-
-        // If no specific file was found, try serving the catch-all [code].html
-        var catchAllFile = embeddedFileProvider.GetFileInfo("[code].html");
-        if (catchAllFile.Exists)
-        {
-            context.Request.Path = "/x/[code].html";
-            await next();
-            return;
-        }
+        
 
         // Otherwise, let the request continue (will likely 404)
         await next();

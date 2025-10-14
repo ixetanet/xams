@@ -1,5 +1,21 @@
 # Release Notes
 
+## 1.0.17
+
+- Added SecurityBuilder to context to easily create RolePermissions
+- Fixed StartupService now uses BaseServiceContext for cleaner api
+- Fixed DataTable rows are showing the wrong month when [UIDateFormat("MMMM YYYY”)], only able to select month and year, stored in database as 2025-08-01 00:00:00, but rendered in DataTable row the previous month because of UTC to local time conversion
+- Fixed DateTime filtering on read request to use ISO 8601
+- Fixed xams-firebase-auth dev mode detection
+- Fixed On api create when the primary key (Id) is string blank Unrecognized Guid format
+- Fixed Denormalize requires the primary key of each join to be included in all joins, the platform should be able to handle this
+- Fixed added join type validation
+- Fixed DataTable: When all fields have a custom header and body and fields = getDefaultFields(metadata); is called in DataTableImp, error: f.endsWith is not a function
+
+## 1.0.11-1.0.16
+
+- Code splitting, bundle optimizations
+
 ## 1.0.10
 
 - Added Firebase Auth admin dash login
