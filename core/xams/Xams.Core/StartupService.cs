@@ -48,6 +48,7 @@ namespace Xams.Core
                 // await PermissionCache.CacheUserTeams(db);
                 await PermissionCache.CacheTeamRoles(db);
                 await ExecuteStartupServices(StartupOperation.Post, scope.ServiceProvider);
+                Console.WriteLine("Startup complete.");
             }
         }
 

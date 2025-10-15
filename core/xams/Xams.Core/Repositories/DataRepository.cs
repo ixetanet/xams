@@ -428,13 +428,19 @@ namespace Xams.Core.Repositories
                 {
                     if (property.Name == "Item")
                         continue;
-
+                    
                     string fieldName = property.Name;
+                    
+                    if (!fieldName.StartsWith("root_") && !aliases.Any(x => fieldName.StartsWith($"{x}_")))
+                    {
+                        continue;
+                    }
+                    
                     if (fieldName.StartsWith("root_"))
                     {
                         fieldName = fieldName.Substring(5);
                     }
-
+                    
                     // If any field names start with an alias, remove the alias
                     string? alias = aliases.FirstOrDefault(x => fieldName.StartsWith($"{x}_"));
                     if (!string.IsNullOrEmpty(alias))

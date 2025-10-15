@@ -4,7 +4,7 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <Version>1.0.10</Version>
+        <Version>1.0.18</Version>
         <Authors>iXeta, LLC</Authors>
         <PackageOutputPath>./nupkg</PackageOutputPath>
         <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -26,7 +26,7 @@
         <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
         <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
         <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
-        <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.0.1"/>
+        <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.9" />
     </ItemGroup>
 
     <ItemGroup>

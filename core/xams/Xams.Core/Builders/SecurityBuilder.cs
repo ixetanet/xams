@@ -60,9 +60,10 @@ public class SecurityBuilder
 
     /// <summary>
     /// Executes the security configuration:
-    /// 1. Creates any missing roles
-    /// 2. Verifies all permissions exist
-    /// 3. Creates role-permission associations that don't already exist
+    /// 1. Validates table permissions (no duplicate table+operation per role)
+    /// 2. Creates any missing roles
+    /// 3. Verifies all permissions exist
+    /// 4. Creates role-permission associations that don't already exist
     /// </summary>
     public async Task Execute()
     {
@@ -70,6 +71,9 @@ public class SecurityBuilder
         {
             return; // Nothing to do
         }
+
+        // Validate table permissions before any database operations
+        ValidateTablePermissions();
 
         var roleMetadata = Cache.Instance.GetTableMetadata("Role");
         var permissionMetadata = Cache.Instance.GetTableMetadata("Permission");
@@ -168,6 +172,61 @@ public class SecurityBuilder
 
         // Save all role-permission associations
         await _db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Validates that no role has multiple permissions for the same table+operation combination.
+    /// For example, a role cannot have both TABLE_Account_READ_TEAM and TABLE_Account_READ_SYSTEM.
+    /// </summary>
+    private void ValidateTablePermissions()
+    {
+        // Filter to only TABLE_ permissions
+        var tablePermissions = _rolePermissions
+            .Where(rp => rp.PermissionName.StartsWith("TABLE_"))
+            .ToList();
+
+        if (tablePermissions.Count == 0)
+        {
+            return; // No table permissions to validate
+        }
+
+        // Parse and group by role + table + operation
+        var grouped = tablePermissions
+            .Select(rp =>
+            {
+                var parts = rp.PermissionName.Split('_');
+                // Format: TABLE_{TableName}_{Operation}_{Level} or TABLE_{TableName}_{Operation}
+                // parts[0] = "TABLE"
+                // parts[1] = TableName
+                // parts[2] = Operation
+                // parts[3] = Level (optional - not present for IMPORT/EXPORT)
+                return new
+                {
+                    rp.RoleName,
+                    TableName = parts.Length > 1 ? parts[1] : "",
+                    Operation = parts.Length > 2 ? parts[2] : "",
+                    rp.PermissionName
+                };
+            })
+            .GroupBy(x => new { x.RoleName, x.TableName, x.Operation })
+            .Where(g => g.Count() > 1)
+            .ToList();
+
+        if (grouped.Any())
+        {
+            // Build error message with details about conflicts
+            var conflicts = grouped.Select(g =>
+            {
+                var permissions = string.Join("\n    - ", g.Select(x => x.PermissionName));
+                return $"Role '{g.Key.RoleName}' has multiple permissions for table '{g.Key.TableName}' operation '{g.Key.Operation}':\n    - {permissions}";
+            });
+
+            var errorMessage = "A role cannot have multiple permissions for the same table and operation combination.\n\n" +
+                              string.Join("\n\n", conflicts) +
+                              "\n\nA role can only have one permission per table+operation combination.";
+
+            throw new InvalidOperationException(errorMessage);
+        }
     }
 
     private class RolePermissionPair

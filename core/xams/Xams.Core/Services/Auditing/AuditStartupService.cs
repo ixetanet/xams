@@ -8,7 +8,7 @@ using Xams.Core.Utils;
 
 namespace Xams.Core.Services.Auditing;
 
-[ServiceStartup(StartupOperation.Post)]
+[ServiceStartup(StartupOperation.Pre, Int32.MinValue)]
 public class AuditStartupService : IServiceStartup
 {
     public static readonly string AuditRetentionSetting = "AUDIT_HISTORY_RETENTION_DAYS";
