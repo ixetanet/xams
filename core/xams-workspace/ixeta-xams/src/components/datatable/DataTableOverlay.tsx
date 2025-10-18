@@ -1,7 +1,7 @@
 import { TablePermissions } from "../../stores/usePermissionStore";
 import { Loader } from "@mantine/core";
 import React from "react";
-import { useDataTableContext } from "../DataTableImp";
+import { useDataTableContext } from "./DataTableContext";
 
 interface DataTableOverlayProps {
   disabledMessage?: string;

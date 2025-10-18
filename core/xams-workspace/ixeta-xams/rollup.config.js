@@ -12,26 +12,25 @@ import terser from "@rollup/plugin-terser";
 export default {
   input: "src/index.ts",
   output: [
-    // {
-    //   // dir: "./dist/cjs/",
-    //   file: "dist/cjs/index.js",
-    //   format: "cjs",
-    //   sourcemap: true,
-    //   name: "react-lib",
-    // },
     {
       dir: "./dist/",
       format: "esm",
       sourcemap: true,
+      preserveModules: true, // Keep module structure for tree-shaking
+      preserveModulesRoot: "src", // Maintain clean import paths
     },
   ],
   plugins: [
-    external(),
+    external(), // Automatically externalize peerDependencies
     resolve(),
     commonjs(),
     typescript({ tsconfig: "./tsconfig.json" }),
     postcss(),
-    terser(),
+    // Removed terser() - libraries shouldn't be minified (let consuming apps decide)
   ],
-  external: ["react", "react-dom"], // Exclude peer dependencies
+  external: [
+    "react",
+    "react-dom",
+    "@microsoft/signalr", // Externalize SignalR - consuming apps will install it
+  ],
 };

@@ -12,12 +12,14 @@ import { useFormContext } from "../contexts/FormContext";
 import { DateInputProps } from "@mantine/dates";
 import { MetadataField } from "../api/MetadataResponse";
 import Lookup from "./Lookup";
+import MultiSelectComponent from "./MultiSelect";
 import RichText from "./RichText";
 import {
   CSNumericType,
   parseFloatCS,
   parseIntCS,
 } from "../utils/CsNumberTypes";
+import { hasTimePart } from "../utils/Util";
 // const RichText = React.lazy(() => import("./RichText"));
 // const Lookup = React.lazy(() => import("./Lookup"));
 // const DateInput = React.lazy(() =>
@@ -32,7 +34,7 @@ interface FieldProps {
   placeholder?: string;
   dateInput?: DateInputProps;
   onChange?: (
-    value: string | boolean | null | undefined,
+    value: Array<{id: string; name: string}> | string[] | string | boolean | null | undefined,
     data?: string | null
   ) => void;
   onBlur?: () => void;
@@ -66,7 +68,10 @@ const Field = (props: FieldProps) => {
     formContext.formBuilder.removeRequiredField(field.name);
   }
 
-  const isReadOnly = field.isReadOnly || props.readOnly;
+  const isReadOnly =
+    field.isReadOnly ||
+    props.readOnly ||
+    (field.isCreateOnly && formContext.formBuilder.operation === "UPDATE");
 
   const setValue = (field: MetadataField, value: string) => {
     let updateValue = false;
@@ -207,41 +212,6 @@ const Field = (props: FieldProps) => {
     }
   };
 
-  const removeTime = (dateFormat?: string) => {
-    // If a time part is not included in the date format then remove it
-    // Based on dayjs formats - https://day.js.org/docs/en/display/format
-    if (dateFormat == null) {
-      return true;
-    }
-
-    const timeParts = [
-      "h",
-      "m",
-      "s",
-      "A",
-      "a",
-      "H",
-      "k",
-      "K",
-      "m",
-      "s",
-      "S",
-      "Z",
-      "X",
-      "LT",
-      "LTS",
-      "LLL",
-      "LLLL",
-      "lll",
-      "llll",
-    ];
-    if (timeParts.some((x) => dateFormat.includes(x))) {
-      return false;
-    }
-
-    return true;
-  };
-
   if (
     field == null ||
     formContext.formBuilder.data === undefined ||
@@ -366,6 +336,43 @@ const Field = (props: FieldProps) => {
           disabled={props.disabled}
         ></Lookup>
       )}
+      {field.type === "MultiSelect" && (
+        <MultiSelectComponent
+          label={<Label field={field}></Label>}
+          size={props.size}
+          className={
+            formContext.formBuilder.canRead.canRead === false ? "invisible" : ""
+          }
+          metaDataField={field}
+          owningRecordId={
+            formContext.formBuilder.metadata?.primaryKey
+              ? formContext.formBuilder.data[
+                  formContext.formBuilder.metadata.primaryKey
+                ]
+              : undefined
+          }
+          value={formContext.formBuilder.data[field.name]}
+          onChange={(values) => {
+            updateState(field.name, values);
+            if (props.onChange != null) {
+              props.onChange(values);
+            }
+          }}
+          onBlur={props.onBlur}
+          readOnly={
+            (formContext.formBuilder.canUpdate === false &&
+              formContext.formBuilder.snapshot !== undefined) ||
+            isReadOnly
+          }
+          required={field.isRequired === true || props.required === true}
+          error={
+            formContext.formBuilder.validationMessages.find(
+              (x) => x.field === field.name
+            )?.message
+          }
+          disabled={props.disabled}
+        ></MultiSelectComponent>
+      )}
       {field.type === "String" && props.varient === "rich" && (
         <RichText
           value={formContext.formBuilder.data[field.name]}
@@ -486,8 +493,10 @@ const Field = (props: FieldProps) => {
             formContext.formBuilder.data[field.name] !== undefined &&
             formContext.formBuilder.data[field.name] !== null &&
             formContext.formBuilder.data[field.name] !== "0001-01-01T00:00:00"
-              ? removeTime(field.dateFormat)
-                ? formContext.formBuilder.data[field.name].replace("Z", "").split("T")[0] // Extract date only
+              ? !hasTimePart(field.dateFormat)
+                ? formContext.formBuilder.data[field.name]
+                    .replace("Z", "")
+                    .split("T")[0] // Extract date only
                 : formContext.formBuilder.data[field.name].replace("Z", "")
               : null
           }
@@ -496,7 +505,7 @@ const Field = (props: FieldProps) => {
               field.name,
               event == null
                 ? null
-                : removeTime(field.dateFormat)
+                : !hasTimePart(field.dateFormat)
                 ? event + "T00:00:00" // Add time component for date-only fields
                 : event
             );

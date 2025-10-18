@@ -143,31 +143,39 @@ public class SecurityBuilder
             permissionNameToIdMap[permissionName] = (Guid)permission.PermissionId;
         }
 
-        // Step 4: Create RolePermission associations (skip duplicates)
+        // Step 4: Create or update RolePermission associations
         foreach (var pair in _rolePermissions)
         {
             var roleId = roleNameToIdMap[pair.RoleName];
             var permissionId = permissionNameToIdMap[pair.PermissionName];
 
-            // Check if association already exists
+            // Check if this exact association already exists
             var rpDLinq = new DynamicLinq(_db, rolePermissionMetadata.Type);
             var rpQuery = rpDLinq.Query.Where("RoleId == @0 && PermissionId == @1", roleId, permissionId);
             var existingRolePermissions = await rpQuery.ToDynamicListAsync();
 
-            if (!existingRolePermissions.Any())
+            if (existingRolePermissions.Any())
             {
-                // Create the role-permission association with deterministic GUID
-                var newRolePermission = new Dictionary<string, dynamic>
-                {
-                    ["RolePermissionId"] = GuidUtil.FromString($"{roleId}{permissionId}"),
-                    ["RoleId"] = roleId,
-                    ["PermissionId"] = permissionId,
-                    ["CreatedDate"] = DateTime.UtcNow
-                };
-
-                var entity = EntityUtil.DictionaryToEntity(rolePermissionMetadata.Type, newRolePermission);
-                _db.Add(entity);
+                continue; // Association already exists, skip
             }
+
+            // For TABLE_ permissions, check if role has a different level for same table+operation
+            // If conflict found and updated, skip creating new association
+            if (await TryUpdateConflictingTablePermission(pair, roleId, permissionId, rolePermissionMetadata, permissionMetadata))
+            {
+                continue;
+            }
+
+            // No conflict found, create new association
+            var newRolePermission = new Dictionary<string, dynamic>
+            {
+                ["RolePermissionId"] = Guid.NewGuid(),
+                ["RoleId"] = roleId,
+                ["PermissionId"] = permissionId
+            };
+
+            var entity = EntityUtil.DictionaryToEntity(rolePermissionMetadata.Type, newRolePermission);
+            _db.Add(entity);
         }
 
         // Save all role-permission associations
@@ -227,6 +235,97 @@ public class SecurityBuilder
 
             throw new InvalidOperationException(errorMessage);
         }
+    }
+
+    /// <summary>
+    /// Checks if a conflicting table permission exists for the role and updates it if found.
+    /// A conflict occurs when the role has a different permission level for the same table+operation.
+    /// </summary>
+    /// <returns>True if a conflict was found and updated; false otherwise</returns>
+    private async Task<bool> TryUpdateConflictingTablePermission(
+        RolePermissionPair pair,
+        Guid roleId,
+        Guid newPermissionId,
+        dynamic rolePermissionMetadata,
+        dynamic permissionMetadata)
+    {
+        // Only check TABLE_ permissions for conflicts
+        if (!pair.PermissionName.StartsWith("TABLE_"))
+        {
+            return false;
+        }
+
+        var parts = pair.PermissionName.Split('_');
+        if (parts.Length < 3)
+        {
+            return false; // Invalid format, skip
+        }
+
+        string tableName = parts[1];
+        string operation = parts[2];
+
+        // Query all RolePermissions for this role
+        var allRpDLinq = new DynamicLinq(_db, rolePermissionMetadata.Type);
+        var allRpQuery = allRpDLinq.Query.Where("RoleId == @0", roleId);
+        var rolePermissionsForRole = await allRpQuery.ToDynamicListAsync();
+
+        // Check each existing RolePermission for conflicts
+        foreach (var existingRp in rolePermissionsForRole)
+        {
+            var existingPermId = (Guid)existingRp.PermissionId;
+
+            // Find the permission name for this RolePermission
+            var permDLinq = new DynamicLinq(_db, permissionMetadata.Type);
+            var permQuery = permDLinq.Query.Where("PermissionId == @0", existingPermId);
+            var existingPermissions = await permQuery.ToDynamicListAsync();
+            var existingPermission = existingPermissions.FirstOrDefault();
+
+            if (existingPermission == null)
+            {
+                continue; // Permission not found, skip
+            }
+
+            string existingPermName = (string)existingPermission.Name;
+
+            // Check if it's a TABLE_ permission with same table+operation
+            if (!existingPermName.StartsWith("TABLE_"))
+            {
+                continue;
+            }
+
+            var existingParts = existingPermName.Split('_');
+            if (existingParts.Length < 3)
+            {
+                continue;
+            }
+
+            string existingTable = existingParts[1];
+            string existingOperation = existingParts[2];
+
+            // Found conflict: same table+operation, different permission name
+            if (existingTable == tableName &&
+                existingOperation == operation &&
+                existingPermName != pair.PermissionName)
+            {
+                // Update the existing RolePermission to point to the new permission
+                var existingRolePermissionId = (Guid)existingRp.RolePermissionId;
+                var existingRoleId = (Guid)existingRp.RoleId;
+
+                var updatedRolePermission = new Dictionary<string, dynamic>
+                {
+                    ["RolePermissionId"] = existingRolePermissionId,
+                    ["RoleId"] = existingRoleId,
+                    ["PermissionId"] = newPermissionId
+                };
+
+                var entityToUpdate = EntityUtil.DictionaryToEntity(rolePermissionMetadata.Type, updatedRolePermission);
+                _db.Update(entityToUpdate);
+
+                return true; // Conflict found and updated
+            }
+        }
+
+        return false; // No conflict found
     }
 
     private class RolePermissionPair

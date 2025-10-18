@@ -258,6 +258,12 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
         value:
           props.defaults?.find((x) => x.field === field.name)?.value ?? null,
       }));
+    const multiSelectDefaults = metadata?.fields
+      .filter((field) => field.type === "MultiSelect")
+      .map((field) => ({
+        field: field.name,
+        value: [],
+      }));
 
     // Get the labels for any default lookups
     // for (const field of metadata.fields ?? []) {
@@ -284,6 +290,10 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
       ...booleanDefaults?.reduce((a, b) => ({ ...a, [b.field]: b.value }), {}),
       ...dateDefaults?.reduce((a, b) => ({ ...a, [b.field]: b.value }), {}),
       ...nullableLookupDefaults?.reduce(
+        (a, b) => ({ ...a, [b.field]: b.value }),
+        {}
+      ),
+      ...multiSelectDefaults?.reduce(
         (a, b) => ({ ...a, [b.field]: b.value }),
         {}
       ),

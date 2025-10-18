@@ -9,9 +9,10 @@ import {
   useMantineColorScheme,
   useMantineTheme,
 } from "@mantine/core";
-import { useDataTableContext } from "../DataTableImp";
+import { useDataTableContext } from "./DataTableContext";
 import dayjs from "dayjs";
 import { DataTableFieldInfo } from "./DataTableTypes";
+import { hasTimePart } from "../../utils/Util";
 
 interface DataCellProps {
   record: any;
@@ -59,9 +60,16 @@ const DataCell = (props: DataCellProps) => {
         return "";
       }
       if (props.fieldInfo.metadataField?.dateFormat != null) {
-        return dayjs(Date.parse(value)).format(
-          props.fieldInfo.metadataField.dateFormat
-        );
+        if (hasTimePart(props.fieldInfo.metadataField.dateFormat)) {
+          return dayjs(Date.parse(value)).format(
+            props.fieldInfo.metadataField.dateFormat
+          );
+        } else {
+          const dateValue = value.replace("Z", "").split("T")[0];
+          return dayjs(dateValue).format(
+            props.fieldInfo.metadataField.dateFormat
+          );
+        }
       }
       const date = new Date(value.replace("Z", ""));
       const mm = String(date.getMonth() + 1).padStart(2, "0"); // getUTCMonth() returns months from 0-11, so we add 1
@@ -69,6 +77,15 @@ const DataCell = (props: DataCellProps) => {
       const yyyy = date.getFullYear();
 
       return `${mm}/${dd}/${yyyy}`;
+    }
+
+    if (
+      Array.isArray(value) &&
+      value.length > 0 &&
+      value[0].name !== undefined &&
+      value[0].id !== undefined
+    ) {
+      return value.map((item: any) => item.name).join(", ");
     }
 
     return value;

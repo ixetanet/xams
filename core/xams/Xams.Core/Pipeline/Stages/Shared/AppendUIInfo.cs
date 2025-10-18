@@ -120,12 +120,48 @@ public static class AppendUIInfo
                 {
                     canUpdate = expandoObject.OwningUserId == context.UserId;
                 }
+
+                // Check custom owning user fields
+                if (!canUpdate)
+                {
+                    var metadata = Cache.Instance.GetTableMetadata(context.TableName);
+                    foreach (var owningUserField in metadata.OwningUserFields)
+                    {
+                        if (expandoDictionary.ContainsKey(owningUserField) && expandoDictionary[owningUserField] != null)
+                        {
+                            var owningUserFieldValue = (Guid)expandoDictionary[owningUserField];
+                            if (owningUserFieldValue == context.UserId)
+                            {
+                                canUpdate = true;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
             else if (updatePermissionLevel == Permissions.PermissionLevel.User)
             {
                 if (expandoDictionary.ContainsKey("OwningUserId") && expandoObject.OwningUserId != null)
                 {
                     canUpdate = expandoObject.OwningUserId == context.UserId;
+                }
+
+                // Check custom owning user fields
+                if (!canUpdate)
+                {
+                    var metadata = Cache.Instance.GetTableMetadata(context.TableName);
+                    foreach (var owningUserField in metadata.OwningUserFields)
+                    {
+                        if (expandoDictionary.ContainsKey(owningUserField) && expandoDictionary[owningUserField] != null)
+                        {
+                            var owningUserFieldValue = (Guid)expandoDictionary[owningUserField];
+                            if (owningUserFieldValue == context.UserId)
+                            {
+                                canUpdate = true;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -147,12 +183,48 @@ public static class AppendUIInfo
                 {
                     canDelete = expandoObject.OwningUserId == context.UserId;
                 }
+
+                // Check custom owning user fields
+                if (!canDelete)
+                {
+                    var metadata = Cache.Instance.GetTableMetadata(context.TableName);
+                    foreach (var owningUserField in metadata.OwningUserFields)
+                    {
+                        if (expandoDictionary.ContainsKey(owningUserField) && expandoDictionary[owningUserField] != null)
+                        {
+                            var owningUserFieldValue = (Guid)expandoDictionary[owningUserField];
+                            if (owningUserFieldValue == context.UserId)
+                            {
+                                canDelete = true;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
             else if (deletePermissionLevel == Permissions.PermissionLevel.User)
             {
                 if (expandoDictionary.ContainsKey("OwningUserId") && expandoObject.OwningUserId != null)
                 {
                     canDelete = expandoObject.OwningUserId == context.UserId;
+                }
+
+                // Check custom owning user fields
+                if (!canDelete)
+                {
+                    var metadata = Cache.Instance.GetTableMetadata(context.TableName);
+                    foreach (var owningUserField in metadata.OwningUserFields)
+                    {
+                        if (expandoDictionary.ContainsKey(owningUserField) && expandoDictionary[owningUserField] != null)
+                        {
+                            var owningUserFieldValue = (Guid)expandoDictionary[owningUserField];
+                            if (owningUserFieldValue == context.UserId)
+                            {
+                                canDelete = true;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
 

@@ -3,6 +3,7 @@ using System.Linq.Dynamic.Core;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Xams.Core.Attributes;
 using Xams.Core.Base;
 using Xams.Core.Dtos;
 using Xams.Core.Dtos.Data;
@@ -197,6 +198,9 @@ namespace Xams.Core.Repositories
 
                 // Remove root_ prefix from fields and change alias prefixes to "alias."
                 results = UpdateFieldPrefixes(results, readInput);
+
+                // Add back UIMultiSelect fields with populated junction record data
+                results = await AddMultiSelectFields(results, readInput.tableName, readInput);
 
                 // If denormalize is true, denormalize the results
                 if (readInput.denormalize == true)
@@ -454,6 +458,262 @@ namespace Xams.Core.Repositories
             }
 
             return newResults;
+        }
+
+        private async Task<List<dynamic>> AddMultiSelectFields(List<dynamic> results, string tableName, ReadInput readInput)
+        {
+            if (results.Count == 0)
+            {
+                return results;
+            }
+
+            var metadata = Cache.Instance.GetTableMetadata(tableName);
+
+            // Find all UIMultiSelect fields from cached metadata
+            var multiSelectFields = metadata.MetadataOutput.fields
+                .Where(f => f.multiSelect != null)
+                .ToList();
+            
+
+            // Extract all parent record IDs
+            List<Guid> parentIds = new List<Guid>();
+            foreach (IDictionary<string, object?> result in results.Cast<IDictionary<string, object?>>())
+            {
+                if (result.ContainsKey(metadata.PrimaryKey) && result[metadata.PrimaryKey] != null)
+                {
+                    if (result[metadata.PrimaryKey] is Guid guidValue)
+                    {
+                        parentIds.Add(guidValue);
+                    }
+                }
+            }
+
+            if (parentIds.Count == 0)
+            {
+                return results;
+            }
+
+            // Process each UIMultiSelect field
+            foreach (var field in multiSelectFields)
+            {
+                var multiSelect = field.multiSelect!;
+                var junctionMetadata = Cache.Instance.GetTableMetadata(multiSelect.junctionTable);
+                var junctionType = junctionMetadata.Type;
+
+                // Query junction records for all parent IDs with JOIN to target entity (in batches of 500)
+                var db = _dataContext ?? CreateNewDbContext();
+
+                // Group junction records by parent ID
+                var groupedByParent = new Dictionary<Guid, List<dynamic>>();
+
+                // Process parent IDs in batches of 500
+                List<Guid> batchIds = new List<Guid>(parentIds);
+                while (batchIds.Count > 0)
+                {
+                    var batch = batchIds.Take(500).ToList();
+                    batchIds = batchIds.Skip(500).ToList();
+
+                    // Build query with JOIN to target entity
+                    var junctionQuery = new Query(db, [
+                        multiSelect.junctionOwnerIdField,
+                        multiSelect.junctionTargetIdField
+                    ], "junction").From(multiSelect.junctionTable);
+
+                    // Join to target entity to get name and description
+                    List<string> targetFields = [multiSelect.targetNameField];
+                    if (!string.IsNullOrEmpty(multiSelect.targetDescriptionField))
+                    {
+                        targetFields.Add(multiSelect.targetDescriptionField);
+                    }
+
+                    junctionQuery.Join(
+                        $"{multiSelect.junctionTable}.{multiSelect.junctionTargetIdField}",
+                        $"{multiSelect.targetTable}.{multiSelect.targetPrimaryKeyField}",
+                        "target",
+                        targetFields.ToArray()
+                    );
+
+                    // Filter by parent IDs (batch)
+                    junctionQuery.Contains($"junction_{multiSelect.junctionOwnerIdField}", batch.Cast<object>().ToArray());
+
+                    var batchJunctionRecords = await junctionQuery.ToDynamicListAsync();
+
+                    // Process batch results
+                    foreach (var junctionRecord in batchJunctionRecords)
+                    {
+                        var ownerIdProp = junctionRecord.GetType().GetProperty($"junction_{multiSelect.junctionOwnerIdField}");
+                        var targetIdProp = junctionRecord.GetType().GetProperty($"junction_{multiSelect.junctionTargetIdField}");
+                        var targetNameProp = junctionRecord.GetType().GetProperty($"target_{multiSelect.targetNameField}");
+
+                        if (ownerIdProp != null && targetIdProp != null && targetNameProp != null)
+                        {
+                            var ownerId = (Guid)ownerIdProp.GetValue(junctionRecord)!;
+                            var targetId = (Guid)targetIdProp.GetValue(junctionRecord)!;
+                            var targetName = targetNameProp.GetValue(junctionRecord)?.ToString() ?? targetId.ToString();
+
+                            if (!groupedByParent.ContainsKey(ownerId))
+                            {
+                                groupedByParent[ownerId] = new List<dynamic>();
+                            }
+
+                            IDictionary<string, object?> targetItem = new ExpandoObject();
+                            targetItem["id"] = targetId.ToString();
+                            targetItem["name"] = targetName;
+
+                            groupedByParent[ownerId].Add(targetItem);
+                        }
+                    }
+                }
+
+                // Populate each result with the corresponding array
+                foreach (IDictionary<string, object?> result in results.Cast<IDictionary<string, object?>>())
+                {
+                    if (result.ContainsKey(metadata.PrimaryKey) && result[metadata.PrimaryKey] is Guid parentId)
+                    {
+                        if (groupedByParent.ContainsKey(parentId))
+                        {
+                            result[field.name] = groupedByParent[parentId];
+                        }
+                        else
+                        {
+                            result[field.name] = new List<dynamic>();
+                        }
+                    }
+                    else
+                    {
+                        result[field.name] = new List<dynamic>();
+                    }
+                }
+            }
+
+            // Process UIMultiSelect fields on joined tables
+            if (readInput.joins != null && readInput.joins.Length > 0)
+            {
+                foreach (var join in readInput.joins)
+                {
+                    string alias = join.alias ?? join.toTable;
+                    var joinedTableMetadata = Cache.Instance.GetTableMetadata(join.toTable);
+
+                    // Find UIMultiSelect fields on the joined table
+                    var joinedMultiSelectFields = joinedTableMetadata.MetadataOutput.fields
+                        .Where(f => f.multiSelect != null)
+                        .ToList();
+
+                    if (joinedMultiSelectFields.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    // Extract IDs from joined records (format: "alias.PrimaryKey")
+                    string joinedPrimaryKeyField = $"{alias}.{joinedTableMetadata.PrimaryKey}";
+                    List<Guid> joinedParentIds = new List<Guid>();
+
+                    foreach (IDictionary<string, object?> result in results.Cast<IDictionary<string, object?>>())
+                    {
+                        if (result.ContainsKey(joinedPrimaryKeyField) && result[joinedPrimaryKeyField] != null)
+                        {
+                            if (result[joinedPrimaryKeyField] is Guid guidValue)
+                            {
+                                joinedParentIds.Add(guidValue);
+                            }
+                        }
+                    }
+
+                    if (joinedParentIds.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    // Process each UIMultiSelect field on the joined table
+                    foreach (var field in joinedMultiSelectFields)
+                    {
+                        var multiSelect = field.multiSelect!;
+                        var junctionMetadata = Cache.Instance.GetTableMetadata(multiSelect.junctionTable);
+                        var junctionType = junctionMetadata.Type;
+
+                        var db = _dataContext ?? CreateNewDbContext();
+                        var groupedByParent = new Dictionary<Guid, List<dynamic>>();
+
+                        // Process in batches of 500
+                        List<Guid> batchIds = new List<Guid>(joinedParentIds);
+                        while (batchIds.Count > 0)
+                        {
+                            var batch = batchIds.Take(500).ToList();
+                            batchIds = batchIds.Skip(500).ToList();
+
+                            var junctionQuery = new Query(db, [
+                                multiSelect.junctionOwnerIdField,
+                                multiSelect.junctionTargetIdField
+                            ], "junction").From(multiSelect.junctionTable);
+
+                            List<string> targetFields = [multiSelect.targetNameField];
+                            if (!string.IsNullOrEmpty(multiSelect.targetDescriptionField))
+                            {
+                                targetFields.Add(multiSelect.targetDescriptionField);
+                            }
+
+                            junctionQuery.Join(
+                                $"{multiSelect.junctionTable}.{multiSelect.junctionTargetIdField}",
+                                $"{multiSelect.targetTable}.{multiSelect.targetPrimaryKeyField}",
+                                "target",
+                                targetFields.ToArray()
+                            );
+
+                            junctionQuery.Contains($"junction_{multiSelect.junctionOwnerIdField}", batch.Cast<object>().ToArray());
+
+                            var batchJunctionRecords = await junctionQuery.ToDynamicListAsync();
+
+                            foreach (var junctionRecord in batchJunctionRecords)
+                            {
+                                var ownerIdProp = junctionRecord.GetType().GetProperty($"junction_{multiSelect.junctionOwnerIdField}");
+                                var targetIdProp = junctionRecord.GetType().GetProperty($"junction_{multiSelect.junctionTargetIdField}");
+                                var targetNameProp = junctionRecord.GetType().GetProperty($"target_{multiSelect.targetNameField}");
+
+                                if (ownerIdProp != null && targetIdProp != null && targetNameProp != null)
+                                {
+                                    var ownerId = (Guid)ownerIdProp.GetValue(junctionRecord)!;
+                                    var targetId = (Guid)targetIdProp.GetValue(junctionRecord)!;
+                                    var targetName = targetNameProp.GetValue(junctionRecord)?.ToString() ?? targetId.ToString();
+
+                                    if (!groupedByParent.ContainsKey(ownerId))
+                                    {
+                                        groupedByParent[ownerId] = new List<dynamic>();
+                                    }
+
+                                    IDictionary<string, object?> targetItem = new ExpandoObject();
+                                    targetItem["id"] = targetId.ToString();
+                                    targetItem["name"] = targetName;
+
+                                    groupedByParent[ownerId].Add(targetItem);
+                                }
+                            }
+                        }
+
+                        // Populate joined results with aliased field name
+                        string aliasedFieldName = $"{alias}.{field.name}";
+                        foreach (IDictionary<string, object?> result in results.Cast<IDictionary<string, object?>>())
+                        {
+                            if (result.ContainsKey(joinedPrimaryKeyField) && result[joinedPrimaryKeyField] is Guid joinedId)
+                            {
+                                if (groupedByParent.ContainsKey(joinedId))
+                                {
+                                    result[aliasedFieldName] = groupedByParent[joinedId];
+                                }
+                                else
+                                {
+                                    result[aliasedFieldName] = new List<dynamic>();
+                                }
+                            }
+                            else
+                            {
+                                result[aliasedFieldName] = new List<dynamic>();
+                            }
+                        }
+                    }
+                }
+            }
+
+            return results;
         }
 
         private List<dynamic> Denormalize(List<dynamic> results, ReadInput readInput)

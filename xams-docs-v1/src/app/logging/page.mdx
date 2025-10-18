@@ -30,7 +30,7 @@ builder.Host.ConfigureXamsLogging();
 
 Xams uses structured logging to ensure all log properties are queryable and searchable. When writing logs, always use message templates with named parameters instead of string interpolation:
 
-```c# {{ title: 'Project/Logic/WidgetService.cs' }}
+```c# {{ title: 'Project/Services/WidgetService.cs' }}
 [ServiceLogic(nameof(Widget), DataOperation.Create, LogicStage.PreOperation)]
 public class WidgetService : IServiceLogic
 {
@@ -64,7 +64,7 @@ public class WidgetService : IServiceLogic
 
 Xams supports standard .NET log levels for categorizing messages:
 
-```c# {{ title: 'Project/Logic/WidgetService.cs' }}
+```c# {{ title: 'Project/Services/WidgetService.cs' }}
 // Debug information for development
 context.Logger.LogDebug("Processing widget validation for {WidgetId}", widgetId);
 

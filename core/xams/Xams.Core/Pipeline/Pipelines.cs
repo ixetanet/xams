@@ -19,6 +19,7 @@ public static class Pipelines
         .Add(new PipeUIServices())
         .Add(new PipeExecuteServiceLogic(LogicStage.PreOperation))
         .Add(new PipeEntityCreate())
+        .Add(new PipeMultiSelectFields())
         .Add(new PipeExecuteServiceLogic(LogicStage.PostOperation))
         .Add(new PipeResultEntity());
     
@@ -33,6 +34,7 @@ public static class Pipelines
         .Add(new PipeUIServices())
         .Add(new PipeExecuteServiceLogic(LogicStage.PreOperation))
         .Add(new PipeEntityUpdate())
+        .Add(new PipeMultiSelectFields())
         .Add(new PipeExecuteServiceLogic(LogicStage.PostOperation))
         .Add(new PipeResultEntity());
 

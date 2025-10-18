@@ -1,25 +1,29 @@
 // hooks/useSignalR.ts
 import { useEffect, useState, useRef } from "react";
-import * as signalR from "@microsoft/signalr";
 import { useAuthContext } from "../contexts/AuthContext";
-import { HubConnection } from "@microsoft/signalr";
+
+// Lazy import SignalR - will be loaded only when needed
+let signalRModule: typeof import("@microsoft/signalr") | null = null;
+const loadSignalR = async () => {
+  if (!signalRModule) {
+    signalRModule = await import("@microsoft/signalr");
+  }
+  return signalRModule;
+};
 
 export type useSignalRResponse = {
   send: (hubName: string, message: string) => void;
   invoke: <T = any>(hubName: string, message: string) => Promise<T>;
   on: (methodName: string, newMethod: (...args: any[]) => any) => void;
   off: (methodName: string) => void;
-  hubConnection: HubConnection | null;
+  hubConnection: any | null; // Using any to avoid importing HubConnection type
 };
 
 export const useSignalR = (hubUrl: string) => {
   const authContext = useAuthContext();
   const establishConnectionRef = useRef<boolean>(false);
-  const connectionRef = useRef<signalR.HubConnection | null>(null);
-  const [connectionState, setConnectionState] =
-    useState<signalR.HubConnectionState>(
-      signalR.HubConnectionState.Disconnected
-    );
+  const connectionRef = useRef<any>(null);
+  const [connectionState, setConnectionState] = useState<string>("Disconnected");
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -52,6 +56,9 @@ export const useSignalR = (hubUrl: string) => {
   };
 
   const getConnection = async () => {
+    // Lazy load SignalR module
+    const signalR = await loadSignalR();
+
     if (!establishConnectionRef.current) {
       establishConnectionRef.current = true;
     } else {
@@ -104,29 +111,29 @@ export const useSignalR = (hubUrl: string) => {
       // Set up connection event handlers
       newConnection.onclose(() => {
         console.log("SignalR connection closed");
-        setConnectionState(signalR.HubConnectionState.Disconnected);
+        setConnectionState("Disconnected");
         connectionRef.current = null;
       });
 
       newConnection.onreconnecting(() => {
         console.log("SignalR reconnecting...");
-        setConnectionState(signalR.HubConnectionState.Reconnecting);
+        setConnectionState("Reconnecting");
       });
 
       newConnection.onreconnected(() => {
         console.log("SignalR reconnected successfully");
-        setConnectionState(signalR.HubConnectionState.Connected);
+        setConnectionState("Connected");
       });
 
       connectionRef.current = newConnection;
-      setConnectionState(signalR.HubConnectionState.Connecting);
+      setConnectionState("Connecting");
 
       await connectionRef.current.start();
-      setConnectionState(signalR.HubConnectionState.Connected);
+      setConnectionState("Connected");
       console.log("Connected to SignalR hub");
     } catch (error) {
       console.error("Error connecting to SignalR hub:", error);
-      setConnectionState(signalR.HubConnectionState.Disconnected);
+      setConnectionState("Disconnected");
       connectionRef.current = null;
     }
     return getResponse();
@@ -139,7 +146,7 @@ export const useSignalR = (hubUrl: string) => {
       return;
     }
     const attemptReconnection = async () => {
-      if (connectionState === signalR.HubConnectionState.Disconnected) {
+      if (connectionState === "Disconnected") {
         console.log("Attempting automatic reconnection...");
         try {
           await getConnection();
@@ -151,7 +158,7 @@ export const useSignalR = (hubUrl: string) => {
       }
     };
 
-    if (connectionState === signalR.HubConnectionState.Disconnected) {
+    if (connectionState === "Disconnected") {
       // Clear any existing timeout
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);

@@ -45,7 +45,7 @@ public class AppUser : User
     [UIRequired]
     [MaxLength(100)]
     public string? EmailAddress { get; set; }
-    
+
     [UIRequired]
     [MaxLength(50)]
     public string? FirebaseId { get; set; }
@@ -121,6 +121,7 @@ Create a UserUtil class to handle user authentication, automatically creating Xa
 ```c# {{ title: 'Project / UserUtil.cs' }}
 public class UserUtil
 {
+    private static ConcurrentDictionary<string, Guid> _users = new();
     public static async Task<Guid> GetUserId(HttpContext httpContext)
     {
         var userIdClaim = httpContext.User.Claims
@@ -134,44 +135,65 @@ public class UserUtil
         {
             throw new Exception("UserId not found");
         }
-        
+
         using (var db = new DataContext())
         {
-            var user = await GetUser(db, userIdClaim, emailClaim);
+            var userId = await GetUserId(db, userIdClaim, emailClaim);
             try
             {
-                // Create user if not found
-                if (user == null)
+                // Attempt to create the user
+                if (userId == Guid.Empty)
                 {
-                    user = await CreateUser(db, userIdClaim, emailClaim);
+                    userId = await CreateUser(db, userIdClaim, emailClaim);
                 }
             }
             catch (Exception e)
             {
-                // Handle concurrent user creation attempts
-                // Add random delay to prevent race conditions
+                // Wait a variable amount of time in case multiple
+                // requests are trying to create the user at once
                 var rnd = new Random(DateTime.Now.Millisecond);
                 await Task.Delay(rnd.Next(20, 150));
-                // Retry retrieval and creation
-                user = await GetUser(db, userIdClaim, emailClaim);
-                if (user == null)
+                // Reattempt to retrieve
+                userId = await GetUserId(db, userIdClaim, emailClaim);
+                if (userId == Guid.Empty)
                 {
-                    user = await CreateUser(db, userIdClaim, emailClaim);
+                    userId = await CreateUser(db, userIdClaim, emailClaim);
                 }
             }
 
-            return user.UserId;
+            return userId;
         }
     }
 
-    private static async Task<AppUser?> GetUser(DataContext db, string? userIdClaim, string? emailClaim)
+    private static async Task<Guid> GetUserId(DataContext db, string? userIdClaim, string? emailClaim)
     {
-        var user = await db.Users.FirstOrDefaultAsync(x => x.FirebaseId == userIdClaim) ?? 
-                   await db.Users.FirstOrDefaultAsync(x => x.EmailAddress == emailClaim);
-        return user;
+        Guid userId;
+
+        if (userIdClaim != null)
+        {
+            if (_users.TryGetValue(userIdClaim, out userId))
+            {
+                return userId;
+            }
+        }
+
+        userId = await db.Users
+            .Where(x => x.FirebaseId == userIdClaim)
+            .Select(x => x.UserId)
+            .FirstOrDefaultAsync();
+
+        if (userId == Guid.Empty)
+        {
+            userId =await db.Users
+                .Where(x => x.EmailAddress == emailClaim)
+                .Select(x => x.UserId)
+                .FirstOrDefaultAsync();
+        }
+
+        return userId;
     }
 
-    private static async Task<AppUser> CreateUser(DataContext db, string userIdClaim, string? emailClaim)
+    private static async Task<Guid> CreateUser(DataContext db, string userIdClaim, string? emailClaim)
     {
         var user = new AppUser();
         user.FirebaseId = userIdClaim;
@@ -181,18 +203,23 @@ public class UserUtil
         db.Add(user);
         await db.SaveChangesAsync();
 
-        var userRole = new UserRole<AppUser, Role>();
-        userRole.UserId = user.UserId;
-        // Assign default role (customize as needed)
-        userRole.RoleId = new Guid("0526627a-ac19-4228-a512-8a817edd4e95");
-        db.Add(userRole);
+        // Assign default Roles
+        if (emailClaim == "xxx@xxx.io")
+        {
+            var adminRole = new UserRole<AppUser, Role>();
+            adminRole.UserId = user.UserId;
+            adminRole.RoleId = SystemRecords.SystemAdministratorRoleId; // Admin role
+            db.Add(adminRole);
+        }
+
         await db.SaveChangesAsync();
-        return user;
+
+        _users.TryAdd(userIdClaim, user.UserId);
+
+        return user.UserId;
     }
 }
 ```
-
-
 
 ## Firebase Configuration
 
@@ -214,45 +241,18 @@ Add your Firebase configuration to appsettings.json:
 }
 ```
 
-## Google Provider
+## OAuth Provider Setup (Google, Facebook, etc.)
 
-To configure Google as an authentication provider and enable custom domain redirects:
+**Setup Instructions**: Follow [Google Cloud Console OAuth setup](https://console.cloud.google.com/apis/credentials) to configure each provider.
 
-1. **Go to Google Cloud Console**
-   - Open the Google Cloud Console and select your project linked to your Firebase app.
+**Critical for Custom Domains**: Add authorized redirect URIs:
 
-2. **Navigate to OAuth 2.0 Credentials**
-   - In the left sidebar, click on "APIs & Services," then choose "Credentials."
-   - Under "OAuth 2.0 Client IDs," find the web client associated with your Firebase project and click the pencil/edit icon.
+```
+https://YOUR_CUSTOM_DOMAIN/__/auth/handler  (Production)
+https://localhost:PORT/__/auth/handler      (Development)
+```
 
-3. **Add Your Redirect URL (Required for Custom Domains)**
-   - The default redirect URL for Firebase Authentication will look like:
-     ```
-     https://YOUR_PROJECT_ID.firebaseapp.com/__/auth/handler
-     ```
-   - **For custom domains** (required when using Google authentication with your own domain), add your Xams ASP.NET project URL:
-     ```
-     https://YOUR_CUSTOM_DOMAIN/__/auth/handler
-     ```
-     The `/__/auth/handler` endpoint is automatically provided by the Xams framework when you configure Firebase authentication with `app.AddFirebaseAuthProxy()`. This implements [Option 3 from Firebase's redirect best practices](https://firebase.google.com/docs/auth/web/redirect-best-practices) - proxying the auth handler through your application backend. This configuration is essential for Google OAuth to properly redirect users back to your custom domain after authentication.
-   - For local development, use:
-     ```
-     https://localhost:PORT/__/auth/handler
-     ```
-   - Replace `YOUR_PROJECT_ID` with your Firebase project ID, `YOUR_CUSTOM_DOMAIN` with your production domain hosting the Xams API, and `PORT` with your local development port.
-
-4. **Add the Redirect URL to Authorized Redirect URIs**
-   - In the OAuth client settings, scroll to the "Authorized redirect URIs" section.
-   - Click "Add URI" and paste in your Firebase project's handler URL(s).
-   - Add both your production and localhost URLs for development convenience.
-
-5. **Save Changes**
-   - After adding your URLs, click "Save" at the bottom of the OAuth client configuration page.
-
-6. **Use Your Redirect URL in Code (Optional)**
-   - In most setups, Firebase Authentication manages the redirect internally, so you don't need to specify it in your frontend code.
-   - If you are configuring the `authDomain` in your Firebase initialization, match it to your custom domain if used.
-
+The `/__/auth/handler` endpoint is automatically provided by Xams (`app.AddFirebaseAuthProxy()`), implementing [Firebase's redirect best practice Option 3](https://firebase.google.com/docs/auth/web/redirect-best-practices) - proxying auth through your backend. This is **required** for custom domains with Google OAuth.
 
 ## Test Your Configuration
 
@@ -276,112 +276,218 @@ Configure your React application environment variables:
 NEXT_PUBLIC_API=https://localhost:7102/
 ```
 
-
 In your `_app.tsx` file, import the Firebase styles and wrap your application with the `XamsFirebaseAuthProvider`. The `auth-recaptcha` div element is required for phone authentication functionality.
 
 ```typescript
-import "@/styles/globals.css";
-import type { AppProps } from "next/app";
-import "@mantine/core/styles.css";
-import "@mantine/dates/styles.css";
-import { createTheme, MantineProvider } from "@mantine/core";
+import '@/styles/globals.css'
+import type { AppProps } from 'next/app'
+import '@mantine/core/styles.css'
+import '@mantine/dates/styles.css'
+import { createTheme, MantineProvider } from '@mantine/core'
 import {
   AppContextProvider,
   AuthContextProvider,
   getQueryParam,
-} from "@ixeta/xams";
-import "@ixeta/xams/styles.css";
-import "@ixeta/xams/global.css";
-import { useRouter } from "next/router";
-import { AuthProvider } from "@ixeta/headless-auth-react";
-import { XamsFirebaseAuthProvider } from "@ixeta/xams-firebase";
+} from '@ixeta/xams'
+import '@ixeta/xams/styles.css'
+import '@ixeta/xams/global.css'
+import { useRouter } from 'next/router'
+import { AuthProvider } from '@ixeta/headless-auth-react'
+import { XamsFirebaseAuthProvider } from '@ixeta/xams-firebase'
 
-const theme = createTheme({});
+const theme = createTheme({})
 
 export default function App({ Component, pageProps }: AppProps) {
-  const router = useRouter();
-  const userId = getQueryParam("userid", router.asPath);
+  const router = useRouter()
+  const userId = getQueryParam('userid', router.asPath)
 
   return (
     <MantineProvider theme={theme}>
-      <XamsFirebaseAuthProvider apiUrl={process.env.NEXT_PUBLIC_API ?? ""}>
-        {(context) => (
-          <AuthProvider authConfig={context.firebaseAuthConfig}>
-            <AuthContextProvider
-              apiUrl={process.env.NEXT_PUBLIC_API as string}
-              headers={{
-                UserId: userId as string,
-              }}
-              onUnauthorized={() => {
-                context.firebaseAuthConfig?.signOut();
-                if (router.isReady) {
-                  router.push("/");
-                }
-              }}
-              getAccessToken={context.firebaseAuthConfig?.getAccessToken}
-            >
-              <AppContextProvider>
-                <Component {...pageProps} />
-                <div id="auth-recaptcha" className="invisible" />
-              </AppContextProvider>
-            </AuthContextProvider>
-          </AuthProvider>
-        )}
+      <XamsFirebaseAuthProvider
+        apiUrl={process.env.NEXT_PUBLIC_API ?? ''}
+        headers={{
+          UserId: userId as string,
+        }}
+        onUnauthorized={(context) => {
+          context.firebaseAuthConfig?.signOut()
+          if (router.isReady) {
+            router.push('/')
+          }
+        }}
+      >
+        <AppContextProvider>
+          <Component {...pageProps} />
+          <div id="auth-recaptcha" className="invisible" />
+        </AppContextProvider>
       </XamsFirebaseAuthProvider>
     </MantineProvider>
-  );
+  )
 }
 ```
 
-Create the authentication pages for login, user profile management, password reset, and Firebase action handling:
+Use the authentication pages to set branding and redirect on successful login. Use `postLoginRedirect` in local storage to redirect users to the page they were trying to access before being redirected to login.
 
 ```tsx {{ title: 'src/pages/login.tsx' }}
-import React from "react";
-import { useRouter } from "next/router";
-import { LoginPage } from "@ixeta/xams-firebase";
+import React from 'react'
+import { useRouter } from 'next/router'
+import { LoginPage } from '@ixeta/xams-firebase'
+import { Logo } from '../components/common/Logo'
 
 const Login = () => {
-  const router = useRouter();
-  // Modify to redirect to desired app page after login
-  return <LoginPage onLoginSuccess={() => router.push("/")} />;
-};
+  const router = useRouter()
+  return (
+    <LoginPage
+      onLoginSuccess={() => {
+        const redirectUrl = localStorage.getItem('postLoginRedirect')
+        localStorage.removeItem('postLoginRedirect')
+        router.push(redirectUrl || '/app/coupons')
+      }}
+      Logo={<Logo />}
+      backgroundColor="#2ea2b0"
+      radius={'md'}
+    />
+  )
+}
 
-export default Login;
-
+export default Login
 ```
 
+Create profile, reset password, and action pages as needed:
+
 ```tsx {{ title: 'src/pages/profile.tsx' }}
-import React from "react";
-import { ProfilePage } from "@ixeta/xams-firebase";
+import React from 'react'
+import { ProfilePage } from '@ixeta/xams-firebase'
 
 const Profile = () => {
-  return <ProfilePage />;
-};
+  return <ProfilePage />
+}
 
-export default Profile;
+export default Profile
 ```
 
 ```tsx {{ title: 'src/pages/reset-password.tsx' }}
-import React from "react";
-import { ResetPasswordPage } from "@ixeta/xams-firebase";
+import React from 'react'
+import { ResetPasswordPage } from '@ixeta/xams-firebase'
 
 const ResetPassword = () => {
-  return <ResetPasswordPage />;
-};
+  return <ResetPasswordPage />
+}
 
-export default ResetPassword;
+export default ResetPassword
 ```
 
 ```tsx {{ title: 'src/pages/__/auth/action.tsx' }}
-import React from "react";
-import { ActionPage } from "@ixeta/xams-firebase";
+import React from 'react'
+import { ActionPage } from '@ixeta/xams-firebase'
 
 const AuthAction = () => {
-  return <ActionPage />;
-};
+  return <ActionPage />
+}
 
-export default AuthAction;
+export default AuthAction
 ```
+
+## React Protected Page
+
+Use the `useAuthProtect` hook to protect pages and access user information:
+
+```tsx {{ title: 'src/pages/admin.tsx' }}
+import { AdminDashboard } from '@ixeta/xams'
+import React from 'react'
+import { NavLink } from '@mantine/core'
+import { IconLogout } from '@tabler/icons-react'
+import { useRouter } from 'next/router'
+import Loading from '@/components/common/Loading'
+import { useAuthProtect } from '@ixeta/xams-firebase'
+
+const Admin = () => {
+  const router = useRouter()
+  const auth = useAuthProtect()
+
+  if (auth.isLoading || !router.isReady) {
+    return <Loading />
+  }
+
+  if (auth.isError) {
+    return <div>Error loading auth settings</div>
+  }
+
+  if (!auth.isLoggedIn) {
+    localStorage.setItem('postLoginRedirect', router.asPath)
+    router.push('/login')
+    return <></>
+  }
+
+  return (
+    <AdminDashboard
+      addMenuItems={[
+        {
+          order: 10000,
+          navLink: (
+            <NavLink
+              label="Logout"
+              leftSection={<IconLogout size={16} />}
+              onClick={() => {
+                auth.signOut()
+                router.push('/')
+              }}
+            />
+          ),
+        },
+      ]}
+    />
+  )
+}
+
+export default Admin
+```
+
+## Using Tanstack Query with Authentication
+
+When using Tanstack Query with authenticated pages, **always** set `enabled: auth.isLoggedIn` to prevent queries from running before authentication is ready. All hooks must be called at the top level before any conditional returns.
+
+```tsx {{ title: 'src/pages/dashboard.tsx' }}
+import { Query, useAuthRequest } from '@ixeta/xams'
+import { useAuthProtect } from '@ixeta/xams-firebase'
+import { useQuery } from '@tanstack/react-query'
+import { useRouter } from 'next/router'
+
+const Dashboard = () => {
+  const router = useRouter()
+  const auth = useAuthProtect()
+  const authRequest = useAuthRequest()
+
+  // Call ALL hooks at the top level
+  const { data, isLoading } = useQuery({
+    queryKey: ['my-data'],
+    queryFn: async () => {
+      const readRequest = new Query(['*'])
+        .from('MyTable')
+        .top(10)
+        .toReadRequest()
+      const response = await authRequest.read(readRequest)
+      if (!response.succeeded) throw new Error(response.friendlyMessage)
+      return response.data.results
+    },
+    enabled: auth.isLoggedIn, // CRITICAL: Prevents query until authenticated
+  })
+
+  // Auth checks come AFTER all hooks
+  if (auth.isLoading || !router.isReady) {
+    return <div>Loading...</div>
+  }
+
+  if (!auth.isLoggedIn) {
+    localStorage.setItem('postLoginRedirect', router.asPath)
+    router.push('/login')
+    return <></>
+  }
+
+  return <div>{/* Use data here */}</div>
+}
+```
+
+## Firebase Email Templates
 
 Configure the Firebase email template action URL to redirect to your Xams application:
 
@@ -391,4 +497,3 @@ Configure the Firebase email template action URL to redirect to your Xams applic
 4. Set the URL to your application's action handler (e.g., `https://localhost:3000/__/auth/action`)
 
 This URL handles email verification, password reset, and other Firebase authentication actions.
-

@@ -43,3 +43,39 @@ export function toLocalTimeStringWithAMPM(isoString: string) {
 
   return `${day} ${month} ${year} ${hours}:${minutes}:${seconds}.${milliseconds} ${ampm}`;
 }
+
+export function hasTimePart(dateFormat?: string): boolean {
+  // If a time part is not included in the date format then remove it
+  // Based on dayjs formats - https://day.js.org/docs/en/display/format
+  if (dateFormat == null) {
+    return false;
+  }
+
+  const timeParts = [
+    "h",
+    "m",
+    "s",
+    "A",
+    "a",
+    "H",
+    "k",
+    "K",
+    "m",
+    "s",
+    "S",
+    "Z",
+    "X",
+    "LT",
+    "LTS",
+    "LLL",
+    "LLLL",
+    "lll",
+    "llll",
+  ];
+
+  if (timeParts.some((x) => dateFormat.includes(x))) {
+    return true;
+  }
+
+  return false;
+}

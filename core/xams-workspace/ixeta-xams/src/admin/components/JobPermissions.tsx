@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   RolePermissionState,
   SystemAdministratorRoleId,
-} from "../RolePermissions";
+} from "../types/RolePermissionTypes";
 import { CellLocation, Row } from "../../components/datagrid/DataGridTypes";
 import DataGrid from "../../components/DataGrid";
 import PermissionIcon from "../PermissionIcon";

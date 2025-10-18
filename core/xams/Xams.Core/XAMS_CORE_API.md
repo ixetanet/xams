@@ -6,6 +6,7 @@ Auto-generated API documentation for Xams.Core library.
 ## Xams.Core
 
 ### Class: AddXamsApiOptions
+
 **Constructors:**
 • `AddXamsApiOptions()`
 **Properties:**
@@ -15,6 +16,7 @@ Auto-generated API documentation for Xams.Core library.
 • `UseDashboard`: `Boolean` { get; set }
 
 ### Class: AuditInfo
+
 **Constructors:**
 • `AuditInfo()`
 **Properties:**
@@ -25,6 +27,7 @@ Auto-generated API documentation for Xams.Core library.
 • `IsUpdateAuditEnabled`: `Boolean` { get; set }
 
 ### Class: Cache
+
 **Constructors:**
 • `Cache()`
 **Properties:**
@@ -41,6 +44,7 @@ Auto-generated API documentation for Xams.Core library.
 • `GetTableMetadata(Type entityType)`: `MetadataInfo`
 
 ### Class: Entity
+
 **Constructors:**
 • `Entity()`
 **Properties:**
@@ -48,6 +52,7 @@ Auto-generated API documentation for Xams.Core library.
 • `Properties`: `List<EntityProperty>` { get; set }
 
 ### Class: EntityProperty
+
 **Constructors:**
 • `EntityProperty()`
 **Properties:**
@@ -55,6 +60,7 @@ Auto-generated API documentation for Xams.Core library.
 • `Type`: `String` { get; set }
 
 ### Class: FieldAuditInfo
+
 **Constructors:**
 • `FieldAuditInfo()`
 **Properties:**
@@ -63,6 +69,7 @@ Auto-generated API documentation for Xams.Core library.
 • `IsUpdateAuditEnabled`: `Boolean` { get; set }
 
 ### Class: MetadataInfo
+
 **Constructors:**
 • `MetadataInfo()`
 **Properties:**
@@ -82,6 +89,7 @@ Auto-generated API documentation for Xams.Core library.
 • `Type`: `Type` { get; set }
 
 ### Class: ServiceActionInfo
+
 **Constructors:**
 • `ServiceActionInfo()`
 **Properties:**
@@ -89,6 +97,7 @@ Auto-generated API documentation for Xams.Core library.
 • `Type`: `Type` { get; set }
 
 ### Class: ServiceBulkInfo
+
 **Constructors:**
 • `ServiceBulkInfo()`
 **Properties:**
@@ -96,6 +105,7 @@ Auto-generated API documentation for Xams.Core library.
 • `Type`: `Type` { get; set }
 
 ### Class: ServiceHubInfo
+
 **Constructors:**
 • `ServiceHubInfo()`
 **Properties:**
@@ -103,6 +113,7 @@ Auto-generated API documentation for Xams.Core library.
 • `Type`: `Type` { get; set }
 
 ### Class: ServiceJobInfo
+
 **Constructors:**
 • `ServiceJobInfo()`
 **Properties:**
@@ -114,6 +125,7 @@ Auto-generated API documentation for Xams.Core library.
 • `Type`: `Type` { get; set }
 
 ### Class: ServiceLogicInfo
+
 **Constructors:**
 • `ServiceLogicInfo()`
 **Properties:**
@@ -121,12 +133,14 @@ Auto-generated API documentation for Xams.Core library.
 • `Type`: `Type` { get; set }
 
 ### Class: ServicePermissionInfo
+
 **Constructors:**
 • `ServicePermissionInfo()`
 **Properties:**
 • `Type`: `Type` { get; set }
 
 ### Class: ServiceSecurityInfo
+
 **Constructors:**
 • `ServiceSecurityInfo()`
 **Properties:**
@@ -134,6 +148,7 @@ Auto-generated API documentation for Xams.Core library.
 • `Type`: `Type` { get; set }
 
 ### Class: ServiceStartupInfo
+
 **Constructors:**
 • `ServiceStartupInfo()`
 **Properties:**
@@ -141,6 +156,7 @@ Auto-generated API documentation for Xams.Core library.
 • `Type`: `Type` { get; set }
 
 ### Class: TablePermission
+
 **Constructors:**
 • `TablePermission()`
 **Properties:**
@@ -148,32 +164,36 @@ Auto-generated API documentation for Xams.Core library.
 • `Table`: `String` { get; set }
 
 ### Class: User
+
 **Constructors:**
 • `User()`
 **Properties:**
 • `CreatedDate`: `DateTime` { get; set }
 
 ### Class: UserConnection
+
 **Constructors:**
 • `UserConnection()`
 **Properties:**
-• `ConnectionHubs`: `Dictionary<String, List`1>` { get; set }
-• `ConnectionIds`: `HashSet<String>` { get; set }
-• `NumberOfConnections`: `Int32` { get; set }
+• `ConnectionHubs`: `Dictionary<String, List`1>`{ get; set }
+•`ConnectionIds`: `HashSet<String>`{ get; set }
+•`NumberOfConnections`: `Int32` { get; set }
 
 ### Enum: PermissionLevel
+
 **Inherits:** `Enum`
-**Values:** 
+**Values:**
 `System`, `Team`, `User`
 
 ### Static Class: PermissionCache
+
 **Properties:**
-• `RolePermissions`: `ReadOnlyDictionary<Guid, HashSet`1>` { get } - RoleId, Permission Names
-• `ServiceProvider`: `IServiceProvider` { get; set }
-• `TeamRoles`: `ReadOnlyDictionary<Guid, List`1>` { get } - TeamId, RoleIds
-• `UserRoles`: `ReadOnlyDictionary<Guid, List`1>` { get } - UserId, RoleIds
-• `Users`: `ReadOnlyDictionary<Guid, User>` { get } - Hashset of all the known users in the system.
-• `UserTeams`: `ReadOnlyDictionary<Guid, List`1>` { get } - UserId, TeamIds
+• `RolePermissions`: `ReadOnlyDictionary<Guid, HashSet`1>`{ get } - RoleId, Permission Names
+•`ServiceProvider`: `IServiceProvider`{ get; set }
+•`TeamRoles`: `ReadOnlyDictionary<Guid, List`1>` { get } - TeamId, RoleIds
+• `UserRoles`: `ReadOnlyDictionary<Guid, List`1>`{ get } - UserId, RoleIds
+•`Users`: `ReadOnlyDictionary<Guid, User>`{ get } - Hashset of all the known users in the system.
+•`UserTeams`: `ReadOnlyDictionary<Guid, List`1>` { get } - UserId, TeamIds
 **Methods:**
 • `CacheRolePermissions(IXamsDbContext db, Guid? roleId = null)`: `Task`
 • `CacheTeamRoles(IXamsDbContext db, Guid? teamId = null)`: `Task`
@@ -188,6 +208,7 @@ Auto-generated API documentation for Xams.Core library.
 • `UpdatePermission(String oldName, String newName)`: `void`
 
 ### Static Class: Permissions
+
 **Methods:**
 • `GetHighestPermission(String[]? permissions, String tableName = "")`: `PermissionLevel?`
 • `GetUserTablePermissions(Guid userId, String tableName, String[] operations)`: `Task<String[]>`
@@ -200,14 +221,15 @@ Auto-generated API documentation for Xams.Core library.
 ## Xams.Core.Actions
 
 ### Class: ADMIN_ExportData
+
 **Implements:** `IServiceAction`
 **Constructors:**
 • `ADMIN_ExportData()`
 **Methods:**
-• `Execute(ActionServiceContext context)`: `Task<Response`1>`
-• `TopologicalSort(DependencyInfo[] tables)`: `List<String>`
+• `Execute(ActionServiceContext context)`: `Task<Response`1>`•`TopologicalSort(DependencyInfo[] tables)`: `List<String>`
 
 ### Class: ADMIN_ExportDependencies
+
 **Implements:** `IServiceAction`
 **Constructors:**
 • `ADMIN_ExportDependencies()`
@@ -216,6 +238,7 @@ Auto-generated API documentation for Xams.Core library.
 • `Execute(ActionServiceContext context)`: `Task<Response`1>`
 
 ### Class: ADMIN_GetTypes
+
 Return tables from metadata as typescript types
 
 **Implements:** `IServiceAction`
@@ -225,6 +248,7 @@ Return tables from metadata as typescript types
 • `Execute(ActionServiceContext context)`: `Task<Response`1>`
 
 ### Class: ADMIN_ImportData
+
 **Implements:** `IServiceAction`
 **Constructors:**
 • `ADMIN_ImportData()`
@@ -232,6 +256,7 @@ Return tables from metadata as typescript types
 • `Execute(ActionServiceContext context)`: `Task<Response`1>`
 
 ### Class: ADMIN_TriggerJob
+
 **Implements:** `IServiceAction`
 **Constructors:**
 • `ADMIN_TriggerJob()`
@@ -239,6 +264,7 @@ Return tables from metadata as typescript types
 • `Execute(ActionServiceContext context)`: `Task<Response`1>`
 
 ### Class: DependencyInfo
+
 **Constructors:**
 • `DependencyInfo()`
 **Properties:**
@@ -246,6 +272,7 @@ Return tables from metadata as typescript types
 • `name`: `String` { get; set }
 
 ### Class: DependencyInfo
+
 **Constructors:**
 • `DependencyInfo()`
 **Properties:**
@@ -253,6 +280,7 @@ Return tables from metadata as typescript types
 • `Name`: `String` { get; set }
 
 ### Class: Dependent
+
 **Constructors:**
 • `Dependent()`
 **Properties:**
@@ -260,12 +288,14 @@ Return tables from metadata as typescript types
 • `Optional`: `Boolean` { get; set }
 
 ### Class: DependentTable
+
 **Constructors:**
 • `DependentTable()`
 **Properties:**
 • `name`: `String` { get; set }
 
 ### Class: RecordImport
+
 **Constructors:**
 • `RecordImport()`
 **Properties:**
@@ -274,6 +304,7 @@ Return tables from metadata as typescript types
 • `RowNumber`: `Int32` { get; set }
 
 ### Class: TABLE_ExportData
+
 **Implements:** `IServiceAction`
 **Constructors:**
 • `TABLE_ExportData()`
@@ -281,6 +312,7 @@ Return tables from metadata as typescript types
 • `Execute(ActionServiceContext context)`: `Task<Response`1>`
 
 ### Class: TABLE_ImportData
+
 **Implements:** `IServiceAction`
 **Constructors:**
 • `TABLE_ImportData()`
@@ -288,6 +320,7 @@ Return tables from metadata as typescript types
 • `Execute(ActionServiceContext context)`: `Task<Response`1>`
 
 ### Class: TABLE_ImportTemplate
+
 **Implements:** `IServiceAction`
 **Constructors:**
 • `TABLE_ImportTemplate()`
@@ -295,6 +328,7 @@ Return tables from metadata as typescript types
 • `Execute(ActionServiceContext context)`: `Task<Response`1>`
 
 ### Class: TableExport
+
 **Constructors:**
 • `TableExport()`
 **Properties:**
@@ -302,19 +336,22 @@ Return tables from metadata as typescript types
 • `tableName`: `String` { get; set }
 
 ### Enum: ImportType
+
 **Inherits:** `Enum`
-**Values:** 
+**Values:**
 `Create`, `Update`
 
 ## Xams.Core.Actions.Shared
 
 ### Static Class: TABLE_ImportExport
+
 **Methods:**
 • `GetTableProperties(Type type)`: `List<PropertyInfo>`
 
 ## Xams.Core.Attributes
 
 ### Attribute: BulkServiceAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `BulkServiceAttribute(BulkStage bulkStage, Int32 order = 0)`
@@ -323,11 +360,13 @@ Return tables from metadata as typescript types
 • `Stage`: `BulkStage` { get; set }
 
 ### Attribute: CascadeDeleteAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `CascadeDeleteAttribute()`
 
 ### Attribute: JobInitialStateAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `JobInitialStateAttribute(JobState state)`
@@ -335,6 +374,7 @@ Return tables from metadata as typescript types
 • `State`: `JobState` { get }
 
 ### Attribute: JobServerAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `JobServerAttribute(ExecuteJobOn executeJobOn, String serverName = null)`
@@ -343,6 +383,7 @@ Return tables from metadata as typescript types
 • `ServerName`: `String` { get }
 
 ### Attribute: JobTimeZone
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `JobTimeZone(String timeZone)`
@@ -350,11 +391,13 @@ Return tables from metadata as typescript types
 • `TimeZone`: `String` { get; set }
 
 ### Attribute: ModuleDbContextAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `ModuleDbContextAttribute()`
 
 ### Attribute: ServiceActionAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `ServiceActionAttribute(String name)`
@@ -362,6 +405,7 @@ Return tables from metadata as typescript types
 • `Name`: `String` { get; set }
 
 ### Attribute: ServiceHubAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `ServiceHubAttribute(String name)`
@@ -369,26 +413,29 @@ Return tables from metadata as typescript types
 • `Name`: `String` { get; set }
 
 ### Attribute: ServiceJobAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `ServiceJobAttribute(String name, String queue, String timeSpan, JobSchedule jobSchedule = 1, DaysOfWeek daysOfWeek = 127, String tag = "")`
-  If JobSchedule is TimeOfDay, then TimeSpan is the time of day to run the job in UTC, ie: "18:13:59" for 6:13:59 PM UTC,
-            otherwise specify Interval with hours:minutes:seconds
-  - `name`: 
-  - `queue`: 
-  - `timeSpan`: 
-  - `jobSchedule`: 
-  - `daysOfWeek`: 
-  - `tag`: 
-**Properties:**
-• `DaysOfWeek`: `DaysOfWeek` { get }
-• `JobSchedule`: `JobSchedule` { get }
-• `Name`: `String` { get }
-• `Queue`: `String` { get }
-• `Tag`: `String` { get }
-• `TimeSpan`: `TimeSpan` { get }
+If JobSchedule is TimeOfDay, then TimeSpan is the time of day to run the job in UTC, ie: "18:13:59" for 6:13:59 PM UTC,
+otherwise specify Interval with hours:minutes:seconds
+
+- `name`:
+- `queue`:
+- `timeSpan`:
+- `jobSchedule`:
+- `daysOfWeek`:
+- `tag`:
+  **Properties:**
+  • `DaysOfWeek`: `DaysOfWeek` { get }
+  • `JobSchedule`: `JobSchedule` { get }
+  • `Name`: `String` { get }
+  • `Queue`: `String` { get }
+  • `Tag`: `String` { get }
+  • `TimeSpan`: `TimeSpan` { get }
 
 ### Attribute: ServiceLogicAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `ServiceLogicAttribute(String tableName, DataOperation dataOperation, LogicStage logicStage, Int32 order = 0)`
@@ -399,11 +446,13 @@ Return tables from metadata as typescript types
 • `TableName`: `String` { get; set }
 
 ### Attribute: ServicePermissionAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `ServicePermissionAttribute()`
 
 ### Attribute: ServiceSecurityAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `ServiceSecurityAttribute(Int32 order = 100)`
@@ -411,6 +460,7 @@ Return tables from metadata as typescript types
 • `Order`: `Int32` { get; set }
 
 ### Attribute: ServiceStartupAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `ServiceStartupAttribute(StartupOperation startupOperation, Int32 order = 0)`
@@ -419,13 +469,28 @@ Return tables from metadata as typescript types
 • `StartupOperation`: `StartupOperation` { get; set }
 
 ### Attribute: UICharacterLimitAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `UICharacterLimitAttribute(Int32 limit)`
 **Properties:**
 • `Limit`: `Int32` { get; set }
 
+### Attribute: UICreateOnlyAttribute
+
+**Inherits:** `Attribute`
+**Constructors:**
+• `UICreateOnlyAttribute()`
+• `UICreateOnlyAttribute(params String[] fields)`
+**Properties:**
+• `Fields`: `String[]` { get; set }
+**Usage:**
+• Apply to properties to mark them as create-only: `[UICreateOnly]`
+• Apply to classes to mark multiple BaseEntity fields as create-only: `[UICreateOnly(nameof(OwningUserId), nameof(CampaignId))]`
+**Description:** Fields marked with this attribute can only be set during record creation and cannot be modified during updates. Enforced on the backend during update operations.
+
 ### Attribute: UIDateFormatAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `UIDateFormatAttribute(String dateFormat)`
@@ -435,83 +500,46 @@ Return tables from metadata as typescript types
 • `HasTimePart()`: `Boolean`
 
 ### Attribute: UIDescriptionAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `UIDescriptionAttribute()`
 
 ### Attribute: UIDisplayNameAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
-• `UIDisplayNameAttribute(Field[] fields)`
-• `UIDisplayNameAttribute(String name, String tag = "")`
+• `UIDisplayNameAttribute(String name, String field = "", String tag = "")`
 **Properties:**
 • `Name`: `String` { get; set }
+• `Field`: `String` { get; set }
 • `Tag`: `String` { get; set }
-
-### Attribute: UIDisplayNameCreatedByAttribute
-**Inherits:** `Attribute`
-**Constructors:**
-• `UIDisplayNameCreatedByAttribute(String displayName)`
-**Properties:**
-• `DisplayName`: `String` { get; set }
-
-### Attribute: UIDisplayNameCreatedDateAttribute
-**Inherits:** `Attribute`
-**Constructors:**
-• `UIDisplayNameCreatedDateAttribute(String displayName)`
-**Properties:**
-• `DisplayName`: `String` { get; set }
-
-### Attribute: UIDisplayNameIsActiveAttribute
-**Inherits:** `Attribute`
-**Constructors:**
-• `UIDisplayNameIsActiveAttribute(String displayName)`
-**Properties:**
-• `DisplayName`: `String` { get; set }
-
-### Attribute: UIDisplayNameOwningTeamAttribute
-**Inherits:** `Attribute`
-**Constructors:**
-• `UIDisplayNameOwningTeamAttribute(String displayName)`
-**Properties:**
-• `DisplayName`: `String` { get; set }
-
-### Attribute: UIDisplayNameOwningUserAttribute
-**Inherits:** `Attribute`
-**Constructors:**
-• `UIDisplayNameOwningUserAttribute(String displayName)`
-**Properties:**
-• `DisplayName`: `String` { get; set }
-
-### Attribute: UIDisplayNameUpdatedByAttribute
-**Inherits:** `Attribute`
-**Constructors:**
-• `UIDisplayNameUpdatedByAttribute(String displayName)`
-**Properties:**
-• `DisplayName`: `String` { get; set }
-
-### Attribute: UIDisplayNameUpdatedDateAttribute
-**Inherits:** `Attribute`
-**Constructors:**
-• `UIDisplayNameUpdatedDateAttribute(String displayName)`
-**Properties:**
-• `DisplayName`: `String` { get; set }
+**Usage:**
+• Apply to properties to set field display names: `[UIDisplayName("Widget Name")]`
+• Apply to classes to set table display names: `[UIDisplayName("Campaigns")]`
+• Apply to classes to override BaseEntity field display names (supports multiple): `[UIDisplayName("Influencer", nameof(OwningUserId))]`
+**Attribute Targets:** `Class`, `Property`
+**Allow Multiple:** `true`
 
 ### Attribute: UIHideAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `UIHideAttribute(Boolean queryable = false)`
-  Field cannot be read from the UI.
-  - `queryable`: If true, this field can still be used as a filter from the UI.
-**Properties:**
-• `Queryable`: `Boolean` { get; set }
+Field cannot be read from the UI.
+
+- `queryable`: If true, this field can still be used as a filter from the UI.
+  **Properties:**
+  • `Queryable`: `Boolean` { get; set }
 
 ### Attribute: UINameAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `UINameAttribute()`
 
 ### Attribute: UINumberRangeAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `UINumberRangeAttribute(Single min, Single max)`
@@ -520,6 +548,7 @@ Return tables from metadata as typescript types
 • `Min`: `Single` { get; set }
 
 ### Attribute: UIOptionAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `UIOptionAttribute(String name)`
@@ -527,6 +556,7 @@ Return tables from metadata as typescript types
 • `Name`: `String` { get; set }
 
 ### Attribute: UIOrderAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `UIOrderAttribute(Int32 order)`
@@ -534,11 +564,13 @@ Return tables from metadata as typescript types
 • `Order`: `Int32` { get; set }
 
 ### Attribute: UIProxyAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `UIProxyAttribute()`
 
 ### Attribute: UIReadOnlyAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `UIReadOnlyAttribute()`
@@ -547,6 +579,7 @@ Return tables from metadata as typescript types
 • `Fields`: `String[]` { get; set }
 
 ### Attribute: UIRecommendedAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `UIRecommendedAttribute()`
@@ -555,6 +588,7 @@ Return tables from metadata as typescript types
 • `Fields`: `String[]` { get; set }
 
 ### Attribute: UIRequiredAttribute
+
 **Inherits:** `Attribute`
 **Constructors:**
 • `UIRequiredAttribute()`
@@ -563,6 +597,7 @@ Return tables from metadata as typescript types
 • `Fields`: `String[]` { get; set }
 
 ### Attribute: UISetFieldFromLookupAttribute
+
 Sets a string field on the entity to the lookupname value of a related entity
 
 **Inherits:** `Attribute`
@@ -572,46 +607,55 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `LookupIdProperty`: `String` { get; set }
 
 ### Enum: BulkStage
+
 **Inherits:** `Enum`
-**Values:** 
+**Values:**
 `Pre`, `Post`
 
 ### Enum: DataOperation
+
 **Inherits:** `Enum`
-**Values:** 
+**Values:**
 `Create`, `Read`, `Update`, `Delete`, `Action`
 
 ### Enum: DaysOfWeek
+
 **Inherits:** `Enum`
-**Values:** 
+**Values:**
 `None`, `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`, `Sunday`, `Weekdays`, `Weekend`, `All`
 
 ### Enum: ExecuteJobOn
+
 **Inherits:** `Enum`
-**Values:** 
+**Values:**
 `All`, `One`
 
 ### Enum: JobSchedule
+
 **Inherits:** `Enum`
-**Values:** 
+**Values:**
 `TimeOfDay`, `Interval`
 
 ### Enum: JobState
+
 **Inherits:** `Enum`
-**Values:** 
+**Values:**
 `Active`, `Inactive`
 
 ### Enum: LogicStage
+
 **Inherits:** `Enum`
-**Values:** 
+**Values:**
 `PreValidation`, `PreOperation`, `PostOperation`
 
 ### Enum: StartupOperation
+
 **Inherits:** `Enum`
-**Values:** 
+**Values:**
 `Pre`, `Post`
 
 ### Struct: Field
+
 **Constructors:**
 • `Field()`
 **Properties:**
@@ -621,6 +665,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 ## Xams.Core.Base
 
 ### Class: BaseEntity
+
 **Constructors:**
 • `BaseEntity()`
 **Properties:**
@@ -637,14 +682,15 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `UpdatedDate`: `DateTime` { get; set }
 
 ### Class: BasePipelineStage
+
 **Implements:** `IPipelineStage`
 **Constructors:**
 • `BasePipelineStage()`
 **Methods:**
-• `Execute(PipelineContext context)`: `Task<Response`1>`
-• `SetNext(IPipelineStage nextItem)`: `void`
+• `Execute(PipelineContext context)`: `Task<Response`1>`•`SetNext(IPipelineStage nextItem)`: `void`
 
 ### Class: BaseServiceContext
+
 **Constructors:**
 • `BaseServiceContext(PipelineContext pipelineContext)`
 **Properties:**
@@ -656,29 +702,33 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `Create(Guid executingUserId, Object entity, Object? parameters = null)`: `Task<T>`
 • `CreateNewDbContext()`: `T` where T : IXamsDbContext
 • `Delete(Object entity, Object? parameters = null)`: `Task`
-  Delete record and execute service logic.
-  - `entity`: Entity
-  - `parameters`: Any type (can be anonymous)
+Delete record and execute service logic.
+
+- `entity`: Entity
+- `parameters`: Any type (can be anonymous)
 
 • `Delete(Guid executingUserId, Object entity, Object? parameters = null)`: `Task`
-  Delete record as a specific user and execute service logic.
-  - `executingUserId`: User to execute as
-  - `entity`: Entity
-  - `parameters`: Any type (can be anonymous)
+Delete record as a specific user and execute service logic.
+
+- `executingUserId`: User to execute as
+- `entity`: Entity
+- `parameters`: Any type (can be anonymous)
 
 • `ExecuteJob(JobOptions jobOptions)`: `Task<Guid>`
-  Execute Job. Does not wait for the job to complete.
+Execute Job. Does not wait for the job to complete.
 
 **Returns:** JobHistoryId
-  - `jobOptions`: 
+
+- `jobOptions`:
 
 • `GetDbContext()`: `T` where T : IXamsDbContext
 • `GetParameters()`: `T`
-• `HubSend(Object message)`: `Task<Response`1>` where T : class, IServiceHub
-• `Permissions(Guid userId, String[] permissions)`: `Task<String[]>`
-  Return an array of matching permissions the user has.
-  - `userId`: 
-  - `permissions`: 
+• `HubSend(Object message)`: `Task<Response`1>`where T : class, IServiceHub
+•`Permissions(Guid userId, String[] permissions)`: `Task<String[]>`
+Return an array of matching permissions the user has.
+
+- `userId`:
+- `permissions`:
 
 • `Update(Object entity, Object? parameters = null)`: `Task<T>`
 • `Update(Guid executingUserId, Object entity, Object? parameters = null)`: `Task<T>`
@@ -686,16 +736,19 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `Upsert(Guid executingUserId, Object entity, Object? parameters = null)`: `Task<T>`
 
 ### Enum: DbProvider
+
 **Inherits:** `Enum`
-**Values:** 
+**Values:**
 `MySQL`, `SQLServer`, `SQLite`, `Postgres`
 
 ### Enum: EntityType<TUser, TTeam, TRole, TSetting>
+
 **Inherits:** `Enum`
-**Values:** 
+**Values:**
 `Default`, `Extended`
 
 ### Interface: IXamsDbContext
+
 **Implements:** `IDisposable`
 **Methods:**
 • `AddRange(Object[] entities)`: `void`
@@ -711,7 +764,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `FindAsync(Type entityType, Object[]? keyValues)`: `ValueTask<Object>`
 • `FindAsync(Type entityType, Object[]? keyValues, CancellationToken cancellationToken)`: `ValueTask<Object>`
 • `GetDbProvider()`: `DbProvider`
-  Returns the current database provider.
+Returns the current database provider.
 
 • `RemoveRange(Object[] entities)`: `void`
 • `RemoveRange(IEnumerable<Object> entities)`: `void`
@@ -726,6 +779,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 ## Xams.Core.Config
 
 ### Class: FirebaseConfig
+
 **Constructors:**
 • `FirebaseConfig()`
 **Properties:**
@@ -742,6 +796,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 ## Xams.Core.Contexts
 
 ### Class: ActionServiceContext
+
 **Inherits:** `BaseServiceContext`
 **Constructors:**
 • `ActionServiceContext(PipelineContext pipelineContext)`
@@ -749,6 +804,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `DataOperation`: `DataOperation` { get }
 
 ### Class: BulkServiceContext
+
 **Inherits:** `BaseServiceContext`
 **Constructors:**
 • `BulkServiceContext(PipelineContext pipelineContext, List<ServiceContext> allServiceContexts)`
@@ -756,6 +812,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `AllServiceContexts`: `List<ServiceContext>` { get; set }
 
 ### Class: HubContext
+
 **Inherits:** `BaseServiceContext`
 **Constructors:**
 • `HubContext(PipelineContext pipelineContext, String message, SignalRHub signalRHub)`
@@ -765,13 +822,17 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `GetMessage()`: `T`
 
 ### Class: HubSendContext
+
 **Inherits:** `BaseServiceContext`
+
 ### Class: JobServiceContext
+
 **Inherits:** `BaseServiceContext`
 **Constructors:**
 • `JobServiceContext(PipelineContext pipelineContext)`
 
 ### Class: PermissionContext
+
 **Constructors:**
 • `PermissionContext(IDataService dataService)`
 **Methods:**
@@ -779,6 +840,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `GetDbContext()`: `T` where T : IXamsDbContext
 
 ### Class: ServiceContext
+
 **Inherits:** `BaseServiceContext`
 **Constructors:**
 • `ServiceContext(PipelineContext pipelineContext, LogicStage logicStage, DataOperation dataOperation, List<Object>? entities, ReadOutput? readOutput)`
@@ -801,6 +863,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `ValueChanged(String fieldName)`: `Boolean`
 
 ### Class: StartupContext
+
 **Constructors:**
 • `StartupContext(IServiceProvider serviceProvider, IDataService dataService)`
 **Properties:**
@@ -810,6 +873,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 ## Xams.Core.Dtos
 
 ### Class: ApiResponse
+
 **Constructors:**
 • `ApiResponse()`
 **Properties:**
@@ -819,6 +883,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `succeeded`: `Boolean` { get; set }
 
 ### Class: FileData
+
 **Constructors:**
 • `FileData()`
 **Properties:**
@@ -827,9 +892,9 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `Stream`: `Stream` { get; set }
 
 ### Class: Response<T>
-**Implements:** `IResponse`1`
-**Constructors:**
-• `Response`1()`
+
+**Implements:** `IResponse`1`**Constructors:**
+•`Response`1()`
 **Properties:**
 • `Data`: `T` { get; set }
 • `FriendlyMessage`: `String` { get; set }
@@ -838,13 +903,15 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `Succeeded`: `Boolean` { get; set }
 
 ### Enum: ResponseType
+
 **Inherits:** `Enum`
-**Values:** 
+**Values:**
 `Json`, `File`
 
 ## Xams.Core.Dtos.Data
 
 ### Class: ActionInput
+
 **Constructors:**
 • `ActionInput()`
 **Properties:**
@@ -852,6 +919,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `parameters`: `Dictionary<String, JsonElement>?` { get; set }
 
 ### Class: BatchInput
+
 **Inherits:** `Input`
 **Constructors:**
 • `BatchInput()`
@@ -859,6 +927,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `entities`: `Input[]?` { get; set }
 
 ### Class: BulkInput
+
 **Constructors:**
 • `BulkInput()`
 **Properties:**
@@ -868,6 +937,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `Upserts`: `Input[]?` { get; set }
 
 ### Class: Exclude
+
 **Constructors:**
 • `Exclude()`
 **Properties:**
@@ -875,11 +945,13 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `query`: `ReadInput` { get; set }
 
 ### Class: FileInput
+
 **Inherits:** `ActionInput`
 **Constructors:**
 • `FileInput()`
 
 ### Class: Filter
+
 **Constructors:**
 • `Filter()`
 **Properties:**
@@ -890,6 +962,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `value`: `String` { get; set }
 
 ### Class: Input
+
 **Constructors:**
 • `Input()`
 **Properties:**
@@ -899,6 +972,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `tableName`: `String` { get; set }
 
 ### Class: Join
+
 **Constructors:**
 • `Join()`
 **Properties:**
@@ -912,6 +986,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `type`: `String?` { get; set }
 
 ### Class: MetadataField
+
 **Constructors:**
 • `MetadataField()`
 **Properties:**
@@ -935,6 +1010,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `type`: `String` { get; set }
 
 ### Class: MetadataInput
+
 **Constructors:**
 • `MetadataInput()`
 **Properties:**
@@ -942,6 +1018,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `parameters`: `Dictionary<String, JsonElement>?` { get; set }
 
 ### Class: MetadataOutput
+
 **Constructors:**
 • `MetadataOutput()`
 **Properties:**
@@ -951,6 +1028,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `tableName`: `String` { get; set }
 
 ### Class: OrderBy
+
 **Constructors:**
 • `OrderBy()`
 **Properties:**
@@ -958,6 +1036,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `order`: `String?` { get; set }
 
 ### Class: PermissionsInput
+
 **Constructors:**
 • `PermissionsInput()`
 **Properties:**
@@ -965,6 +1044,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `parameters`: `Dictionary<String, JsonElement>?` { get; set }
 
 ### Class: ReadInput
+
 **Constructors:**
 • `ReadInput()`
 **Properties:**
@@ -984,6 +1064,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `GetId()`: `Object`
 
 ### Class: ReadOutput
+
 **Constructors:**
 • `ReadOutput()`
 **Properties:**
@@ -999,6 +1080,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `totalResults`: `Int32` { get; set }
 
 ### Class: TablesOutput
+
 **Constructors:**
 • `TablesOutput()`
 **Properties:**
@@ -1009,6 +1091,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 ## Xams.Core.Entities
 
 ### Class: Audit
+
 **Constructors:**
 • `Audit()`
 **Properties:**
@@ -1022,6 +1105,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `Name`: `String?` { get; set }
 
 ### Class: AuditField
+
 **Constructors:**
 • `AuditField()`
 **Properties:**
@@ -1034,6 +1118,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `Name`: `String` { get; set }
 
 ### Class: AuditHistory
+
 **Constructors:**
 • `AuditHistory()`
 **Properties:**
@@ -1049,6 +1134,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `UserId`: `Guid?` { get; set }
 
 ### Class: AuditHistoryDetail
+
 **Constructors:**
 • `AuditHistoryDetail()`
 **Properties:**
@@ -1064,6 +1150,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `TableName`: `String` { get; set }
 
 ### Class: Job
+
 **Constructors:**
 • `Job()`
 **Properties:**
@@ -1076,6 +1163,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `Tag`: `String` { get; set }
 
 ### Class: JobHistory
+
 **Constructors:**
 • `JobHistory()`
 **Properties:**
@@ -1091,6 +1179,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `Status`: `String` { get; set }
 
 ### Class: Log
+
 **Constructors:**
 • `Log()`
 **Properties:**
@@ -1124,6 +1213,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `Version`: `String` { get; set }
 
 ### Class: Option
+
 **Constructors:**
 • `Option()`
 **Properties:**
@@ -1135,6 +1225,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `Value`: `String` { get; set }
 
 ### Class: Permission
+
 **Constructors:**
 • `Permission()`
 **Properties:**
@@ -1143,6 +1234,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `Tag`: `String` { get; set }
 
 ### Class: Role
+
 **Constructors:**
 • `Role()`
 **Properties:**
@@ -1151,16 +1243,17 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `RoleId`: `Guid` { get; set }
 
 ### Class: RolePermission<TRole>
+
 **Constructors:**
-• `RolePermission`1()`
-**Properties:**
-• `Permission`: `Permission` { get; set }
-• `PermissionId`: `Guid` { get; set }
-• `Role`: `TRole` { get; set }
-• `RoleId`: `Guid` { get; set }
-• `RolePermissionId`: `Guid` { get; set }
+• `RolePermission`1()`**Properties:**
+•`Permission`: `Permission`{ get; set }
+•`PermissionId`: `Guid`{ get; set }
+•`Role`: `TRole`{ get; set }
+•`RoleId`: `Guid`{ get; set }
+•`RolePermissionId`: `Guid` { get; set }
 
 ### Class: Server
+
 **Constructors:**
 • `Server()`
 **Properties:**
@@ -1169,6 +1262,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `ServerId`: `Guid` { get; set }
 
 ### Class: Setting
+
 **Constructors:**
 • `Setting()`
 **Properties:**
@@ -1178,6 +1272,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `Value`: `String` { get; set }
 
 ### Class: System
+
 **Constructors:**
 • `System()`
 **Properties:**
@@ -1187,6 +1282,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `Value`: `String` { get; set }
 
 ### Class: Team
+
 **Constructors:**
 • `Team()`
 **Properties:**
@@ -1195,26 +1291,27 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `TeamId`: `Guid` { get; set }
 
 ### Class: TeamRole<TTeam, TRole>
+
 **Constructors:**
-• `TeamRole`2()`
-**Properties:**
-• `Role`: `TRole` { get; set }
-• `RoleId`: `Guid` { get; set }
-• `Team`: `TTeam` { get; set }
-• `TeamId`: `Guid` { get; set }
-• `TeamRoleId`: `Guid` { get; set }
+• `TeamRole`2()`**Properties:**
+•`Role`: `TRole`{ get; set }
+•`RoleId`: `Guid`{ get; set }
+•`Team`: `TTeam`{ get; set }
+•`TeamId`: `Guid`{ get; set }
+•`TeamRoleId`: `Guid` { get; set }
 
 ### Class: TeamUser<TTeam, TUser>
+
 **Constructors:**
-• `TeamUser`2()`
-**Properties:**
-• `Team`: `TTeam` { get; set }
-• `TeamId`: `Guid` { get; set }
-• `TeamUserId`: `Guid` { get; set }
-• `User`: `TUser` { get; set }
-• `UserId`: `Guid` { get; set }
+• `TeamUser`2()`**Properties:**
+•`Team`: `TTeam`{ get; set }
+•`TeamId`: `Guid`{ get; set }
+•`TeamUserId`: `Guid`{ get; set }
+•`User`: `TUser`{ get; set }
+•`UserId`: `Guid` { get; set }
 
 ### Class: User
+
 **Constructors:**
 • `User()`
 **Properties:**
@@ -1224,34 +1321,35 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `UserId`: `Guid` { get; set }
 
 ### Class: UserRole<TUser, TRole>
+
 **Constructors:**
-• `UserRole`2()`
-**Properties:**
-• `Role`: `TRole` { get; set }
-• `RoleId`: `Guid` { get; set }
-• `User`: `TUser` { get; set }
-• `UserId`: `Guid` { get; set }
-• `UserRoleId`: `Guid` { get; set }
+• `UserRole`2()`**Properties:**
+•`Role`: `TRole`{ get; set }
+•`RoleId`: `Guid`{ get; set }
+•`User`: `TUser`{ get; set }
+•`UserId`: `Guid`{ get; set }
+•`UserRoleId`: `Guid` { get; set }
 
 ## Xams.Core.Extensions
 
 ### Static Class: ExtensionMethods
+
 **Methods:**
 • `GetTables(ReadInput? readInput)`: `String[]`
 
 ## Xams.Core.Hubs
 
 ### Class: LoggingHub
+
 **Implements:** `IServiceHub`
 **Constructors:**
 • `LoggingHub()`
 **Methods:**
-• `OnConnected(HubContext context)`: `Task<Response`1>`
-• `OnDisconnected(HubContext context)`: `Task<Response`1>`
-• `OnReceive(HubContext context)`: `Task<Response`1>`
-• `Send(HubSendContext context)`: `Task<Response`1>`
+• `OnConnected(HubContext context)`: `Task<Response`1>`•`OnDisconnected(HubContext context)`: `Task<Response`1>`
+• `OnReceive(HubContext context)`: `Task<Response`1>`•`Send(HubSendContext context)`: `Task<Response`1>`
 
 ### Class: ReceiveMessage
+
 **Constructors:**
 • `ReceiveMessage()`
 **Properties:**
@@ -1265,6 +1363,7 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `UserId`: `String` { get; set }
 
 ### Class: SendMessage
+
 **Constructors:**
 • `SendMessage()`
 **Properties:**
@@ -1281,37 +1380,29 @@ Sets a string field on the entity to the lookupname value of a related entity
 ## Xams.Core.Interfaces
 
 ### Interface: IBulkService
+
 **Methods:**
 • `Execute(BulkServiceContext context)`: `Task<Response`1>`
 
 ### Interface: IDataService
+
 **Methods:**
-• `Bulk(Guid userId, BulkInput input)`: `Task<Response`1>`
-• `Create(Guid userId, BatchInput createInput)`: `Task<Response`1>`
-• `Create(Guid userId, T entity, Object parameters = null, PipelineContext parent = null)`: `Task<Response`1>`
-• `Delete(Guid userId, BatchInput input)`: `Task<Response`1>`
-• `Delete(Guid userId, T entity, Object parameters = null, PipelineContext parent = null)`: `Task<Response`1>`
-• `GetDataRepository()`: `DataRepository`
-• `GetDbContext()`: `T` where T : IXamsDbContext
-• `GetExecutionId()`: `Guid`
-• `GetExecutionUserId()`: `Guid`
-• `GetMetadataRepository()`: `MetadataRepository`
-• `GetSecurityRepository()`: `SecurityRepository`
-• `Metadata(MetadataInput metadataInput, Guid userId)`: `Task<Response`1>`
-• `Permissions(PermissionsInput permissionsInput, Guid userId)`: `Task<Response`1>`
-• `Read(Guid userId, ReadInput input, PipelineContext? parent = null)`: `Task<Response`1>`
-• `Update(Guid userId, BatchInput input)`: `Task<Response`1>`
-• `Update(Guid userId, T entity, Object parameters = null, PipelineContext parent = null)`: `Task<Response`1>`
-• `Upsert(Guid userId, BatchInput input)`: `Task<Response`1>`
-• `Upsert(Guid userId, T entity, Object parameters = null, PipelineContext parent = null)`: `Task<Response`1>`
+• `Bulk(Guid userId, BulkInput input)`: `Task<Response`1>`•`Create(Guid userId, BatchInput createInput)`: `Task<Response`1>`
+• `Create(Guid userId, T entity, Object parameters = null, PipelineContext parent = null)`: `Task<Response`1>`•`Delete(Guid userId, BatchInput input)`: `Task<Response`1>`
+• `Delete(Guid userId, T entity, Object parameters = null, PipelineContext parent = null)`: `Task<Response`1>`•`GetDataRepository()`: `DataRepository`•`GetDbContext()`: `T`where T : IXamsDbContext
+•`GetExecutionId()`: `Guid`•`GetExecutionUserId()`: `Guid`•`GetMetadataRepository()`: `MetadataRepository`•`GetSecurityRepository()`: `SecurityRepository`•`Metadata(MetadataInput metadataInput, Guid userId)`: `Task<Response`1>`
+• `Permissions(PermissionsInput permissionsInput, Guid userId)`: `Task<Response`1>`•`Read(Guid userId, ReadInput input, PipelineContext? parent = null)`: `Task<Response`1>`
+• `Update(Guid userId, BatchInput input)`: `Task<Response`1>`•`Update(Guid userId, T entity, Object parameters = null, PipelineContext parent = null)`: `Task<Response`1>`
+• `Upsert(Guid userId, BatchInput input)`: `Task<Response`1>`•`Upsert(Guid userId, T entity, Object parameters = null, PipelineContext parent = null)`: `Task<Response`1>`
 • `WhoAmI(Guid userId)`: `Task<Response`1>`
 
 ### Interface: IPipelineStage
+
 **Methods:**
-• `Execute(PipelineContext context)`: `Task<Response`1>`
-• `SetNext(IPipelineStage nextItem)`: `void`
+• `Execute(PipelineContext context)`: `Task<Response`1>`•`SetNext(IPipelineStage nextItem)`: `void`
 
 ### Interface: IResponse<T>
+
 **Properties:**
 • `Data`: `T` { get; set }
 • `FriendlyMessage`: `String` { get; set }
@@ -1319,54 +1410,63 @@ Sets a string field on the entity to the lookupname value of a related entity
 • `Succeeded`: `Boolean` { get; set }
 
 ### Interface: IServiceAction
+
 Execute a service action.
 
 **Methods:**
 • `Execute(ActionServiceContext context)`: `Task<Response`1>`
 
 ### Interface: IServiceHub
+
 **Methods:**
 • `OnConnected(HubContext context)`: `Task<Response`1>`
-  Client connected to the hub and has permission to use it.
-            Can use this method to add the user to a group, initialize state, etc.
-            Also called if a client is connected, and they've recently been given permission to use the hub.
-  - `context`: 
+Client connected to the hub and has permission to use it.
+Can use this method to add the user to a group, initialize state, etc.
+Also called if a client is connected, and they've recently been given permission to use the hub.
+
+- `context`:
 
 • `OnDisconnected(HubContext context)`: `Task<Response`1>`
-  Client disconnected from the hub.
-            Can use this method to clean up state, remove the user from a group, etc.
-            Also called if the client recently lost permission to use the hub,
-  - `context`: 
+Client disconnected from the hub.
+Can use this method to clean up state, remove the user from a group, etc.
+Also called if the client recently lost permission to use the hub,
+
+- `context`:
 
 • `OnReceive(HubContext context)`: `Task<Response`1>`
-  On Receive method is called when a message is received from the client.
-  - `context`: 
+On Receive method is called when a message is received from the client.
+
+- `context`:
 
 • `Send(HubSendContext context)`: `Task<Response`1>`
-  Send method is called to send a message to the client.
-            This will only be called from server-side code
-  - `context`: 
+Send method is called to send a message to the client.
+This will only be called from server-side code
 
+- `context`:
 
 ### Interface: IServiceJob
+
 **Methods:**
 • `Execute(JobServiceContext context)`: `Task<Response`1>`
 
 ### Interface: IServiceLogic
+
 Execute a service logic on create, read, update, or delete.
 
 **Methods:**
 • `Execute(ServiceContext context)`: `Task<Response`1>`
 
 ### Interface: IServicePermission
+
 Service Permissions return a list of permissions that should exist in the system.
-            If the permissions do not exist, the system will create them, and the permission
-            existed prior but no longer does, the system will remove it.
+If the permissions do not exist, the system will create them, and the permission
+existed prior but no longer does, the system will remove it.
 
 **Methods:**
 • `Execute(PermissionContext permissionContext)`: `Task<Response`1>`
 
 ### Interface: IServiceStartup
+
 Executes logic on startup.
 
 **Methods:**
@@ -1375,6 +1475,7 @@ Executes logic on startup.
 ## Xams.Core.Jobs
 
 ### Class: Job
+
 **Constructors:**
 • `Job(Object jobObject, Dictionary<String, JsonElement> parameters, Guid? jobHistoryId = null)`
 **Properties:**
@@ -1389,6 +1490,7 @@ Executes logic on startup.
 • `ConvertDayOfWeek(DayOfWeek dayOfWeek)`: `DaysOfWeek`
 
 ### Class: JobHistoryRetentionJob
+
 **Implements:** `IServiceJob`
 **Constructors:**
 • `JobHistoryRetentionJob()`
@@ -1396,6 +1498,7 @@ Executes logic on startup.
 • `Execute(JobServiceContext context)`: `Task<Response`1>`
 
 ### Class: JobOptions
+
 **Constructors:**
 • `JobOptions()`
 **Properties:**
@@ -1405,6 +1508,7 @@ Executes logic on startup.
 • `Parameters`: `Object` { get; set } - Any class or anonymous type
 
 ### Class: JobPing
+
 **Constructors:**
 • `JobPing(IXamsDbContext dbContext, Object jobHistory)`
 **Methods:**
@@ -1412,6 +1516,7 @@ Executes logic on startup.
 • `Start()`: `void`
 
 ### Class: JobQueue
+
 **Constructors:**
 • `JobQueue(IServiceProvider serviceProvider)`
 **Properties:**
@@ -1420,6 +1525,7 @@ Executes logic on startup.
 • `Execute(List<Job> jobs)`: `Task`
 
 ### Class: JobService
+
 **Constructors:**
 • `JobService(IServiceProvider serviceProvider)`
 **Properties:**
@@ -1428,6 +1534,7 @@ Executes logic on startup.
 • `Singleton`: `JobService?` { get; set }
 
 ### Class: JobStartupService
+
 **Implements:** `IServiceStartup`
 **Constructors:**
 • `JobStartupService()`
@@ -1436,6 +1543,7 @@ Executes logic on startup.
 • `Execute(StartupContext startupContext)`: `Task<Response`1>`
 
 ### Class: LogHistoryRetentionJob
+
 **Implements:** `IServiceJob`
 **Constructors:**
 • `LogHistoryRetentionJob()`
@@ -1443,6 +1551,7 @@ Executes logic on startup.
 • `Execute(JobServiceContext context)`: `Task<Response`1>`
 
 ### Class: LogStartupService
+
 **Implements:** `IServiceStartup`
 **Constructors:**
 • `LogStartupService()`
@@ -1452,6 +1561,7 @@ Executes logic on startup.
 ## Xams.Core.Pipeline
 
 ### Class: PipelineBuilder
+
 **Constructors:**
 • `PipelineBuilder()`
 **Methods:**
@@ -1459,6 +1569,7 @@ Executes logic on startup.
 • `Execute(PipelineContext pipelineContext)`: `Task<Response`1>`
 
 ### Class: PipelineContext
+
 **Constructors:**
 • `PipelineContext()`
 **Properties:**
@@ -1487,6 +1598,7 @@ Executes logic on startup.
 • `CreateServiceContext()`: `ServiceContext`
 
 ### Static Class: Pipelines
+
 **Fields:**
 • `Create`: `PipelineBuilder`
 • `CreateProxy`: `PipelineBuilder`
@@ -1499,6 +1611,7 @@ Executes logic on startup.
 • `UpdateProxy`: `PipelineBuilder`
 
 ### Struct: SystemParameters
+
 **Properties:**
 • `NoPostOrderTraversalDelete`: `Boolean` { get; set }
 • `PreventSave`: `Boolean` { get; set }
@@ -1508,6 +1621,7 @@ Executes logic on startup.
 ## Xams.Core.Pipeline.Stages
 
 ### Class: PipeAddEntityToEntities
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1516,6 +1630,7 @@ Executes logic on startup.
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipeEntityCreate
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1524,6 +1639,7 @@ Executes logic on startup.
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipeEntityDelete
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1532,6 +1648,7 @@ Executes logic on startup.
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipeEntityRead
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1540,6 +1657,7 @@ Executes logic on startup.
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipeEntityUpdate
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1548,6 +1666,7 @@ Executes logic on startup.
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipeExecuteServiceLogic
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1556,6 +1675,7 @@ Executes logic on startup.
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipeGetPreEntity
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1564,6 +1684,7 @@ Executes logic on startup.
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipelineDependency
+
 **Constructors:**
 • `PipelineDependency()`
 **Properties:**
@@ -1571,6 +1692,7 @@ Executes logic on startup.
 • `PipelineContext`: `PipelineContext` { get; set }
 
 ### Class: PipePatchEntity
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1579,6 +1701,7 @@ Executes logic on startup.
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipePermissionRules
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1587,6 +1710,7 @@ Executes logic on startup.
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipePermissions
+
 Determines if the user can perform the Create\Read\Update\Delete operation
 
 **Inherits:** `BasePipelineStage`
@@ -1597,6 +1721,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipePreValidation
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1605,6 +1730,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipeProtectSystemRecords
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1613,6 +1739,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipeResultEmpty
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1621,6 +1748,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipeResultEntity
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1629,6 +1757,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipeResultReadOutput
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1637,6 +1766,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipeSetDefaultFields
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1645,6 +1775,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipeUIServices
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1653,6 +1784,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `Execute(PipelineContext context)`: `Task<Response`1>`
 
 ### Class: PipeValidateNonNullableProperties
+
 **Inherits:** `BasePipelineStage`
 **Implements:** `IPipelineStage`
 **Constructors:**
@@ -1663,55 +1795,56 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 ## Xams.Core.Pipeline.Stages.Shared
 
 ### Static Class: AppendOutputParameters
+
 **Methods:**
 • `Set(PipelineContext context, List<Object> data)`: `List<Object>`
 
 ### Static Class: AppendUIInfo
+
 **Methods:**
 • `Set(PipelineContext context, ReadOutput readOutput)`: `Task<List`1>`
 
 ### Static Class: PipelineUtil
+
 **Methods:**
 • `SetExistingEntity(PipelineContext context, Guid id)`: `Task<Response`1>`
 
 ## Xams.Core.Repositories
 
 ### Class: DataRepository
+
 **Implements:** `IDisposable`
 **Constructors:**
 • `DataRepository(Type dataContextType, IDataService dataService)`
 **Methods:**
 • `BeginTransaction()`: `Task`
 • `CommitTransaction()`: `Task`
-• `Create(T entity, Boolean preventSave)`: `Task<Response`1>`
-• `CreateNewDbContext()`: `IXamsDbContext`
-• `CreateNewDbContext()`: `T` where T : IXamsDbContext
-• `Delete(T entity, Boolean preventSave)`: `Task<Response`1>`
-• `DenormalizeJoins(String fromTable, List<Object> results, Dictionary<String, List`1> joinedRecords, ReadInput readInput)`: `List<Object>`
-• `Dispose()`: `void`
-• `Find(String tableName, Object[] ids, Boolean newDataContext, String[]? fields = null, Boolean updateFieldPrefixes = false)`: `Task<Response`1>`
-• `Find(String tableName, Object id, Boolean newDataContext)`: `Task<Response`1>`
-• `GetDbContext()`: `TDbContext` where TDbContext : IXamsDbContext
-• `Read(Guid userId, ReadInput readInput, ReadOptions readOptions)`: `Task<Response`1>`
-  This will return a list of ExpandoObjects
-  - `userId`: 
-  - `readInput`: 
-  - `readOptions`: 
+• `Create(T entity, Boolean preventSave)`: `Task<Response`1>`•`CreateNewDbContext()`: `IXamsDbContext`•`CreateNewDbContext()`: `T`where T : IXamsDbContext
+•`Delete(T entity, Boolean preventSave)`: `Task<Response`1>`
+• `DenormalizeJoins(String fromTable, List<Object> results, Dictionary<String, List`1> joinedRecords, ReadInput readInput)`: `List<Object>`•`Dispose()`: `void`•`Find(String tableName, Object[] ids, Boolean newDataContext, String[]? fields = null, Boolean updateFieldPrefixes = false)`: `Task<Response`1>`
+• `Find(String tableName, Object id, Boolean newDataContext)`: `Task<Response`1>`•`GetDbContext()`: `TDbContext`where TDbContext : IXamsDbContext
+•`Read(Guid userId, ReadInput readInput, ReadOptions readOptions)`: `Task<Response`1>`
+This will return a list of ExpandoObjects
+
+- `userId`:
+- `readInput`:
+- `readOptions`:
 
 • `RollbackTransaction()`: `Task`
 • `SaveChangesAsync()`: `Task`
 • `Update(T entity, Boolean preventSave)`: `Task<Response`1>`
 
 ### Class: MetadataRepository
+
 **Constructors:**
 • `MetadataRepository(Type dataContext)`
 **Methods:**
 • `GetDataContext()`: `IXamsDbContext`
 • `GetTableMetadata(MetadataInput metadataInput)`: `Response<Object>`
-• `Metadata(MetadataInput metadataInput, Guid userId)`: `Task<Response`1>`
-• `Tables(MetadataInput metadataInput, Guid userId)`: `Task<Response`1>`
+• `Metadata(MetadataInput metadataInput, Guid userId)`: `Task<Response`1>`•`Tables(MetadataInput metadataInput, Guid userId)`: `Task<Response`1>`
 
 ### Class: ReadOptions
+
 **Constructors:**
 • `ReadOptions()`
 **Properties:**
@@ -1720,34 +1853,41 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `Permissions`: `String[]` { get; set }
 
 ### Class: SecurityRepository
+
 **Constructors:**
 • `SecurityRepository()`
 **Methods:**
-• `Get(PermissionsInput permissionsInput, Guid userId)`: `Task<Response`1>`
-• `UserPermissions(PermissionsInput permissionsInput, Guid userId)`: `Task<Response`1>`
+• `Get(PermissionsInput permissionsInput, Guid userId)`: `Task<Response`1>`•`UserPermissions(PermissionsInput permissionsInput, Guid userId)`: `Task<Response`1>`
 • `UsersExistInSameTeam(Guid user1Id, Guid user2Id)`: `Boolean`
-  Returns true if 2 users are reachable through the same team.
-  - `user1Id`: 
-  - `user2Id`: 
+Returns true if 2 users are reachable through the same team.
 
+- `user1Id`:
+- `user2Id`:
 
 ## Xams.Core.Services
 
 ### Class: DataService<TDbContext>
-**Inherits:** `DataService`2`
-**Implements:** `IDataService`, `IDisposable`
+
+**Inherits:** `DataService`2`**Implements:**`IDataService`, `IDisposable`
+
 ### Class: DataService<TDbContext, TUser>
-**Inherits:** `DataService`3`
-**Implements:** `IDataService`, `IDisposable`
+
+**Inherits:** `DataService`3`**Implements:**`IDataService`, `IDisposable`
+
 ### Class: DataService<TDbContext, TUser, TTeam>
-**Inherits:** `DataService`4`
-**Implements:** `IDataService`, `IDisposable`
+
+**Inherits:** `DataService`4`**Implements:**`IDataService`, `IDisposable`
+
 ### Class: DataService<TDbContext, TUser, TTeam, TRole>
-**Inherits:** `DataService`5`
-**Implements:** `IDataService`, `IDisposable`
+
+**Inherits:** `DataService`5`**Implements:**`IDataService`, `IDisposable`
+
 ### Class: DataService<TDbContext, TUser, TTeam, TRole, TSetting>
+
 **Implements:** `IDataService`, `IDisposable`
+
 ### Class: OperationInfo
+
 **Constructors:**
 • `OperationInfo()`
 **Properties:**
@@ -1757,6 +1897,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `TableName`: `String` { get; set }
 
 ### Class: QueryFactory
+
 **Constructors:**
 • `QueryFactory(IXamsDbContext dbContext, QueryOptions queryOptions, ReadInput readInput)`
 **Methods:**
@@ -1765,6 +1906,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `ValidateFilters(ReadInput readInput, Filter[]? filters)`: `void`
 
 ### Class: QueryOptions
+
 **Constructors:**
 • `QueryOptions()`
 **Properties:**
@@ -1772,6 +1914,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `UserId`: `Guid` { get; set }
 
 ### Class: TableOperationGroup
+
 **Constructors:**
 • `TableOperationGroup()`
 **Properties:**
@@ -1781,6 +1924,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 ## Xams.Core.Services.Auditing
 
 ### Class: AuditBulkService
+
 **Implements:** `IBulkService`
 **Constructors:**
 • `AuditBulkService()`
@@ -1788,6 +1932,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `Execute(BulkServiceContext context)`: `Task<Response`1>`
 
 ### Class: AuditCacheRefreshJob
+
 **Implements:** `IServiceJob`
 **Constructors:**
 • `AuditCacheRefreshJob()`
@@ -1795,6 +1940,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `Execute(JobServiceContext context)`: `Task<Response`1>`
 
 ### Class: AuditFieldService
+
 **Implements:** `IServiceLogic`
 **Constructors:**
 • `AuditFieldService()`
@@ -1802,6 +1948,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `Execute(ServiceContext context)`: `Task<Response`1>`
 
 ### Class: AuditHistoryDetailService
+
 **Implements:** `IServiceLogic`
 **Constructors:**
 • `AuditHistoryDetailService()`
@@ -1809,6 +1956,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `Execute(ServiceContext context)`: `Task<Response`1>`
 
 ### Class: AuditHistoryRecordOptions
+
 **Constructors:**
 • `AuditHistoryRecordOptions()`
 **Properties:**
@@ -1823,6 +1971,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `TransactionDb`: `IXamsDbContext` { get; set }
 
 ### Class: AuditHistoryRetentionJob
+
 **Implements:** `IServiceJob`
 **Constructors:**
 • `AuditHistoryRetentionJob()`
@@ -1830,6 +1979,7 @@ Determines if the user can perform the Create\Read\Update\Delete operation
 • `Execute(JobServiceContext context)`: `Task<Response`1>`
 
 ### Class: AuditNameService
+
 If the Name property is changed, this service will update all Audit History records to reflect the new name.
 
 **Implements:** `IServiceLogic`
@@ -1839,6 +1989,7 @@ If the Name property is changed, this service will update all Audit History reco
 • `Execute(ServiceContext context)`: `Task<Response`1>`
 
 ### Class: AuditOperation
+
 **Constructors:**
 • `AuditOperation()`
 **Properties:**
@@ -1847,17 +1998,18 @@ If the Name property is changed, this service will update all Audit History reco
 • `PreEntity`: `Object?` { get; set }
 
 ### Class: AuditStartupService
+
 **Implements:** `IServiceStartup`
 **Constructors:**
 • `AuditStartupService()`
 **Methods:**
-• `CacheAuditRecords(IXamsDbContext db)`: `Task<Response`1>`
-• `Execute(StartupContext startupContext)`: `Task<Response`1>`
+• `CacheAuditRecords(IXamsDbContext db)`: `Task<Response`1>`•`Execute(StartupContext startupContext)`: `Task<Response`1>`
 • `GetAuditSettings(StartupContext context)`: `Task`
 **Fields:**
 • `AuditRetentionSetting`: `String`
 
 ### Class: Lookup
+
 **Constructors:**
 • `Lookup()`
 **Properties:**
@@ -1867,6 +2019,7 @@ If the Name property is changed, this service will update all Audit History reco
 • `TableName`: `String` { get; set }
 
 ### Class: NewAudit
+
 **Constructors:**
 • `NewAudit()`
 **Properties:**
@@ -1874,6 +2027,7 @@ If the Name property is changed, this service will update all Audit History reco
 • `TableName`: `String` { get; set }
 
 ### Static Class: AuditLogic
+
 **Methods:**
 • `AddAuditHistoryRecord(AuditHistoryRecordOptions options)`: `Object`
 • `AddCreateUpdateDeleteDetails(AuditHistoryRecordOptions options, Object auditHistory)`: `Task`
@@ -1883,6 +2037,7 @@ If the Name property is changed, this service will update all Audit History reco
 ## Xams.Core.Services.Jobs
 
 ### Class: ImportDataJob
+
 This job is triggered upon config data import
 
 **Implements:** `IServiceJob`
@@ -1894,6 +2049,7 @@ This job is triggered upon config data import
 ## Xams.Core.Services.Logging
 
 ### Class: LogItem
+
 **Constructors:**
 • `LogItem()`
 **Properties:**
@@ -1902,6 +2058,7 @@ This job is triggered upon config data import
 ## Xams.Core.Services.Logic
 
 ### Class: SettingService
+
 **Implements:** `IServiceLogic`
 **Constructors:**
 • `SettingService()`
@@ -1909,6 +2066,7 @@ This job is triggered upon config data import
 • `Execute(ServiceContext context)`: `Task<Response`1>`
 
 ### Class: SystemService
+
 **Implements:** `IServiceLogic`
 **Constructors:**
 • `SystemService()`
@@ -1918,6 +2076,7 @@ This job is triggered upon config data import
 ## Xams.Core.Services.Permission
 
 ### Class: CreatePermissions
+
 **Implements:** `IServicePermission`
 **Constructors:**
 • `CreatePermissions()`
@@ -1925,8 +2084,11 @@ This job is triggered upon config data import
 • `Execute(PermissionContext permissionContext)`: `Task<Response`1>`
 
 ### Class: PermissionCacheJob
+
 **Implements:** `IServiceJob`
+
 ### Class: PermissionCacheService
+
 Whenever the permissions are updated, this service will invalidate the cache so all running instances will refresh their cache.
 
 **Implements:** `IBulkService`
@@ -1938,6 +2100,7 @@ Whenever the permissions are updated, this service will invalidate the cache so 
 ## Xams.Core.Services.Servers
 
 ### Class: ServerJob
+
 Ping the database every 5 seconds
 
 **Implements:** `IServiceJob`
@@ -1949,6 +2112,7 @@ Ping the database every 5 seconds
 ## Xams.Core.Startup
 
 ### Class: Item
+
 **Constructors:**
 • `Item(String name, String value)`
 **Properties:**
@@ -1956,10 +2120,12 @@ Ping the database every 5 seconds
 • `Value`: `String` { get; set }
 
 ### Class: SystemEntities
+
 **Constructors:**
 • `SystemEntities()`
 
 ### Class: SystemRecords
+
 **Constructors:**
 • `SystemRecords(IDataService dataService)`
 **Methods:**
@@ -1983,6 +2149,7 @@ Ping the database every 5 seconds
 ## Xams.Core.Utils
 
 ### Class: Dependency
+
 **Constructors:**
 • `Dependency()`
 **Properties:**
@@ -1995,15 +2162,16 @@ Ping the database every 5 seconds
 • `Type`: `Type` { get; set }
 
 ### Class: DependencyFinder
+
 **Constructors:**
 • `DependencyFinder()`
 **Methods:**
 • `GetDependencies(Type targetType, IXamsDbContext dbContext, Int32 depth = 0, Dependency? parent = null)`: `List<Dependency>`
 • `GetMaxDepth(List<Dependency> dependencies)`: `Int32`
-• `GetPostOrderTraversal(PostOrderTraversalSettings settings, PostOrderTraversalContext? context = null)`: `Task<ConcurrentDictionary`2>`
-• `LogDependencyTree(List<Dependency> dependencies, Int32 depth = 0)`: `void`
+• `GetPostOrderTraversal(PostOrderTraversalSettings settings, PostOrderTraversalContext? context = null)`: `Task<ConcurrentDictionary`2>`•`LogDependencyTree(List<Dependency> dependencies, Int32 depth = 0)`: `void`
 
 ### Class: DynamicLinq
+
 **Constructors:**
 • `DynamicLinq(IXamsDbContext db, Type entity)`
 **Properties:**
@@ -2012,12 +2180,12 @@ Ping the database every 5 seconds
 • `Query`: `IQueryable` { get; set }
 • `TargetType`: `Type` { get; set }
 **Methods:**
-• `BatchRequest(IXamsDbContext db, Type entity, List<Object> ids, Int32 batchSize = 500)`: `Task<List`1>`
-• `BatchRequestThreaded(Func<IXamsDbContext> dbFactory, Type entity, List<Object> ids, Int32 batchSize = 500)`: `Task<ConcurrentDictionary`2>`
+• `BatchRequest(IXamsDbContext db, Type entity, List<Object> ids, Int32 batchSize = 500)`: `Task<List`1>`•`BatchRequestThreaded(Func<IXamsDbContext> dbFactory, Type entity, List<Object> ids, Int32 batchSize = 500)`: `Task<ConcurrentDictionary`2>`
 • `Find(IXamsDbContext db, Type entity, Object id)`: `Task<Object>`
 • `FindAll(IXamsDbContext db, Type entity)`: `Task<List`1>`
 
 ### Class: EntityInfo
+
 **Constructors:**
 • `EntityInfo()`
 **Properties:**
@@ -2025,12 +2193,14 @@ Ping the database every 5 seconds
 • `Id`: `Object` { get; set }
 
 ### Class: GuidUtil
+
 **Constructors:**
 • `GuidUtil()`
 **Methods:**
 • `FromString(String input)`: `Guid`
 
 ### Class: MapEntityResult
+
 **Constructors:**
 • `MapEntityResult()`
 **Properties:**
@@ -2039,6 +2209,7 @@ Ping the database every 5 seconds
 • `Message`: `String` { get; set }
 
 ### Class: PostOrderTraversalContext
+
 **Constructors:**
 • `PostOrderTraversalContext()`
 **Properties:**
@@ -2048,6 +2219,7 @@ Ping the database every 5 seconds
 • `RecordInfoDict`: `ConcurrentDictionary<Object, RecordInfo>` { get; set }
 
 ### Class: PostOrderTraversalSettings
+
 **Constructors:**
 • `PostOrderTraversalSettings()`
 **Properties:**
@@ -2057,6 +2229,7 @@ Ping the database every 5 seconds
 • `ReturnEntity`: `Boolean` { get; set }
 
 ### Class: Query
+
 **Constructors:**
 • `Query(IXamsDbContext dbContext, String[] fields, String rootAlias = "root")`
 **Properties:**
@@ -2072,14 +2245,10 @@ Ping the database every 5 seconds
 • `LeftJoin(String from, String to, String alias, String[] fields)`: `Query`
 • `LeftJoin(String from, String to, Query joinQuery)`: `Query`
 • `OrderBy(String field, String order)`: `Query`
-• `ToDynamicListAsync()`: `Task<List`1>`
-• `Top(Int32 value)`: `Query`
-• `ToQueryable()`: `IQueryable`
-• `ToQueryableRaw()`: `IQueryable`
-• `Union(Query query)`: `Query`
-• `Where(String where, Object[]? args)`: `Query`
+• `ToDynamicListAsync()`: `Task<List`1>`•`Top(Int32 value)`: `Query`•`ToQueryable()`: `IQueryable`•`ToQueryableRaw()`: `IQueryable`•`Union(Query query)`: `Query`•`Where(String where, Object[]? args)`: `Query`
 
 ### Class: RecordInfo
+
 **Constructors:**
 • `RecordInfo()`
 **Properties:**
@@ -2089,22 +2258,24 @@ Ping the database every 5 seconds
 • `Entity`: `Object` { get; set }
 
 ### Class: SqliteUtil
+
 **Constructors:**
 • `SqliteUtil()`
 **Methods:**
 • `Repair(IXamsDbContext dbContext)`: `Task`
-  Upon creating a non-nullable field, Sqlite defaults the value to null
-            This creates an issue with the entity framework upon querying because it's expecting a non-nullable value
-            This updates the database with the default values
-
+Upon creating a non-nullable field, Sqlite defaults the value to null
+This creates an issue with the entity framework upon querying because it's expecting a non-nullable value
+This updates the database with the default values
 
 ### Class: SqlTranslator
+
 **Constructors:**
 • `SqlTranslator()`
 **Methods:**
 • `Translate(String postgresqlQuery, DbProvider targetDb)`: `String`
 
 ### Class: UiSetFieldFromLookupInfo
+
 **Constructors:**
 • `UiSetFieldFromLookupInfo()`
 **Properties:**
@@ -2113,53 +2284,59 @@ Ping the database every 5 seconds
 • `Property`: `PropertyInfo` { get; set }
 
 ### Class: XamsDashboardOptions
+
 **Constructors:**
 • `XamsDashboardOptions()`
 **Properties:**
 • `RequireAuthorization`: `Boolean` { get; set }
 
 ### Enum: FieldModifications
+
 **Inherits:** `Enum`
-**Values:** 
+**Values:**
 `NoRelatedFields`, `RelatedToNames`, `AllFields`
 
 ### Static Class: CopyUtil
+
 **Methods:**
 • `DeepCopy(IXamsDbContext dbContext, Type entityType, Guid entityId, String[] excludedEntities)`: `Task<Object>`
-  Deep copy an entity
-  - `dbContext`: 
-  - `entityType`: 
-  - `entityId`: 
-  - `excludedEntities`: Which entities should not be copied and maintain their original relationship
+Deep copy an entity
 
+- `dbContext`:
+- `entityType`:
+- `entityId`:
+- `excludedEntities`: Which entities should not be copied and maintain their original relationship
 
 ### Static Class: EmbeddedResourceUtil
+
 **Properties:**
 • `Assembly`: `Assembly` { get }
 **Methods:**
 • `GetNamespace()`: `String`
 • `GetResourceNames()`: `String[]`
-  Lists all embedded resources in the assembly
-
+Lists all embedded resources in the assembly
 
 ### Static Class: EmbeddedRoutingUtil
 
 ### Static Class: EntityUtil
+
 **Methods:**
 • `ConvertToEntity(Type type, Dictionary<String, Object> fields)`: `MapEntityResult`
 • `ConvertToEntityId(Type type, Input input)`: `MapEntityResult`
-  Convert the Primary Key to the appropriate type
+Convert the Primary Key to the appropriate type
 
 **Returns:** MapEntityResult containing the entity or error information
-  - `type`: The entity type
-  - `fields`: The fields dictionary
+
+- `type`: The entity type
+- `fields`: The fields dictionary
 
 • `DictionaryToEntity(Type type, Dictionary<String, Object> fields)`: `Object`
 • `GetEntity(Input input, DataOperation dataOperation, String& errorMessage)`: `Response<Object>`
 • `GetEntityFields(Type targetType, String[]? fields, String fieldPrefix, FieldModifications mods)`: `String`
 • `GetLookupNameValue(Object entity)`: `String`
-  Finds the value of the Name or UILookupNameAttribute property
-  - `entity`: 
+Finds the value of the Name or UILookupNameAttribute property
+
+- `entity`:
 
 • `IsSystemEntity(Type entityType)`: `Boolean`
 • `MergeFields(Object? entity, Dictionary<String, Object> fields)`: `MapEntityResult`
@@ -2168,33 +2345,36 @@ Ping the database every 5 seconds
 • `SimpleTypes`: `HashSet<Type>`
 
 ### Static Class: Queries
+
 **Methods:**
 • `GetCreateSetting(IXamsDbContext db, String name, String defaultValue)`: `Task<String>`
 • `UpdateSystemRecord(IXamsDbContext db, String name, String value)`: `Task`
 
 ### Static Class: QueryUtil
+
 **Methods:**
 • `Contains(IQueryable query, Object[] values, String field)`: `IQueryable`
-  Adds a "Contains" filter to an IQueryable based on an array of  values
+Adds a "Contains" filter to an IQueryable based on an array of values
 
 **Returns:** Filtered IQueryable with Where clause applied
-  - `query`: The IQueryable to filter
-  - `values`: Array of values
-  - `field`: Name of the field
+
+- `query`: The IQueryable to filter
+- `values`: Array of values
+- `field`: Name of the field
 
 • `GetTables(ReadInput? readInput)`: `String[]`
 
 ### Static Class: ServiceResult
+
 **Methods:**
 • `Error(Object data = null)`: `Response<Object>`
 • `Error(String friendlyMessage, Object? data = null)`: `Response<Object>`
 • `Error(String friendlyMessage, String logMessage, Object? data = null)`: `Response<Object>`
 • `Success(Object data = null)`: `Response<Object>`
-• `Success(List<String> data)`: `Response<List`1>`
-• `Success(FileData fileData)`: `Response<Object>`
+• `Success(List<String> data)`: `Response<List`1>`•`Success(FileData fileData)`: `Response<Object>`
 
 ### Static Class: UIInfoUtil
+
 **Methods:**
 • `IsUIInfoSet(ReadOutput readOutput)`: `Boolean`
 • `SetUIInfo(ReadOutput readOutput, Boolean canDelete, Boolean canUpdate, Boolean canAssign)`: `void`
-

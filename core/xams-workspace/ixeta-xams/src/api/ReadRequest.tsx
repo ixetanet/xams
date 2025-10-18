@@ -28,7 +28,7 @@ export interface ReadFilter {
   filters?: ReadFilter[];
   field?: string;
   value?: string | null;
-  operator?: string;
+  operator?: "==" | "!=" | ">" | ">=" | "<" | "<=" | "Contains";
 }
 
 export interface ReadExcept {

@@ -23,6 +23,19 @@ export interface MetadataField {
   isRequired: boolean;
   isRecommended: boolean;
   isReadOnly: boolean;
+  isCreateOnly: boolean;
   option: string;
   numberRange: string;
+  multiSelect?: MetadataMultiSelect;
+}
+
+export interface MetadataMultiSelect {
+  junctionTable: string;
+  junctionOwnerIdField: string;
+  junctionTargetIdField: string;
+  targetTable: string;
+  targetNameField: string;
+  targetDescriptionField?: string;
+  targetPrimaryKeyField: string;
+  targetHasActiveField: boolean;
 }

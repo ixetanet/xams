@@ -66,6 +66,23 @@ public class PipePermissions : BasePipelineStage
             };
         }
 
+        // Check custom owning user fields
+        var metadata = Cache.Instance.GetTableMetadata(context.TableName);
+        foreach (var owningUserField in metadata.OwningUserFields)
+        {
+            var owningUserFieldProperty = context.PreEntity.GetType().GetProperty(owningUserField);
+            Guid? owningUserFieldValue = owningUserFieldProperty?.GetValue(context.PreEntity) as Guid?;
+
+            if (highestPermission is Permissions.PermissionLevel.User or Permissions.PermissionLevel.Team &&
+                owningUserFieldValue == context.UserId)
+            {
+                return new Response<T>()
+                {
+                    Succeeded = true
+                };
+            }
+        }
+
         return new Response<T>()
         {
             Succeeded = false,
@@ -82,9 +99,18 @@ public class PipePermissions : BasePipelineStage
         var owningUserProperty = context.Entity.GetType().GetProperty("OwningUserId");
         Guid? owningTeamId = owningTeamProperty?.GetValue(context.Entity) as Guid?;
         Guid? owningUserId = owningUserProperty?.GetValue(context.Entity) as Guid?;
-        
+
+        // Get custom owning user fields
+        var metadata = Cache.Instance.GetTableMetadata(context.TableName);
+        var customOwningUserFields = new Dictionary<string, Guid?>();
+        foreach (var owningUserField in metadata.OwningUserFields)
+        {
+            var property = context.Entity.GetType().GetProperty(owningUserField);
+            customOwningUserFields[owningUserField] = property?.GetValue(context.Entity) as Guid?;
+        }
+
         // No assignment fields, skip
-        if (owningTeamProperty == null && owningUserProperty == null)
+        if (owningTeamProperty == null && owningUserProperty == null && customOwningUserFields.Count == 0)
         {
             return new Response<T>()
             {
@@ -92,7 +118,7 @@ public class PipePermissions : BasePipelineStage
             };
         }
 
-        // If this is an update and the user hasn't changed the owning team\user, allow the update
+        // If this is an update and the user hasn't changed the owning team\user or custom owning user fields, allow the update
         if (context.PreEntity != null)
         {
             var existingOwningTeamProperty = context.PreEntity.GetType().GetProperty("OwningTeamId");
@@ -100,7 +126,21 @@ public class PipePermissions : BasePipelineStage
             Guid? existingOwningTeamId = existingOwningTeamProperty?.GetValue(context.PreEntity) as Guid?;
             Guid? existingOwningUserId = existingOwningUserProperty?.GetValue(context.PreEntity) as Guid?;
 
-            if (owningTeamId == existingOwningTeamId && owningUserId == existingOwningUserId)
+            bool owningFieldsChanged = owningTeamId != existingOwningTeamId || owningUserId != existingOwningUserId;
+
+            // Check if any custom owning user fields changed
+            foreach (var kvp in customOwningUserFields)
+            {
+                var existingProperty = context.PreEntity.GetType().GetProperty(kvp.Key);
+                Guid? existingValue = existingProperty?.GetValue(context.PreEntity) as Guid?;
+                if (kvp.Value != existingValue)
+                {
+                    owningFieldsChanged = true;
+                    break;
+                }
+            }
+
+            if (!owningFieldsChanged)
             {
                 return new Response<T>()
                 {
@@ -109,8 +149,10 @@ public class PipePermissions : BasePipelineStage
             }
         }
 
-        if ((owningTeamProperty != null || owningUserProperty != null) && owningTeamId == null &&
-            owningUserId == null)
+        // Check if at least one owning field is set
+        bool hasOwningField = owningTeamId != null || owningUserId != null;
+
+        if ((owningTeamProperty != null || owningUserProperty != null) && !hasOwningField)
         {
             return new Response<T>()
             {
@@ -119,8 +161,10 @@ public class PipePermissions : BasePipelineStage
             };
         }
 
-        // If system permission, allow assigment to any team\user
+        // Get highest permission level
         Permissions.PermissionLevel? highestPermission = Permissions.GetHighestPermission(permissions);
+
+        // System permission: Allow assignment to any team/user
         if (highestPermission is Permissions.PermissionLevel.System)
         {
             return new Response<T>()
@@ -129,92 +173,144 @@ public class PipePermissions : BasePipelineStage
             };
         }
 
-        // If team permission, allow assignment to all teams the user is a member of
-        if (owningTeamId != null)
+        // Team permission: Allow assignment to any user + teams user belongs to
+        if (highestPermission is Permissions.PermissionLevel.Team)
         {
-            if (highestPermission is Permissions.PermissionLevel.Team)
+            // Validate team assignment
+            if (owningTeamId != null)
             {
-                // Get the users teams, then check if the owning team is one of the users teams
                 List<Guid> userTeams = PermissionCache.UserTeams[context.UserId];
-                // make the below check more readable
-                bool isTeamAccessible = userTeams.Any(x => x == owningTeamId);
-                if (isTeamAccessible)
+                if (!userTeams.Any(x => x == owningTeamId))
                 {
                     return new Response<T>()
                     {
-                        Succeeded = true
+                        Succeeded = false,
+                        FriendlyMessage = $"Cannot assign to team. You are not a member of this team."
                     };
                 }
+            }
 
-                return new Response<T>()
+            // Validate user assignments (just check user exists)
+            if (owningUserId != null)
+            {
+                Response<object?> userResponse = await context.DataRepository.Find("User", owningUserId.Value, false);
+                if (userResponse.Data == null)
                 {
-                    Succeeded = false,
-                    FriendlyMessage = $"Cannot assign to team, No membership."
-                };
+                    return new Response<T>()
+                    {
+                        Succeeded = false,
+                        FriendlyMessage = $"Could not find user with ID {owningUserId}."
+                    };
+                }
+            }
+
+            // Validate custom owning user fields (just check users exist)
+            foreach (var kvp in customOwningUserFields)
+            {
+                if (kvp.Value != null)
+                {
+                    Response<object?> userResponse = await context.DataRepository.Find("User", kvp.Value.Value, false);
+                    if (userResponse.Data == null)
+                    {
+                        return new Response<T>()
+                        {
+                            Succeeded = false,
+                            FriendlyMessage = $"Could not find user with ID {kvp.Value}."
+                        };
+                    }
+                }
             }
 
             return new Response<T>()
             {
-                Succeeded = false,
-                FriendlyMessage =
-                    $"Cannot assign to team, can only assign to self."
+                Succeeded = true
             };
         }
 
-        if (owningUserId != null)
+        // User permission: Allow assignment to any user (cannot assign teams)
+        if (highestPermission is Permissions.PermissionLevel.User)
         {
-            Response<object?> owningUserResponse =
-                await context.DataRepository.Find("User", owningUserId.Value, false);
-
-            var userRecord = owningUserResponse.Data;
-            if (userRecord == null)
+            // Reject team assignment
+            if (owningTeamId != null)
             {
                 return new Response<T>()
                 {
                     Succeeded = false,
-                    FriendlyMessage = $"Could not find user with ID {owningUserId}."
+                    FriendlyMessage = $"Cannot assign to team. You need Team-level assign permissions."
                 };
             }
 
-            string userName = userRecord.GetType().GetProperty("Name")?.GetValue(userRecord) as string ?? "";
-
-            if (context.UserId == owningUserId)
+            // Validate user assignments (just check user exists)
+            if (owningUserId != null)
             {
-                return new Response<T>()
-                {
-                    Succeeded = true
-                };
-            }
-
-            if (highestPermission is Permissions.PermissionLevel.Team)
-            {
-                if (context.SecurityRepository.UsersExistInSameTeam(context.UserId, owningUserId.Value))
+                Response<object?> userResponse = await context.DataRepository.Find("User", owningUserId.Value, false);
+                if (userResponse.Data == null)
                 {
                     return new Response<T>()
                     {
-                        Succeeded = true
+                        Succeeded = false,
+                        FriendlyMessage = $"Could not find user with ID {owningUserId}."
                     };
                 }
+            }
 
-                return new Response<T>()
+            // Validate custom owning user fields (just check users exist)
+            foreach (var kvp in customOwningUserFields)
+            {
+                if (kvp.Value != null)
                 {
-                    Succeeded = false,
-                    FriendlyMessage = $"User {userName} is not in one of your teams."
-                };
+                    Response<object?> userResponse = await context.DataRepository.Find("User", kvp.Value.Value, false);
+                    if (userResponse.Data == null)
+                    {
+                        return new Response<T>()
+                        {
+                            Succeeded = false,
+                            FriendlyMessage = $"Could not find user with ID {kvp.Value}."
+                        };
+                    }
+                }
             }
 
             return new Response<T>()
             {
-                Succeeded = false,
-                FriendlyMessage = $"Cannot assign {context.TableName} to user {userName}. Can only assign to self."
+                Succeeded = true
             };
+        }
+
+        // No assign permissions: Can only assign to self
+        if (owningTeamId != null)
+        {
+            return new Response<T>()
+            {
+                Succeeded = false,
+                FriendlyMessage = $"Cannot assign to team. You need assign permissions."
+            };
+        }
+
+        if (owningUserId != null && owningUserId != context.UserId)
+        {
+            return new Response<T>()
+            {
+                Succeeded = false,
+                FriendlyMessage = $"You can only assign records to yourself."
+            };
+        }
+
+        foreach (var kvp in customOwningUserFields)
+        {
+            if (kvp.Value != null && kvp.Value != context.UserId)
+            {
+                return new Response<T>()
+                {
+                    Succeeded = false,
+                    FriendlyMessage = $"You can only assign records to yourself."
+                };
+            }
         }
 
         return new Response<T>()
         {
-            Succeeded = false,
-            FriendlyMessage = $"Record must be assigned to a user.",
-            Data = default
+            Succeeded = true
         };
     }
     

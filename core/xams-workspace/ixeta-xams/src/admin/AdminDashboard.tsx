@@ -1,7 +1,7 @@
 import { TablesResponse } from "../api/TablesResponse";
 import useAuthRequest from "../hooks/useAuthRequest";
 import { AppShell, Burger, Button, Loader, ScrollArea } from "@mantine/core";
-import React, { ReactNode, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useDisclosure } from "@mantine/hooks";
 import ExportDataModal from "./ExportDataModal";
 import ImportDataModal from "./ImportDataModal";
@@ -18,6 +18,11 @@ import AdminDashServers from "./nav/AdminDashServers";
 import AdminDashDevelopment from "./nav/AdminDashDevelopment";
 import AdminDashLogs from "./nav/AdminDashLogs";
 import LogsViewer from "./components/logviewer/LogsViewer";
+import {
+  AdminDashboardProps,
+  NavItem,
+  AdminDashContext,
+} from "./contexts/AdminDashContext";
 
 const EmptyTableInfo = {
   tableName: "",
@@ -36,57 +41,6 @@ const EmptyTableInfo = {
   canDelete: undefined,
   maxResults: 50,
 } as DataTableProps;
-
-export interface AdminDashboardProps {
-  title?: string;
-  visibleEntities?: string[];
-  showEntityDisplayNames?: boolean;
-  addMenuItems?: NavItem[];
-  hiddenEntities?: string[];
-  hiddenMenuItems?: string[];
-  forceHideImportData?: boolean;
-  forceHideExportData?: boolean;
-  forceHideToggleMode?: boolean;
-  userCard?: ReactNode;
-  accessDeniedMessage?: ReactNode;
-}
-
-export interface NavItem {
-  order: number;
-  navLink: React.JSX.Element;
-}
-
-export interface ContextProps {
-  children?: any;
-}
-
-export type AdminDashContextShape = {
-  props: AdminDashboardProps;
-  tables: TablesResponse[];
-  color: string;
-  setActiveComponent: React.Dispatch<
-    React.SetStateAction<
-      | {
-          component: React.ReactNode;
-        }
-      | undefined
-    >
-  >;
-  emptyTableInfo: any;
-};
-
-export const AdminDashContext =
-  React.createContext<AdminDashContextShape | null>(null);
-
-export const useAdminDashContext = () => {
-  const context = React.useContext(AdminDashContext);
-  if (!context) {
-    throw new Error(
-      "useAdminDashContext must be used within a AdminDashContextProvider"
-    );
-  }
-  return context;
-};
 
 type Access = {
   Dashboard: boolean;

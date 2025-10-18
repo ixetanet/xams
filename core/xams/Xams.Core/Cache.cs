@@ -92,7 +92,7 @@ namespace Xams.Core
                         DisplayNameAttribute =
                             entityType.GetCustomAttribute<UIDisplayNameAttribute>()
                             ??
-                            new UIDisplayNameAttribute(tableName,
+                            new UIDisplayNameAttribute(tableName, "",
                                 EntityUtil.IsSystemEntity(entityType) ? "System" : ""),
                         TableName = tableName,
                         PrimaryKey = primaryKeyName,
@@ -104,7 +104,11 @@ namespace Xams.Core
                                        ?? entityType.GetProperty("Name"),
                         IsProxy = entityType.GetCustomAttribute<UIProxyAttribute>() != null,
                         HasOwningUserField = entityType.GetProperty("OwningUserId") != null,
-                        HasOwningTeamField = entityType.GetProperty("OwningTeamId") != null
+                        HasOwningTeamField = entityType.GetProperty("OwningTeamId") != null,
+                        OwningUserFields = entityType.GetProperties()
+                            .Where(p => p.GetCustomAttribute<OwningUserAttribute>() != null)
+                            .Select(p => p.Name)
+                            .ToList()
                     };
                     cache.TableMetadata.Add(tableName, tableMetadata);
                     cache.TableTypeMetadata.Add(entityType, tableMetadata);
@@ -117,22 +121,24 @@ namespace Xams.Core
                     var tableRequiredFields = entityType.GetCustomAttribute<UIRequiredAttribute>()?.Fields ?? [];
                     var tableReadOnlyFields = entityType.GetCustomAttribute<UIReadOnlyAttribute>()?.Fields ?? [];
                     var tableRecommendedFields = entityType.GetCustomAttribute<UIRecommendedAttribute>()?.Fields ?? [];
+                    var tableCreateOnlyFields = entityType.GetCustomAttribute<UICreateOnlyAttribute>()?.Fields ?? [];
 
-                    var owningUserDisplayName = entityType.GetCustomAttribute<UIDisplayNameOwningUserAttribute>();
-                    var owningTeamDisplayName = entityType.GetCustomAttribute<UIDisplayNameOwningTeamAttribute>();
-                    var createdDateDisplayName = entityType.GetCustomAttribute<UIDisplayNameCreatedDateAttribute>();
-                    var updatedDateDisplayName = entityType.GetCustomAttribute<UIDisplayNameUpdatedDateAttribute>();
-                    var isActiveDisplayName = entityType.GetCustomAttribute<UIDisplayNameIsActiveAttribute>();
-                    var createdByDisplayName = entityType.GetCustomAttribute<UIDisplayNameCreatedByAttribute>();
-                    var updatedByDisplayName = entityType.GetCustomAttribute<UIDisplayNameUpdatedByAttribute>();
+                    // Get all UIDisplayName attributes for BaseEntity field overrides
+                    var fieldDisplayNameOverrides = entityType.GetCustomAttributes<UIDisplayNameAttribute>()
+                        .Where(attr => !string.IsNullOrEmpty(attr.Field))
+                        .ToDictionary(attr => attr.Field, attr => attr.Name);
 
                     // Get Metadata Output for the metadata endpoint
                     var properties = tableMetadata.Type.GetProperties();
                     List<MetadataField> fields = new List<MetadataField>();
                     foreach (var property in properties)
                     {
-                        // Skip ICollection
-                        if (!property.IsValidEntityProperty())
+                        // Check if this is a UIMultiSelect property
+                        UIMultiSelectAttribute? multiSelectAttribute =
+                            Attribute.GetCustomAttribute(property, typeof(UIMultiSelectAttribute)) as UIMultiSelectAttribute;
+
+                        // Skip ICollection unless it has UIMultiSelect attribute
+                        if (property.IsICollection() && multiSelectAttribute == null)
                             continue;
 
                         // Ignore the hidden fields
@@ -193,6 +199,9 @@ namespace Xams.Core
                         UIReadOnlyAttribute? readOnlyAttribute =
                             Attribute.GetCustomAttribute(property, typeof(UIReadOnlyAttribute)) as UIReadOnlyAttribute;
 
+                        UICreateOnlyAttribute? createOnlyAttribute =
+                            Attribute.GetCustomAttribute(property, typeof(UICreateOnlyAttribute)) as UICreateOnlyAttribute;
+
                         UIDisplayNameAttribute? displayNameAttribute =
                             Attribute.GetCustomAttribute(property, typeof(UIDisplayNameAttribute)) as
                                 UIDisplayNameAttribute;
@@ -219,7 +228,100 @@ namespace Xams.Core
                             Attribute.GetCustomAttribute(property, typeof(UINumberRangeAttribute)) as
                                 UINumberRangeAttribute;
 
+                        // Handle UIMultiSelect
+                        MetadataMultiSelect? multiSelect = null;
+                        if (multiSelectAttribute != null)
+                        {
+                            // Get the junction table type from ICollection<T>
+                            Type? junctionType = null;
+                            if (property.PropertyType.IsGenericType &&
+                                property.PropertyType.GetGenericTypeDefinition() == typeof(ICollection<>))
+                            {
+                                junctionType = property.PropertyType.GetGenericArguments()[0];
+                            }
+
+                            if (junctionType != null)
+                            {
+                                // Get the junction table name
+                                string junctionTableName = string.Empty;
+                                var junctionTableAttr = junctionType.GetCustomAttribute<TableAttribute>();
+                                if (junctionTableAttr != null)
+                                {
+                                    junctionTableName = junctionTableAttr.Name;
+                                }
+
+                                // Get the target property by finding the navigation property that matches JunctionTargetIdField
+                                var junctionProperties = junctionType.GetProperties();
+                                var targetIdProperty = junctionProperties.FirstOrDefault(p =>
+                                    p.Name == multiSelectAttribute.JunctionTargetIdField);
+
+                                PropertyInfo? targetNavigationProperty = null;
+                                if (targetIdProperty != null)
+                                {
+                                    // Find the corresponding navigation property (same name without "Id")
+                                    string navPropName = targetIdProperty.Name.EndsWith("Id")
+                                        ? targetIdProperty.Name.Substring(0, targetIdProperty.Name.Length - 2)
+                                        : targetIdProperty.Name;
+                                    targetNavigationProperty = junctionProperties.FirstOrDefault(p => p.Name == navPropName);
+                                }
+
+                                if (targetNavigationProperty != null)
+                                {
+                                    Type targetType = targetNavigationProperty.PropertyType;
+
+                                    // Get target table name
+                                    string targetTableName = string.Empty;
+                                    var targetTableAttr = targetType.GetCustomAttribute<TableAttribute>();
+                                    if (targetTableAttr != null)
+                                    {
+                                        targetTableName = targetTableAttr.Name;
+                                    }
+
+                                    // Get target name field
+                                    string targetNameField = targetType
+                                        .GetProperties()
+                                        .FirstOrDefault(x => x.GetCustomAttribute<UINameAttribute>() != null)
+                                        ?.Name ?? targetType.GetProperty("Name")?.Name ?? string.Empty;
+
+                                    // Get target description field
+                                    string? targetDescriptionField = targetType
+                                        .GetProperties()
+                                        .FirstOrDefault(x => x.GetCustomAttribute<UIDescriptionAttribute>() != null)
+                                        ?.Name;
+
+                                    // Get target primary key
+                                    string targetPrimaryKey = string.Empty;
+                                    if (TryFindPrimaryKeyProperties(dbContext, targetType, out var targetPkProps) &&
+                                        targetPkProps != null && targetPkProps.Length > 0)
+                                    {
+                                        targetPrimaryKey = targetPkProps[0].Name;
+                                    }
+
+                                    // Check if target has IsActive field
+                                    bool targetHasActiveField = targetType.GetProperty("IsActive") != null;
+
+                                    multiSelect = new MetadataMultiSelect
+                                    {
+                                        junctionTable = junctionTableName,
+                                        junctionOwnerIdField = multiSelectAttribute.JunctionOwnerIdField,
+                                        junctionTargetIdField = multiSelectAttribute.JunctionTargetIdField,
+                                        targetTable = targetTableName,
+                                        targetNameField = targetNameField,
+                                        targetDescriptionField = targetDescriptionField,
+                                        targetPrimaryKeyField = targetPrimaryKey,
+                                        targetHasActiveField = targetHasActiveField
+                                    };
+                                }
+                            }
+                        }
+
                         string fieldType = GetFieldType(isLookup, property);
+
+                        // Override field type for MultiSelect
+                        if (multiSelect != null)
+                        {
+                            fieldType = "MultiSelect";
+                        }
 
                         if (displayNameAttribute == null)
                         {
@@ -236,33 +338,10 @@ namespace Xams.Core
 
                         string displayName = displayNameAttribute.Name;
 
-                        if (property.Name == "OwningUserId" && owningUserDisplayName != null)
+                        // Check for field-specific display name overrides from UIDisplayName attributes
+                        if (fieldDisplayNameOverrides.TryGetValue(property.Name, out var overrideName))
                         {
-                            displayName = owningUserDisplayName.DisplayName;
-                        }
-                        if (property.Name == "OwningTeamId" && owningTeamDisplayName != null)
-                        {
-                            displayName = owningTeamDisplayName.DisplayName;
-                        }
-                        if (property.Name == "CreatedDate" && createdDateDisplayName != null)
-                        {
-                            displayName = createdDateDisplayName.DisplayName;
-                        }
-                        if (property.Name == "UpdatedDate" && updatedDateDisplayName != null)
-                        {
-                            displayName = updatedDateDisplayName.DisplayName;
-                        }
-                        if (property.Name == "IsActive" && isActiveDisplayName != null)
-                        {
-                            displayName = isActiveDisplayName.DisplayName;
-                        }
-                        if (property.Name == "CreatedById" && createdByDisplayName != null)
-                        {
-                            displayName = createdByDisplayName.DisplayName;
-                        }
-                        if (property.Name == "UpdatedById" && updatedByDisplayName != null)
-                        {
-                            displayName = updatedByDisplayName.DisplayName;
+                            displayName = overrideName;
                         }
 
                         bool isNullable;
@@ -288,15 +367,18 @@ namespace Xams.Core
                             lookupTableNameField = lookupTableNameField,
                             lookupTableDescriptionField = lookuptableDescriptionField,
                             lookupTableHasActiveField = lookupTablHasActiveField,
+                            lookupTablePrimaryKeyField = string.Empty,
                             dateFormat = dateFormatAttribute?.DateFormat,
                             isNullable = isNullable,
                             isRequired = requiredAttribute != null || tableRequiredFields.Contains(property.Name),
                             isRecommended = recommendedAttribute != null || tableRecommendedFields.Contains(property.Name),
                             isReadOnly = readOnlyAttribute != null || tableReadOnlyFields.Contains(property.Name),
+                            isCreateOnly = createOnlyAttribute != null || tableCreateOnlyFields.Contains(property.Name),
                             option = optionAttribute?.Name ?? "",
                             numberRange = numberRangeAttribute != null
                                 ? $"{numberRangeAttribute.Min}-{numberRangeAttribute.Max}"
-                                : null
+                                : null,
+                            multiSelect = multiSelect
                         });
                     }
 
@@ -899,6 +981,7 @@ namespace Xams.Core
             public bool HasOwningUserField { get; set; }
             public bool HasOwningTeamField { get; set; }
             public bool IsProxy { get; set; }
+            public List<string> OwningUserFields { get; set; } = new();
 
             public MetadataOutput MetadataOutput { get; set; } = null!;
         }

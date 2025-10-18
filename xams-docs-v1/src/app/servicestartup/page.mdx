@@ -1,7 +1,6 @@
 export const metadata = {
   title: 'Service Startup',
-  description:
-    'Service Startup executes logic when the application starts.',
+  description: 'Service Startup executes logic when the application starts.',
 }
 
 # Service Startup
@@ -28,37 +27,14 @@ public class RoleStartup : IServiceStartup
 
 The ServiceStartup attribute takes the following parameters:
 
-- <b>StartupOperation</b>: `Pre` executes before system records are created, `Post` executes after (use `Post` unless you need `Pre`)
-- <b>Order</b> (optional): Execution order when multiple startup services run at the same stage (lower executes first, default: 0)
+- <b>StartupOperation</b>: `Pre` executes before system records are created,
+  `Post` executes after (use `Post` unless you need `Pre`)
+- <b>Order</b> (optional): Execution order when multiple startup services run at
+  the same stage (lower executes first, default: 0)
 
-## StartupContext
+## Initialize Roles, Permissions and Options
 
-```c# {{ title: 'Project / Startup / MyStartup.cs' }}
-[ServiceStartup(StartupOperation.Post)]
-public class MyStartup : IServiceStartup
-{
-    public async Task<Response<object?>> Execute(StartupContext context)
-    {
-        // Get database context
-        DataContext db = context.GetDbContext<DataContext>();
-
-        // Access service provider for dependency injection
-        var myService = context.ServiceProvider.GetRequiredService<IMyService>();
-
-        // Access SecurityBuilder for role/permission setup
-        await context.SecurityBuilder
-            .Role("Admin")
-                .Permission("PERMISSION_NAME")
-            .Execute();
-
-        return ServiceResult.Success();
-    }
-}
-```
-
-## Initialize Roles and Permissions
-
-Use the SecurityBuilder to initialize roles and assign permissions. Roles are created if they don't exist. Permissions must already exist (automatically created by the framework for entities).
+Use the SecurityBuilder to initialize roles and assign permissions. Roles are created if they don't exist. Permissions must already exist (automatically created by the framework for entities, actions, jobs and hubs).
 
 ```c# {{ title: 'Project / Startup / RoleStartup.cs' }}
 [ServiceStartup(StartupOperation.Post)]
@@ -70,6 +46,8 @@ public class RoleStartup : IServiceStartup
             .Role("Public User")
                 .Permission("TABLE_Account_UPDATE_TEAM")
                 .Permission("TABLE_Account_READ_SYSTEM")
+                .Permission("HUB_ChatHub")
+                .Permission("ACTION_SendNotification")
             .Role("Platform Admin")
                 .Permission("TABLE_Account_CREATE_SYSTEM")
                 .Permission("TABLE_Account_UPDATE_SYSTEM")
@@ -79,14 +57,54 @@ public class RoleStartup : IServiceStartup
                 .Permission("TABLE_Offer_CREATE_SYSTEM")
                 .Permission("TABLE_Offer_UPDATE_SYSTEM")
                 .Permission("TABLE_Offer_DELETE_SYSTEM")
+                .Permission("HUB_AdminHub")
+                .Permission("ACTION_ExportData")
+                .Permission("ACTION_ImportData")
+                .Permission("JOB_DataCleanup")
             .Execute();
 
+        await CreateOptions(context);
+
         return ServiceResult.Success();
+    }
+
+    private async Task CreateOptions(StartupContext context)
+    {
+        var db = context.GetDbContext<DataContext>();
+
+        await CreateOptionIfNotExists(db, "Status", "Active", 1);
+        await CreateOptionIfNotExists(db, "Status", "Pending", 2);
+        await CreateOptionIfNotExists(db, "Priority", "Low", 1);
+        await CreateOptionIfNotExists(db, "Priority", "High", 2);
+
+        await db.SaveChangesAsync();
+    }
+
+    private async Task CreateOptionIfNotExists(DataContext db, string name, string label, int order)
+    {
+        var exists = await db.Options.AnyAsync(o => o.Name == name && o.Label == label);
+        if (!exists)
+        {
+            db.Options.Add(new Option
+            {
+                OptionId = Guid.NewGuid(),
+                Name = name,
+                Label = label,
+                Order = order,
+                Tag = ""
+            });
+        }
     }
 }
 ```
 
-Table permissions follow the convention `TABLE_(TableName)_(Operation)_(Level)`. For example: `TABLE_Widget_READ_SYSTEM`, `TABLE_Account_UPDATE_TEAM`. See the [Security](/security) documentation for more details.
+Permissions follow these naming conventions:
+- **Table**: `TABLE_(TableName)_(Operation)_(Level)` - Example: `TABLE_Widget_READ_SYSTEM`, `TABLE_Account_UPDATE_TEAM`
+- **Action**: `ACTION_(ActionName)` - Example: `ACTION_SendNotification`, `ACTION_ExportData`
+- **Hub**: `HUB_(HubName)` - Example: `HUB_ChatHub`, `HUB_AdminHub`
+- **Job**: `JOB_(JobName)` - Example: `JOB_DataCleanup`
+
+See the [Security](/security) documentation for more details.
 
 ## Dependency Injection
 

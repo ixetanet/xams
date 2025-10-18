@@ -43,6 +43,9 @@ public class QueryFactory
         // If '*' is in the fields, replace it with all fields
         OmitHiddenFields(readInputCopy);
 
+        // Remove UIMultiSelect fields as they don't map to database columns
+        RemoveMultiSelectFields(readInputCopy);
+
         // If the query doesn't include OwningUserId or OwningTeamId, add it
         AddOwnerFields(readInputCopy);
 
@@ -274,6 +277,62 @@ public class QueryFactory
         }
     }
 
+    private void RemoveMultiSelectFields(ReadInput readInput)
+    {
+        // Remove UIMultiSelect fields from root table
+        if (readInput.fields.Length > 0)
+        {
+            List<string> fieldsToKeep = new();
+            var metadata = Cache.Instance.GetTableMetadata(readInput.tableName);
+            var properties = metadata.Type.GetEntityProperties();
+
+            foreach (var fieldName in readInput.fields)
+            {
+                var property = properties.FirstOrDefault(p => p.Name == fieldName);
+                if (property != null)
+                {
+                    fieldsToKeep.Add(fieldName);
+                }
+            }
+
+            readInput.fields = fieldsToKeep.ToArray();
+        }
+
+        // Remove UIMultiSelect fields from joins
+        if (readInput.joins != null)
+        {
+            foreach (var join in readInput.joins)
+            {
+                if (join.fields.Length > 0)
+                {
+                    List<string> joinFieldsToKeep = new();
+                    var joinMetadata = Cache.Instance.GetTableMetadata(join.toTable);
+                    var joinProperties = joinMetadata.Type.GetEntityProperties();
+
+                    foreach (var fieldName in join.fields)
+                    {
+                        var property = joinProperties.FirstOrDefault(p => p.Name == fieldName);
+                        if (property != null)
+                        {
+                            joinFieldsToKeep.Add(fieldName);
+                        }
+                    }
+
+                    join.fields = joinFieldsToKeep.ToArray();
+                }
+            }
+        }
+
+        // Recursively process except fields
+        if (readInput.except != null)
+        {
+            foreach (var exclude in readInput.except)
+            {
+                RemoveMultiSelectFields(exclude.query);
+            }
+        }
+    }
+
     private void AddOwnerFields(ReadInput readInput)
     {
         var metadata = Cache.Instance.GetTableMetadata(readInput.tableName);
@@ -290,6 +349,15 @@ public class QueryFactory
         if (metadata.HasOwningTeamField && !readInput.fields.Contains("OwningTeamId"))
         {
             readInput.fields = readInput.fields.Append("OwningTeamId").ToArray();
+        }
+
+        // Add custom owning user fields
+        foreach (var owningUserField in metadata.OwningUserFields)
+        {
+            if (!readInput.fields.Contains(owningUserField))
+            {
+                readInput.fields = readInput.fields.Append(owningUserField).ToArray();
+            }
         }
     }
 
@@ -363,7 +431,22 @@ public class QueryFactory
             // If the user only has user level permissions and this entity has an OwningUser field, filter by the user's id
             if (highestPermission is Permissions.PermissionLevel.User && hasOwningUserId)
             {
-                query.Where($"{query.RootAlias}_OwningUserId == @0", _queryOptions.UserId);
+                var metadata = Cache.Instance.GetTableMetadata(query.TableName);
+
+                // Build OR condition for OwningUserId and all custom owning user fields
+                if (metadata.OwningUserFields.Count > 0)
+                {
+                    var conditions = new List<string> { $"{query.RootAlias}_OwningUserId == @0" };
+                    for (int i = 0; i < metadata.OwningUserFields.Count; i++)
+                    {
+                        conditions.Add($"{query.RootAlias}_{metadata.OwningUserFields[i]} == @0");
+                    }
+                    query.Where($"({string.Join(" || ", conditions)})", _queryOptions.UserId);
+                }
+                else
+                {
+                    query.Where($"{query.RootAlias}_OwningUserId == @0", _queryOptions.UserId);
+                }
             }
 
             // If the user has team level access, show them records owned by their teams and by themselves
@@ -378,7 +461,22 @@ public class QueryFactory
 
                 if (hasOwningUserId && joinOn == "user")
                 {
-                    query.Where($"{query.RootAlias}_OwningUserId == @0", _queryOptions.UserId);
+                    var metadata = Cache.Instance.GetTableMetadata(query.TableName);
+
+                    // Build OR condition for OwningUserId and all custom owning user fields
+                    if (metadata.OwningUserFields.Count > 0)
+                    {
+                        var conditions = new List<string> { $"{query.RootAlias}_OwningUserId == @0" };
+                        for (int i = 0; i < metadata.OwningUserFields.Count; i++)
+                        {
+                            conditions.Add($"{query.RootAlias}_{metadata.OwningUserFields[i]} == @0");
+                        }
+                        query.Where($"({string.Join(" || ", conditions)})", _queryOptions.UserId);
+                    }
+                    else
+                    {
+                        query.Where($"{query.RootAlias}_OwningUserId == @0", _queryOptions.UserId);
+                    }
                 }
             }
         }

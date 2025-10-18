@@ -14,16 +14,18 @@ Service Logic classes are automatically discovered and executed by the framework
 Service Logic can execute at the listed stages below.
 
 - <b>PreValidation</b>: Before security validation and before the save to the
-  database
+  database. This occurs before validation attributes such as `UIRequired`,
+  `UIReadOnly`, and `UIHidden` are checked. If setting a required field in
+  Service Logic, use PreValidation.
 - <b>PreOperation</b>: After security validation and before the save to the
   database
 - <b>PostOperation</b>: After the save to the database
 
 ## Create Service Logic
 
-To create Service Logic, create a new file in the project in the Logic folder.
+To create Service Logic, create a new file in the project in the Services folder.
 
-```c# {{ title: 'Project / Logic / MyEntityService.cs' }}
+```c# {{ title: 'Project / Services / MyEntityService.cs' }}
 // The ServiceLogic attribute specifies what table this will execute on, what operation(s), and when (before or after the transaction)
 [ServiceLogic(nameof(MyEntity), DataOperation.Create | DataOperation.Update, LogicStage.PreOperation, 100)]
 public class MyEntityService : IServiceLogic
@@ -47,7 +49,8 @@ public class MyEntityService : IServiceLogic
 
 The ServiceLogic attribute takes the following parameters.
 
-- <b>TableName</b>: The name of the entity the service logic will execute on. '*' for all entities.
+- <b>TableName</b>: The name of the entity the service logic will execute on.
+  '*' for all entities.
 - <b>DataOperations</b>: Flags that determine what data operations this should
   execute on, create, read, update, and delete.
 - <b>LogicStages</b>: Flags that determine which stages the service logic should
@@ -59,7 +62,7 @@ The ServiceLogic attribute takes the following parameters.
 
 ServiceContext has a number of properties that can be used during execution.
 
-```c# {{ title: 'Project / Logic / MyEntityService.cs' }}
+```c# {{ title: 'Project / Services / MyEntityService.cs' }}
 [ServiceLogic(nameof(MyEntity), DataOperation.Create | DataOperation.Update | DataOperation.Read, LogicStage.PreOperation | LogicStage.PostOperation, 100)]
 public class MyEntityService : IServiceLogic
 {
@@ -137,7 +140,7 @@ public class MyEntityService : IServiceLogic
 
 Service Logic classes support constructor-based dependency injection. The framework uses `ActivatorUtilities.CreateInstance()` to instantiate service logic classes, allowing automatic injection of registered services:
 
-```c# {{ title: 'Project / Logic / WidgetService.cs' }}
+```c# {{ title: 'Project / Services / WidgetService.cs' }}
 [ServiceLogic(nameof(Widget), DataOperation.Create, LogicStage.PreOperation)]
 public class WidgetService : IServiceLogic
 {
@@ -155,7 +158,7 @@ public class WidgetService : IServiceLogic
         // Use injected services
         await _emailService.SendNotification("Widget created");
         await _cacheService.InvalidateCache("widgets");
-        
+
         // Use ServiceContext for framework services
         context.Logger.LogInformation("Widget processing completed");
 
@@ -165,15 +168,130 @@ public class WidgetService : IServiceLogic
 ```
 
 ### Key Benefits
+
 - Standard .NET constructor-based dependency injection
 - Clean separation of concerns and testable code
 - Access to all services registered in the DI container
 - Framework automatically resolves dependencies
 
 ### Available Services
+
 - **Constructor injection**: Custom business services and third-party services registered in DI container
 - **ServiceContext**: Framework services like `context.Logger`, `context.GetDbContext<T>()`, `context.ExecutingUserId`, etc.
 
 ## Performance
 
 For optimal performance, prioritize using `PreOperation` logic whenever possible. This allows the database save to be delayed until all records are processed, or until an entity with `PostOperation` logic is triggered.
+
+## Best Practices
+
+### ValueChanged
+
+- Always use `context.ValueChanged("FieldName")` to check if a field has changed instead of comparing values directly between the `PreEntity` and `Entity`. This will always return true on create operations.
+
+### Use context.Create/Update/Delete
+
+**Always use `context.Create/Update/Delete()`** - Direct `db.Add()` bypasses service logic, validations, and real-time updates.
+
+```c#
+// ❌ WRONG: db.Add(entity); await db.SaveChangesAsync();
+// ✅ CORRECT:
+await context.Create<MyEntity>(entity);
+```
+
+### Code Organization
+
+- Isolate logic into separate methods and use defensive coding to ensure it executes only when expected.
+
+```c# {{ title: 'Project / Services / UserService.cs' }}
+[ServiceLogic(nameof(User), DataOperation.Create, LogicStage.PreOperation)]
+public class UserService : IServiceLogic
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        // Pre-Operation
+        await SetUserEmailAddress(context);
+        // Post-Operation
+        await SendNotificationEmail(context);
+        return ServiceResult.Success();
+    }
+
+    private async Task SetUserEmailAddress(ServiceContext context)
+    {
+        if (context.DataOperation is not DataOperation.Create)
+        {
+            return;
+        }
+
+        if (context.LogicStage is not LogicStage.PreOperation)
+        {
+            return;
+        }
+
+        // Set User Email Logic
+        ...
+    }
+
+    private async Task SendNotificationEmail(ServiceContext context)
+    {
+        if (context.DataOperation is not DataOperation.Create)
+        {
+            return;
+        }
+
+        if (context.LogicStage is not LogicStage.PostOperation)
+        {
+            return;
+        }
+
+        // Send Notification Email Logic
+        ...
+    }
+}
+```
+
+### Error Handling
+
+Do not throw exceptions from service logic. Instead return a failed `ServiceResult` with an appropriate error message.
+
+```c# {{ title: 'Project / Services / ForumCategoryService.cs' }}
+[ServiceLogic(nameof(ForumCategory), DataOperation.Create | DataOperation.Update, LogicStage.PreOperation)]
+public class ForumCategoryService : IServiceLogic
+{
+    public async Task<Response<object?>> Execute(ServiceContext context)
+    {
+        var validateDisplayOrderResponse = await ValidateDisplayOrder(context);
+        if (!validateDisplayOrderResponse.Succeeded) return validateDisplayOrderResponse;
+        return ServiceResult.Success();
+    }
+
+    private async Task<Response<object?>> ValidateDisplayOrder(ServiceContext context)
+    {
+        if (context.DataOperation is not (DataOperation.Create or DataOperation.Update))
+        {
+            return ServiceResult.Success();
+        }
+
+        if (context.LogicStage is not LogicStage.PreOperation)
+        {
+            return ServiceResult.Success();
+        }
+
+        var category = context.GetEntity<ForumCategory>();
+        var db = context.GetDbContext<DataContext>();
+
+        // Check if display order is already taken by another category
+        var existingCategory = await db.ForumCategories
+            .Where(c => c.DisplayOrder == category.DisplayOrder && c.CategoryId != category.CategoryId)
+            .FirstOrDefaultAsync();
+
+        if (existingCategory != null)
+        {
+            return ServiceResult.Error(
+                $"Display order {category.DisplayOrder} is already in use by category '{existingCategory.Name}'");
+        }
+
+        return ServiceResult.Success();
+    }
+}
+```

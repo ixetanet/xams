@@ -1,6 +1,6 @@
 import { Button, Checkbox, Divider, Modal, Table } from "@mantine/core";
 import React, { useState } from "react";
-import { useDataTableContext } from "../DataTableImp";
+import { useDataTableContext } from "./DataTableContext";
 import { IconCaretDown } from "@tabler/icons-react";
 
 interface DataTableColumnsProps {

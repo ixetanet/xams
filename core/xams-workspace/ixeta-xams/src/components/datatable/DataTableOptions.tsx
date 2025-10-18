@@ -9,7 +9,7 @@ import {
 import React, { useEffect, useState } from "react";
 import useColor from "../../hooks/useColor";
 import usePermissionStore from "../../stores/usePermissionStore";
-import { useDataTableContext } from "../DataTableImp";
+import { useDataTableContext } from "./DataTableContext";
 import useAuthRequest from "../../hooks/useAuthRequest";
 import DataTableImportData from "./DataTableImportData";
 import { useDisclosure } from "@mantine/hooks";

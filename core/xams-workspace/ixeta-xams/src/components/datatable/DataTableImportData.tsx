@@ -2,7 +2,7 @@ import { Button, FileInput, Loader, Modal, Select } from "@mantine/core";
 import React, { useEffect } from "react";
 import useAuthRequest from "../../hooks/useAuthRequest";
 import { API_DATA_FILE } from "../../apiurls";
-import { useDataTableContext } from "../DataTableImp";
+import { useDataTableContext } from "./DataTableContext";
 
 interface ImportDataProps {
   opened: boolean;

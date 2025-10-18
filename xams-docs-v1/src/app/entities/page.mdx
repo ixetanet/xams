@@ -9,24 +9,49 @@ Entity definitions need to follow certain rules in order to work with Xams. {{ c
 
 ## Entity Rules
 
-1. Entities should have either a string Name field or a string field with the attribute UIName for lookup fields.
+1. Entities _must_ have a string Name field or a string field with the attribute `UIName` for lookup fields.
 2. Composite Primary Keys are not supported.
+3. Self-referencing entities must NOT include navigation properties to themselves.
+4. **System entities use base table names**: `User`, `Team`, `Role`, `Setting` are always the table names—even when extended (e.g., `public class AppUser : User` → table name is `"User"` for queries and permissions).
+
+## Self-Referencing Entities
+
+For entities that reference themselves (like nested comments), use only the ID field - do not include the navigation property.
+
+```c# {{ title: 'Project / Entities / Comment.cs' }}
+[Table(nameof(Comment))]
+public class Comment : BaseEntity
+{
+    public Guid CommentId { get; set; }
+
+    [UIRequired]
+    public string Content { get; set; }
+
+    // Self-reference - use ID only
+    public Guid? ParentCommentId { get; set; }
+    // ❌ Do NOT add: public Comment? ParentComment { get; set; }
+}
+```
+
+<Note>
+  Navigation properties on self-referencing entities cause nullable reference errors during queries. Use only the ID field and query parent/child records separately if needed.
+</Note>
 
 ## Cascade Delete
 
 Configure cascade delete using the nullable operator `?` and the `CascadeDelete` attribute.
 
-
 ```c# {{ title: 'Project / Entities / Widget.cs' }}
-[Table("Widget")]
-public class Widget : BaseRecord
+[Table(nameof(Widget))]
+public class Widget : BaseEntity
 {
     public Guid WidgetId { get; set; }
 
     // Name is not nullable and required
+    [UIName]
     public string Name { get; set; }
 
-    // Company is not nullable making it required 
+    // Company is not nullable making it required
     // Deleting the Company deletes this record
     public Guid CompanyId { get; set; }
     public Department Company { get; set; }
@@ -52,6 +77,7 @@ public class Widget : BaseRecord
 ```
 
 <Note>
-  When a user deletes a record, delete permissions are checked only on the record being deleted—not on any dependent records removed through cascading.
-This behavior is consistent with how enterprise CRM systems operate.
+  When a user deletes a record, delete permissions are checked only on the
+  record being deleted—not on any dependent records removed through cascading.
+  This behavior is consistent with how enterprise CRM systems operate.
 </Note>

@@ -1,0 +1,173 @@
+import firebaseAuth from '@/images/firebase_auth.png'
+export const metadata = {
+  title: 'Firebase Authentication',
+  description: 'How to protect pages and setup login redirects.',
+}
+
+## Authentication Pages
+
+Use the authentication pages to set branding and redirect on successful login. Use `postLoginRedirect` in local storage to redirect users to the page they were trying to access before being redirected to login.
+
+```tsx {{ title: 'src/pages/login.tsx' }}
+import React from 'react'
+import { useRouter } from 'next/router'
+import { LoginPage } from '@ixeta/xams-firebase'
+import { Logo } from '../components/common/Logo'
+
+const Login = () => {
+  const router = useRouter()
+  return (
+    <LoginPage
+      onLoginSuccess={() => {
+        const redirectUrl = localStorage.getItem('postLoginRedirect')
+        localStorage.removeItem('postLoginRedirect')
+        router.push(redirectUrl || '/app/coupons')
+      }}
+      Logo={<Logo />}
+      backgroundColor="#2ea2b0"
+      radius={'md'}
+    />
+  )
+}
+
+export default Login
+```
+
+```tsx {{ title: 'src/pages/profile.tsx' }}
+import React from 'react'
+import { ProfilePage } from '@ixeta/xams-firebase'
+
+const Profile = () => {
+  return <ProfilePage Logo={<Logo />} backgroundColor="#2ea2b0" radius={'md'} />
+}
+
+export default Profile
+```
+
+```tsx {{ title: 'src/pages/reset-password.tsx' }}
+import React from 'react'
+import { ResetPasswordPage } from '@ixeta/xams-firebase'
+
+const ResetPassword = () => {
+  return (
+    <ResetPasswordPage
+      Logo={<Logo />}
+      backgroundColor="#2ea2b0"
+      radius={'md'}
+    />
+  )
+}
+
+export default ResetPassword
+```
+
+```tsx {{ title: 'src/pages/__/auth/action.tsx' }}
+import React from 'react'
+import { ActionPage } from '@ixeta/xams-firebase'
+
+const AuthAction = () => {
+  return <ActionPage Logo={<Logo />} backgroundColor="#2ea2b0" radius={'md'} />
+}
+
+export default AuthAction
+```
+
+## React Protected Page
+
+Use the `useAuthProtect` hook to protect pages and access user information:
+
+```tsx {{ title: 'src/pages/admin.tsx' }}
+import { AdminDashboard } from '@ixeta/xams'
+import React from 'react'
+import { NavLink } from '@mantine/core'
+import { IconLogout } from '@tabler/icons-react'
+import { useRouter } from 'next/router'
+import Loading from '@/components/common/Loading'
+import { useAuthProtect } from '@ixeta/xams-firebase'
+
+const Admin = () => {
+  const router = useRouter()
+  const auth = useAuthProtect()
+
+  if (auth.isLoading || !router.isReady) {
+    return <Loading />
+  }
+
+  if (auth.isError) {
+    return <div>Error loading auth settings</div>
+  }
+
+  if (!auth.isLoggedIn) {
+    localStorage.setItem('postLoginRedirect', router.asPath)
+    router.push('/login')
+    return <></>
+  }
+
+  return (
+    <AdminDashboard
+      addMenuItems={[
+        {
+          order: 10000,
+          navLink: (
+            <NavLink
+              label="Logout"
+              leftSection={<IconLogout size={16} />}
+              onClick={() => {
+                auth.signOut()
+                router.push('/')
+              }}
+            />
+          ),
+        },
+      ]}
+    />
+  )
+}
+
+export default Admin
+```
+
+## Using Tanstack Query with Authentication
+
+When using Tanstack Query with authenticated pages, **always** set `enabled: auth.isLoggedIn` to prevent queries from running before authentication is ready. All hooks must be called at the top level before any conditional returns.
+
+```tsx {{ title: 'src/pages/dashboard.tsx' }}
+import { Query, useAuthRequest } from '@ixeta/xams'
+import { useAuthProtect } from '@ixeta/xams-firebase'
+import { useQuery } from '@tanstack/react-query'
+import { useRouter } from 'next/router'
+
+const Dashboard = () => {
+  const router = useRouter()
+  const auth = useAuthProtect()
+  const authRequest = useAuthRequest()
+
+  // Call ALL hooks at the top level
+  const { data, isLoading } = useQuery({
+    queryKey: ['my-data'],
+    queryFn: async () => {
+      const readRequest = new Query(['*'])
+        .from('MyTable')
+        .top(10)
+        .toReadRequest()
+      const response = await authRequest.read(readRequest)
+      if (!response.succeeded) throw new Error(response.friendlyMessage)
+      return response.data.results
+    },
+    enabled: auth.isLoggedIn, // CRITICAL: Prevents query until authenticated
+  })
+
+  // Auth checks come AFTER all hooks
+  if (auth.isLoading || !router.isReady) {
+    return <div>Loading...</div>
+  }
+
+  if (!auth.isLoggedIn) {
+    localStorage.setItem('postLoginRedirect', router.asPath)
+    router.push('/login')
+    return <></>
+  }
+
+  return <div>{/* Use data here */}</div>
+}
+```

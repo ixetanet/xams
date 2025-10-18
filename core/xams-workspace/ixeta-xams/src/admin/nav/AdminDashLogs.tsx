@@ -1,5 +1,5 @@
 import React from "react";
-import { useAdminDashContext } from "../AdminDashboard";
+import { useAdminDashContext } from "../contexts/AdminDashContext";
 import { NavLink } from "@mantine/core";
 import { IconLogs } from "@tabler/icons-react";
 import LogsViewer from "../components/logviewer/LogsViewer";

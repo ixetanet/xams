@@ -1,7 +1,7 @@
 import { Select, TextInput } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import React, { useEffect, useState } from "react";
-import { useDataTableContext } from "../DataTableImp";
+import { useDataTableContext } from "./DataTableContext";
 import { getDataOptions } from "./DataTableTypes";
 import { getLocalTimeOffsetFromUTC } from "../../utils/Util";
 

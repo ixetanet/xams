@@ -38,6 +38,8 @@ const Index = () => {
     setWidgets(response.data.results)
   }, [authRequest])
 
+  // See best practices regarding using Tanstack Query
+  // when calling onLoad
   useEffect(() => {
     loadWidgets()
   }, [loadWidgets])
@@ -54,7 +56,12 @@ const Index = () => {
 export default Index
 ```
 
- ## Fields
+<Note>
+  By default the top 5 records are returned. See the Top section below to change
+  this.
+</Note>
+
+## Fields
 
 Select the fields to return by providing a string array to the `Query` constructor.
 
@@ -67,9 +74,7 @@ const readRequest = new Query(['Name', 'CreatedDate'])
 Select all fields by providing a `*`.
 
 ```tsx {{ title: 'Query' }}
-const readRequest = new Query(['*'])
-  .from('Widget')
-  .toReadRequest()
+const readRequest = new Query(['*']).from('Widget').toReadRequest()
 ```
 
 ## Filtering
@@ -82,6 +87,11 @@ const readRequest = new Query(['*'])
   .where('Price', '>', 0)
   .toReadRequest()
 ```
+
+<Note>
+  When filtering on a DateTime field, the value must be in ISO 8601 format. ie:
+  `2025-10-01` or `2025-10-01T00:00:00Z` (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSZ)
+</Note>
 
 Additional criteria can be provided using the `and` and `or` methods.
 
@@ -125,7 +135,6 @@ The parameters for a join are -
 - To table and field
 - Alias
 - Fields to include (Can be '\*' for all fields)
-
 
 ## Left Join
 
@@ -174,7 +183,7 @@ const readRequest = new Query(['*'])
     'PostalCode',
     'City',
     'State',
-    'Country'
+    'Country',
   ])
   .toReadRequest()
 ```
@@ -251,85 +260,29 @@ const readRequest = new Query(['AccountId', 'Name'])
   .toReadRequest()
 ```
 
-```json {{ title: 'Response' }}
+```json {{ title: 'Response - Without Denormalization' }}
 {
   "succeeded": true,
-  "friendlyMessage": null,
-  "logMessage": null,
   "data": {
-    "pages": 1,
-    "currentPage": 1,
     "totalResults": 4,
-    "maxResults": 15,
-    "tableName": "Account",
-    "orderBy": null,
-    "distinct": null,
-    "denormalize": null,
     "results": [
       {
         "AccountId": "c4284ccd-b393-40bc-8e32-3e031a66055e",
         "Name": "MegaCorp, Inc.",
         "c.ContactId": "d8984649-956c-4844-9db8-8c667b904725",
         "c.FirstName": "John",
-        "c.LastName": "Smith",
-        "c.AccountId": "c4284ccd-b393-40bc-8e32-3e031a66055e",
-        "c.Account": "MegaCorp, Inc.",
-        "_ui_info_": {
-          "canDelete": true,
-          "canUpdate": true,
-          "canAssign": true,
-          "tableName": "Account"
-        },
-        "_parameters_": {}
-      },
-      {
-        "AccountId": "c4284ccd-b393-40bc-8e32-3e031a66055e",
-        "Name": "MegaCorp, Inc.",
-        "c.ContactId": "85a8368d-9405-44eb-8143-e676aa6b60d2",
-        "c.FirstName": "Rick",
-        "c.LastName": "Stanley",
-        "c.AccountId": "c4284ccd-b393-40bc-8e32-3e031a66055e",
-        "c.Account": "MegaCorp, Inc.",
-        "_ui_info_": {
-          "canDelete": true,
-          "canUpdate": true,
-          "canAssign": true,
-          "tableName": "Account"
-        },
-        "_parameters_": {}
+        "c.LastName": "Smith"
+        // ... (2 more MegaCorp contacts)
       },
       {
         "AccountId": "d846ee11-78c3-49f4-9cc0-0e4470f5bf42",
         "Name": "SuperStore",
         "c.ContactId": "ae454123-d060-4099-9b05-f3a0e49f75ce",
         "c.FirstName": "Sam",
-        "c.LastName": "Richards",
-        "c.AccountId": "d846ee11-78c3-49f4-9cc0-0e4470f5bf42",
-        "c.Account": "SuperStore",
-        "_ui_info_": {
-          "canDelete": true,
-          "canUpdate": true,
-          "canAssign": true,
-          "tableName": "Account"
-        },
-        "_parameters_": {}
-      },
-      {
-        "AccountId": "d846ee11-78c3-49f4-9cc0-0e4470f5bf42",
-        "Name": "SuperStore",
-        "c.ContactId": "4a3f2ed2-a827-4198-aee1-a3900e54dc51",
-        "c.FirstName": "Jack",
-        "c.LastName": "Frost",
-        "c.AccountId": "d846ee11-78c3-49f4-9cc0-0e4470f5bf42",
-        "c.Account": "SuperStore",
-        "_ui_info_": {
-          "canDelete": true,
-          "canUpdate": true,
-          "canAssign": true,
-          "tableName": "Account"
-        },
-        "_parameters_": {}
+        "c.LastName": "Richards"
+        // ... (1 more SuperStore contact)
       }
+      // Note: One row per contact (4 total rows for 2 accounts)
     ]
   }
 }
@@ -345,78 +298,122 @@ const readRequest = new Query(['AccountId', 'Name'])
   .toReadRequest()
 ```
 
-```tsx {{ title: 'Query' }}
+```json {{ title: 'Response - With Denormalization' }}
 {
     "succeeded": true,
-    "friendlyMessage": null,
-    "logMessage": null,
     "data": {
-        "pages": 1,
-        "currentPage": 1,
-        "totalResults": 4,
-        "maxResults": 15,
-        "tableName": "Account",
-        "orderBy": null,
-        "distinct": null,
         "denormalize": true,
+        "totalResults": 2,
         "results": [
             {
                 "AccountId": "c4284ccd-b393-40bc-8e32-3e031a66055e",
                 "Name": "MegaCorp, Inc.",
                 "c": [
-                    {
-                        "ContactId": "d8984649-956c-4844-9db8-8c667b904725",
-                        "FirstName": "John",
-                        "LastName": "Smith",
-                        "AccountId": "c4284ccd-b393-40bc-8e32-3e031a66055e",
-                        "Account": "MegaCorp, Inc."
-                    },
-                    {
-                        "ContactId": "85a8368d-9405-44eb-8143-e676aa6b60d2",
-                        "FirstName": "Rick",
-                        "LastName": "Stanley",
-                        "AccountId": "c4284ccd-b393-40bc-8e32-3e031a66055e",
-                        "Account": "MegaCorp, Inc."
-                    }
-                ],
-                "_ui_info_": {
-                    "canDelete": true,
-                    "canUpdate": true,
-                    "canAssign": true,
-                    "tableName": "Account"
-                },
-                "_parameters_": {}
+                    { "ContactId": "...", "FirstName": "John", "LastName": "Smith" },
+                    { "ContactId": "...", "FirstName": "Rick", "LastName": "Stanley" }
+                ]
             },
             {
                 "AccountId": "d846ee11-78c3-49f4-9cc0-0e4470f5bf42",
                 "Name": "SuperStore",
                 "c": [
-                    {
-                        "ContactId": "ae454123-d060-4099-9b05-f3a0e49f75ce",
-                        "FirstName": "Sam",
-                        "LastName": "Richards",
-                        "AccountId": "d846ee11-78c3-49f4-9cc0-0e4470f5bf42",
-                        "Account": "SuperStore"
-                    },
-                    {
-                        "ContactId": "4a3f2ed2-a827-4198-aee1-a3900e54dc51",
-                        "FirstName": "Jack",
-                        "LastName": "Frost",
-                        "AccountId": "d846ee11-78c3-49f4-9cc0-0e4470f5bf42",
-                        "Account": "SuperStore"
-                    }
-                ],
-                "_ui_info_": {
-                    "canDelete": true,
-                    "canUpdate": true,
-                    "canAssign": true,
-                    "tableName": "Account"
-                },
-                "_parameters_": {}
+                    { "ContactId": "...", "FirstName": "Sam", "LastName": "Richards" },
+                    { "ContactId": "...", "FirstName": "Jack", "LastName": "Frost" }
+                ]
             }
+            // Note: Contacts grouped in arrays (2 rows, one per account)
         ]
     }
 }
 ```
 
-Notice the contacts are now grouped into an array named after the alias provided.
+**Key Difference**: Contacts are now grouped into arrays named after the alias (`c`), resulting in one row per account instead of one row per contact.
+
+## Best Practices
+
+When using queries in a React application, it is recommended to use Tanstack Query to manage the server state.
+
+```tsx {{ title: 'Query' }}
+import { Query, useAuthRequest } from '@ixeta/xams'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+
+const CouponsPage = () => {
+  const router = useRouter()
+  const authRequest = useAuthRequest()
+  const queryClient = useQueryClient()
+  const query = useQuery({
+    queryKey: ['coupons'],
+    queryFn: async () => {
+      const readRequest = new Query(['*'])
+        .top(100)
+        .from('Coupon')
+        .where('IsActive', '==', 'true')
+        .and('ProductName', 'Contains', searchRef.current)
+        .toReadRequest()
+      const readResp = await authRequest.read<Coupon>(readRequest)
+      if (!readResp.succeeded) {
+        throw new Error(readResp.friendlyMessage)
+      }
+      return readResp.data
+    },
+  })
+  const [search, setSearch] = useDebouncedState('', 200)
+  const searchRef = useRef(search)
+  const searchInputRef = useRef(null)
+
+  if (searchRef.current !== search) {
+    searchRef.current = search
+    queryClient.invalidateQueries({
+      queryKey: ['coupons'],
+    })
+  }
+
+  if (query.isError || query.data == null) {
+    return <ErrorMessage message={query.error?.message} />
+  }
+
+  return (
+    <div>
+      <Text>My Digital Coupons</Text>
+      <div>
+        <TextInput
+          label="Search"
+          defaultValue={search}
+          onChange={(e) => setSearch(e.currentTarget.value)}
+          ref={searchInputRef}
+        />
+      </div>
+      {query.data.results.length === 0 && (
+        <div>
+          <Text>No Coupons Found</Text>
+        </div>
+      )}
+      <div>
+        {query.data?.results.map((coupon) => {
+          return (
+            <Card key={coupon.CouponId}>
+              <div>
+                <Text>{coupon.ProductName}</Text>
+              </div>
+              <Button
+                onClick={() =>
+                  router.push(
+                    addUserIdUrlParam(
+                      router.asPath,
+                      `/${coupon.RedemptionCode}`,
+                    ),
+                  )
+                }
+              >
+                Redeem
+              </Button>
+            </Card>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+export default CouponsPage
+```

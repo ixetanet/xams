@@ -27,7 +27,21 @@ namespace Xams.Core.Dtos.Data
         public bool isRequired { get; set; }
         public bool isRecommended { get; set; }
         public bool isReadOnly { get; set; }
+        public bool isCreateOnly { get; set; }
         public string option { get; set; }
         public string? numberRange { get; set; }
+        public MetadataMultiSelect? multiSelect { get; set; }
+    }
+
+    public class MetadataMultiSelect
+    {
+        public required string junctionTable { get; set; }
+        public required string junctionOwnerIdField { get; set; }
+        public required string junctionTargetIdField { get; set; }
+        public required string targetTable { get; set; }
+        public required string targetNameField { get; set; }
+        public string? targetDescriptionField { get; set; }
+        public required string targetPrimaryKeyField { get; set; }
+        public bool targetHasActiveField { get; set; }
     }
 }

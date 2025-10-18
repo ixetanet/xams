@@ -10,7 +10,13 @@ public class PipeResultReadOutput : BasePipelineStage
         // Remove Owner fields if they weren't requested
         bool removeOwningUserField = !context.ReadInput!.fields.Contains("*") && !context.ReadInput.fields.Contains("OwningUserId");
         bool removeOwningTeamField = !context.ReadInput!.fields.Contains("*") && !context.ReadInput.fields.Contains("OwningTeamId");
-        
+
+        // Get custom owning user fields that should be removed
+        var metadata = Cache.Instance.GetTableMetadata(context.TableName);
+        var owningUserFieldsToRemove = metadata.OwningUserFields
+            .Where(field => !context.ReadInput!.fields.Contains("*") && !context.ReadInput.fields.Contains(field))
+            .ToList();
+
         foreach (var result in context.ReadOutput!.results)
         {
             var dict = (IDictionary<string, object>)result;
@@ -22,10 +28,19 @@ public class PipeResultReadOutput : BasePipelineStage
             {
                 dict.Remove("OwningTeamId");
             }
+
+            // Remove custom owning user fields
+            foreach (var owningUserField in owningUserFieldsToRemove)
+            {
+                if (dict.ContainsKey(owningUserField))
+                {
+                    dict.Remove(owningUserField);
+                }
+            }
         }
 
         context.ReadOutput.parameters = context.OutputParameters;
-        
+
         return Task.FromResult(new Response<object?>()
         {
             Succeeded = true,

@@ -1,5 +1,5 @@
 import React from "react";
-import { useAdminDashContext } from "../AdminDashboard";
+import { useAdminDashContext } from "../contexts/AdminDashContext";
 import { Button, CopyButton, NavLink } from "@mantine/core";
 import { IconBox, IconClipboard, IconCheck } from "@tabler/icons-react";
 import DataTable from "../../components/DataTable";

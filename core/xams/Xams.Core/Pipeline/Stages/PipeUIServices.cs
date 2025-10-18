@@ -22,51 +22,58 @@ public class PipeUIServices : BasePipelineStage
             return response;
         }
 
+        response = ReadOnlyFields(context);
+        if (!response.Succeeded)
+        {
+            return response;
+        }
+
+        response = CreateOnlyFields(context);
+        if (!response.Succeeded)
+        {
+            return response;
+        }
+
         response = NumberRange(context);
         if (!response.Succeeded)
         {
             return response;
         }
-        
+
         return await base.Execute(context);
     }
 
     private Response<object?> CharacterLimit(PipelineContext context)
     {
-        var properties = context.Entity?.GetType().GetProperties();
-        if (properties != null)
+        if (context.Entity == null)
         {
-            foreach (var property in properties)
+            return ServiceResult.Success();
+        }
+
+        // Use cached metadata instead of reflection
+        var metadata = Cache.Instance.GetTableMetadata(context.TableName);
+        var characterLimitFields = metadata.MetadataOutput.fields
+            .Where(f => f.characterLimit.HasValue)
+            .ToList();
+
+        foreach (var field in characterLimitFields)
+        {
+            var property = context.Entity.GetType().GetProperty(field.name);
+            if (property != null)
             {
-                var limitAttribute = property.GetCustomAttributes(typeof(UICharacterLimitAttribute), true);
-                if (limitAttribute.Length > 0)
+                var value = property.GetValue(context.Entity);
+                if (value != null && value.ToString()!.Length > field.characterLimit!.Value)
                 {
-                    var value = property.GetValue(context.Entity);
-                    if (value != null)
+                    return new Response<object?>()
                     {
-                        var limit = ((UICharacterLimitAttribute)limitAttribute[0]).Limit;
-                        if (value.ToString()!.Length > limit)
-                        {
-                            // Get the display name of the property
-                            UIDisplayNameAttribute? displayNameAttribute =
-                                property.GetCustomAttribute(typeof(UIDisplayNameAttribute), true) as
-                                    UIDisplayNameAttribute;
-                            return new Response<object?>()
-                            {
-                                Succeeded = false,
-                                FriendlyMessage =
-                                    $"The value for {displayNameAttribute?.Name ?? property.Name} exceeds the character limit of {limit}."
-                            };
-                        }
-                    }
+                        Succeeded = false,
+                        FriendlyMessage = $"The value for {field.displayName ?? field.name} exceeds the character limit of {field.characterLimit}."
+                    };
                 }
             }
         }
 
-        return new Response<object?>()
-        {
-            Succeeded = true
-        };
+        return ServiceResult.Success();
     }
 
     private Response<object?> RequiredFields(PipelineContext context)
@@ -84,30 +91,39 @@ public class PipeUIServices : BasePipelineStage
         {
             return ServiceResult.Success();
         }
-        
-        foreach (var property in context.Entity.GetType().GetEntityProperties())
+
+        // If no fields were provided (not from API), allow it
+        if (context.Fields == null)
         {
-            if (property.GetCustomAttribute(typeof(UIRequiredAttribute), true) != null)
+            return ServiceResult.Success();
+        }
+
+        // Use cached metadata instead of reflection
+        var metadata = Cache.Instance.GetTableMetadata(context.TableName);
+        var requiredFields = metadata.MetadataOutput.fields
+            .Where(f => f.isRequired)
+            .ToList();
+
+        foreach (var field in requiredFields)
+        {
+            var property = context.Entity.GetType().GetProperty(field.name);
+            if (property != null)
             {
                 var value = property.GetValue(context.Entity);
-                if (value == null || 
-                    (property.PropertyType == typeof(string) && 
+                if (value == null ||
+                    (property.PropertyType == typeof(string) &&
                      (string.IsNullOrEmpty(value.ToString()) || string.IsNullOrWhiteSpace(value.ToString()))))
                 {
-                    UIDisplayNameAttribute? displayNameAttribute =
-                        property.GetCustomAttribute(typeof(UIDisplayNameAttribute), true) as UIDisplayNameAttribute;
                     return new Response<object?>()
                     {
                         Succeeded = false,
-                        FriendlyMessage = $"{displayNameAttribute?.Name ?? property.Name} is required."
+                        FriendlyMessage = $"{field.displayName ?? field.name} is required."
                     };
                 }
             }
         }
-        return new Response<object?>()
-        {
-            Succeeded = true
-        };
+
+        return ServiceResult.Success();
     }
 
     private Response<object?> NumberRange(PipelineContext context)
@@ -182,5 +198,126 @@ public class PipeUIServices : BasePipelineStage
         {
             Succeeded = true
         };
+    }
+
+    private Response<object?> CreateOnlyFields(PipelineContext context)
+    {
+        if (context.DataOperation != DataOperation.Update)
+        {
+            return ServiceResult.Success();
+        }
+
+        if (context.Entity == null || context.PreEntity == null)
+        {
+            return ServiceResult.Success();
+        }
+
+        // If no fields were provided (not from API), allow it
+        if (context.Fields == null)
+        {
+            return ServiceResult.Success();
+        }
+
+        // Use cached metadata instead of reflection
+        var metadata = Cache.Instance.GetTableMetadata(context.TableName);
+        var createOnlyFields = metadata.MetadataOutput.fields.Where(f => f.isCreateOnly).ToList();
+
+        foreach (var field in createOnlyFields)
+        {
+            var property = context.Entity.GetType().GetProperty(field.name);
+            if (property != null)
+            {
+                var currentValue = property.GetValue(context.Entity);
+                var preValue = property.GetValue(context.PreEntity);
+
+                // Check if value changed
+                if (!Equals(currentValue, preValue))
+                {
+                    return new Response<object?>()
+                    {
+                        Succeeded = false,
+                        FriendlyMessage = $"{field.displayName ?? field.name} cannot be modified after creation."
+                    };
+                }
+            }
+        }
+
+        return ServiceResult.Success();
+    }
+
+    private Response<object?> ReadOnlyFields(PipelineContext context)
+    {
+        if (context.DataOperation is not (DataOperation.Create or DataOperation.Update))
+        {
+            return ServiceResult.Success();
+        }
+
+        // If no fields were provided (not from API), allow it
+        if (context.Fields == null)
+        {
+            return ServiceResult.Success();
+        }
+
+        if (context.Entity == null)
+        {
+            return ServiceResult.Success();
+        }
+
+        // Use cached metadata instead of reflection
+        var metadata = Cache.Instance.GetTableMetadata(context.TableName);
+        var readOnlyFields = metadata.MetadataOutput.fields
+            .Where(f => f.isReadOnly)
+            .ToList();
+
+        foreach (var field in readOnlyFields)
+        {
+            // Check if user attempted to set this readonly field via API
+            if (context.Fields.ContainsKey(field.name))
+            {
+                var property = context.Entity.GetType().GetProperty(field.name);
+                if (property != null)
+                {
+                    var currentValue = property.GetValue(context.Entity);
+
+                    if (currentValue == null)
+                    {
+                        continue;
+                    }
+
+                    // For Create operations, always block setting readonly fields
+                    if (context.DataOperation == DataOperation.Create)
+                    {
+                        if (field.name == nameof(BaseEntity.OwningUserId) && (Guid?)currentValue == context.UserId)
+                        {
+                            continue;
+                        }
+                        
+                        return new Response<object?>()
+                        {
+                            Succeeded = false,
+                            FriendlyMessage = $"{field.displayName ?? field.name} is read-only and cannot be set."
+                        };
+                    }
+
+                    // For Update operations, only block if value has changed
+                    if (context.DataOperation == DataOperation.Update && context.PreEntity != null)
+                    {
+                        var preValue = property.GetValue(context.PreEntity);
+
+                        // Check if value changed
+                        if (!Equals(currentValue, preValue))
+                        {
+                            return new Response<object?>()
+                            {
+                                Succeeded = false,
+                                FriendlyMessage = $"{field.displayName ?? field.name} is read-only and cannot be modified."
+                            };
+                        }
+                    }
+                }
+            }
+        }
+
+        return ServiceResult.Success();
     }
 }

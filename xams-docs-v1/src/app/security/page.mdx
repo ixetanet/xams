@@ -37,18 +37,85 @@ The `OwningUserId` and `OwningTeamId` fields can be set simultaneously, but at l
 
 If a table does not inherit from the `BaseEntity` class, System-level permissions are required to Create, Read, Update, and Delete records. In this case, records cannot be assigned or have ownership, as they lack the `OwningUserId` and `OwningTeamId` fields.
 
+## Multiple Owner Fields
+
+The `OwningUser` attribute allows multiple users to own a single record by marking additional Guid fields as owner fields. This is useful for entities like messages, tasks, or transactions where multiple users need equal access to the same record.
+
+```c# {{ title: 'Project / Entities / Message.cs' }}
+[Table(nameof(Message))]
+[UIDisplayName("Sender", nameof(OwningUserId))]
+public class Message : BaseEntity
+{
+    public Guid MessageId { get; set; }
+
+    [OwningUser]
+    public Guid? ReceiverId { get; set; }
+    public User? Receiver { get; set; }
+
+    public string Content { get; set; }
+}
+```
+
+When a user has User or Team-level permissions, they can access a record if they match **any** owner field. In the example above, both the sender and receiver can read, update, and delete the message.
+
+- <b>User-level permissions:</b> Users can access records where any `[OwningUser]`
+  field matches their user ID.
+- <b>Team-level permissions:</b> Users can access records where any `[OwningUser]`
+  field matches their user ID or where the `OwningTeamId` matches a team they belong
+  to.
+- <b>System-level permissions:</b> Users can access any record regardless of owner
+  fields.
+
+## Enforcing Owner Field Rules
+
+In some cases, you may want to give multiple users access to a record while restricting which owner fields they can assign. For example, in a friend request system, the issuing user creates the request and should be assigned to `OwningUserId`, while the receiving user is assigned to a `[OwningUser]` field. The issuing user needs System-level assign permissions to assign the request to any user on the platform, but you want to ensure they can only assign themselves to `OwningUserId` and cannot change it later. Use security attributes to enforce these rules.
+
+```c# {{ title: 'Project / Entities / FriendRequest.cs' }}
+[Table(nameof(FriendRequest))]
+[UIReadOnly(nameof(OwningUserId))]   // Auto-set to current user, prevents tampering
+[UICreateOnly(nameof(ReceiverId))]   // Set once on create, then immutable
+[UIDisplayName("Sender", nameof(OwningUserId))]
+public class FriendRequest : BaseEntity
+{
+    public Guid FriendRequestId { get; set; }
+
+    [OwningUser]
+    public Guid ReceiverId { get; set; }
+    public User? Receiver { get; set; }
+
+    public string Status { get; set; }
+}
+```
+
+In this example, `UIReadOnly` on `OwningUserId` automatically sets it to the current user and prevents any changes via UI or API. `UICreateOnly` on `ReceiverId` allows the issuing user to set it on create (using their System-level assign permissions), but prevents modification afterward. The receiving user (matched by `ReceiverId`) can accept by updating the friend request as long as they have User-level update permissions, since they are an owner of the record.
+
+<Note>
+  For complex business rules beyond owner enforcement (status transitions,
+  validation, etc.), use Service Logic. See Service Logic documentation for
+  details.
+</Note>
+
 ## Assign
 
-- <b>User-level assign permissions:</b> When creating records, users can only assign
-  the record to themselves (`OwningUserId`). If this field is not set, it defaults
-  to the user creating the record.
+- <b>No assign permissions:</b> Users can only assign records to themselves. If no
+  owning fields are set, `OwningUserId` defaults to the user creating the record.
 
-- <b>Team-level assign permissions:</b> Users can assign the `OwningUserId` to themselves
-  or any user in the teams they belong to. Additionally, they can set the `OwningTeamId`
-  to any of the teams they are a member of.
+- <b>User-level assign permissions:</b> Users can assign the `OwningUserId` or any
+  `[OwningUser]` field to any user in the system. Users cannot assign the `OwningTeamId`.
+
+- <b>Team-level assign permissions:</b> Users can assign the `OwningUserId` or any
+  `[OwningUser]` field to any user in the system. Additionally, they can set the
+  `OwningTeamId` to any of the teams they are a member of.
 
 - <b>System-level assign permissions:</b> Users can assign the record to any user
-  (`OwningUserId`) or team (`OwningTeamId`) in the system.
+  (`OwningUserId`, `[OwningUser]` fields) or team (`OwningTeamId`) in the system.
+
+<Note>
+  **Security Attributes**: `UIReadOnly` on `OwningUserId` overrides assign
+  permissions - the field is always set to the current user and cannot be
+  changed. `UICreateOnly` fields respect assign permissions on create, then
+  become immutable on update.
+</Note>
 
 ## Import & Export
 
@@ -108,7 +175,7 @@ const MyComponent = () => {
 
 From the ServiceLogic use the Permissions method of the ServiceContext to return an array of matching permissions the user has.
 
-```c# {{ title: 'Project.Services / Logic / MyEntityService.cs' }}
+```c# {{ title: 'Project / Services / MyEntityService.cs' }}
 [ServiceLogic(nameof(Widget), DataOperation.Create, LogicStage.PreOperation)]
 public class WidgetService : IServiceLogic
 {
@@ -130,3 +197,9 @@ For example, the System-level read access permission for the Widget entity is `T
 The operation can be one of the following: `CREATE`, `READ`, `UPDATE`, `DELETE`, or `ASSIGN`. The level can be `USER`, `TEAM`, or `SYSTEM`.
 
 Import and Export permissions follow the convention `TABLE_(TableName)_IMPORT` and `TABLE_(TableName)_EXPORT`.
+
+Actions follow the convention `ACTION_(ActionName)`.
+
+Realtime hubs (SignalR) follow the convention `HUB_(HubName)`.
+
+Job permissions follow the convention `JOB_(JobName)`.

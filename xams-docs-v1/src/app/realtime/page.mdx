@@ -13,11 +13,18 @@ Xams provides built-in support for real-time communication between server and cl
 Xams uses a single SignalR hub per browser window instance for optimal performance. You can create service-specific hubs using the `ServiceHub` attribute and implementing the `IServiceHub` interface.
 
 ```c# {{ title: 'Project/Hubs/ChatHub.cs' }}
+using Microsoft.AspNetCore.SignalR;
+using Xams.Core.Attributes;
+using Xams.Core.Contexts;
+using Xams.Core.Dtos;
+using Xams.Core.Interfaces;
+using Xams.Core.Utils;
+
 [ServiceHub(nameof(ChatHub))]
 public class ChatHub : IServiceHub
 {
     private static readonly string GroupName = "MyChatGroup";
-    
+
     public async Task<Response<object?>> OnConnected(HubContext context)
     {
         await context.Groups.AddToGroupAsync(context.SignalRContext.ConnectionId, GroupName);
@@ -29,15 +36,15 @@ public class ChatHub : IServiceHub
         await context.Groups.RemoveFromGroupAsync(context.SignalRContext.ConnectionId, GroupName);
         return ServiceResult.Success();
     }
-    
+
     public async Task<Response<object?>> OnReceive(HubContext context)
     {
         var stringMessage = context.Message;
         var message = context.GetMessage<ClientMessage>();
-        
+
         if (message.type == "message")
         {
-            await context.Clients.All.SendAsync("ReceiveMessage", message.content);    
+            await context.Clients.All.SendAsync("ReceiveMessage", message.content);
         }
 
         return ServiceResult.Success("Message Received!");
@@ -48,7 +55,7 @@ public class ChatHub : IServiceHub
         public string type { get; set; }
         public string content { get; set; }
     }
-    
+
     public async Task<Response<object?>> Send(HubSendContext context)
     {
         await context.Clients.All.SendAsync(context.Message as string ?? "");
@@ -59,10 +66,12 @@ public class ChatHub : IServiceHub
 
 ## Hub Permissions
 
-Hub access is controlled through role-based permissions. 
+Hub access is controlled through role-based permissions.
+
 <DocImage image={realtimePermissions} full={true} />
 <Note>
-  Modifying hub permissions forces affected clients to reconnect, causing temporary disconnection.
+  Modifying hub permissions forces affected clients to reconnect, causing
+  temporary disconnection.
 </Note>
 
 The `IServiceHub` interface defines four methods with specific permission requirements:
@@ -75,10 +84,10 @@ public interface IServiceHub
 
     // Called when a client disconnects or loses permissions
     public Task<Response<object?>> OnDisconnected(HubContext context);
-    
+
     // Called when receiving messages from permitted clients
     public Task<Response<object?>> OnReceive(HubContext context);
-    
+
     // Called from server-side services to send messages
     public Task<Response<object?>> Send(HubSendContext context);
 }
@@ -90,40 +99,41 @@ The client connects to the hub using the `appContext.signalR()` method, which re
 
 ```tsx {{ title: 'src/pages/Chat.tsx' }}
 const Chat = () => {
-  const appContext = useAppContext();
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<string[]>([]);
+  const appContext = useAppContext()
+  const [message, setMessage] = useState('')
+  const [messages, setMessages] = useState<string[]>([])
 
   const onSubmit = async (e: FormEvent<HTMLFormElement> | undefined) => {
-    e?.preventDefault();
-    const connection = await appContext.signalR();
+    e?.preventDefault()
+    const connection = await appContext.signalR()
     // Use send() for fire-and-forget, invoke() for return values
     await connection.send(
-      "ChatHub",
+      'ChatHub',
       JSON.stringify({
-        type: "message",
+        type: 'message',
         content: message,
-      })
-    );
-    setMessage("");
-  };
+      }),
+    )
+    setMessage('')
+  }
 
   useEffect(() => {
-    let cleanup: (() => void) | undefined;
+    let cleanup: (() => void) | undefined
     const connect = async () => {
-      const signalR = await appContext.signalR();
-      signalR.on("ReceiveMessage", (message: string) => {
-        setMessages((msgs) => [...msgs, `${message}`]);
-      });
-      cleanup = () => signalR.off("ReceiveMessage");
-    };
-    // Ensure the connection is established before using it
-    appContext.signalR();
-    if (appContext.signalRState === HubConnectionState.Connected) {
-      connect();
+      const signalR = await appContext.signalR()
+      // Framework automatically reconnects - no manual reconnection logic needed
+      signalR.on('ReceiveMessage', (message: string) => {
+        setMessages((msgs) => [...msgs, `${message}`])
+      })
+      cleanup = () => signalR.off('ReceiveMessage')
     }
-    return () => cleanup?.();
-  }, [appContext.signalRState]);
+    // Ensure the connection is established before using it
+    appContext.signalR()
+    if (appContext.signalRState === HubConnectionState.Connected) {
+      connect()
+    }
+    return () => cleanup?.()
+  }, [appContext.signalRState])
 
   return (
     <AppLayout>
@@ -133,7 +143,7 @@ const Chat = () => {
         ))}
       </ul>
       <form onSubmit={onSubmit}>
-        <div className="w-full flex gap-2">
+        <div className="flex w-full gap-2">
           <TextInput
             value={message}
             className="w-full"
@@ -145,10 +155,15 @@ const Chat = () => {
         </div>
       </form>
     </AppLayout>
-  );
-};
+  )
+}
 ```
 
+<Note>
+  The framework automatically handles connection initialization via
+  `appContext.signalR()`, reconnection on disconnect, and connection state
+  tracking via `appContext.signalRState`
+</Note>
 
 ## Sending Messages from Services
 
@@ -171,134 +186,38 @@ public class WidgetService : IServiceLogic
 ```
 
 <Note>
-  The `HubSend` method executes in a new database transaction, independent of the current service's transaction context.
+  The `HubSend` method executes in a new database transaction, independent of
+  the current service's transaction context.
 </Note>
 
-The hub's `Send` method processes the message:
+The hub's `Send` method processes server-side messages (see complete example above).
+
+<Note>
+  The `Clients.All` property sends messages to all connected clients across the
+  entire application, not just those connected to this specific hub. Use groups
+  to target specific client subsets.
+</Note>
+
+## Dependency Injection
+
+ServiceHub classes support constructor-based dependency injection:
 
 ```c# {{ title: 'Project/Hubs/ChatHub.cs' }}
 [ServiceHub(nameof(ChatHub))]
 public class ChatHub : IServiceHub
 {
-    // Additional implementation details
-    public async Task<Response<object?>> Send(HubSendContext context)
+    private readonly IEmailService _emailService;
+
+    public ChatHub(IEmailService emailService)
     {
-        var message = context.GetMessage<ServerMessage>();
-        if (message.type == "message_all_clients")
-        {
-            await context.Clients.All.SendAsync(message.content);
-        }
+        _emailService = emailService;
+    }
+
+    public async Task<Response<object?>> OnConnected(HubContext context)
+    {
+        await _emailService.SendWelcome(context.ExecutingUserId);
         return ServiceResult.Success();
     }
-    
-    public class ServerMessage
-    {
-        public string type { get; set; }
-        public string content { get; set; }
-    }
+    // ... other methods
 }
-```
-
-<Note>
-  The `Clients.All` property sends messages to all connected clients across the entire application, not just those connected to this specific hub. Use groups to target specific client subsets.
-</Note>
-
-## Authentication
-
-SignalR authentication requires configuring JWT bearer token support in `Program.cs`:
-
-```c# {{ title: 'Project/Program.cs' }}
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {    
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
-            {
-                var accessToken = context.Request.Query["access_token"];
-                var path = context.HttpContext.Request.Path;
-                
-                if (!string.IsNullOrEmpty(accessToken) && 
-                    path.StartsWithSegments("/xams/hub"))
-                {
-                    context.Token = accessToken;
-                }
-                
-                return Task.CompletedTask;
-            }
-        };
-    });
-```
-
-The `getAccessToken` function provides bearer tokens to both the `useAuthRequest` hook and SignalR connections.
-
-```tsx {{ title: 'src/pages/_app.tsx' }}
-import {
-  AppContextProvider,
-  AuthContextProvider,
-  getQueryParam,
-} from "@ixeta/xams";
-
-export default function App({ Component, pageProps }: AppProps) {
-  const userId = getQueryParam("userid", router.asPath);
-
-  const getAccessToken = async () => {
-    // Token retrieval implementation
-  };
-
-  return (
-    <MantineProvider theme={theme}>
-      <AuthContextProvider
-        apiUrl={process.env.NEXT_PUBLIC_API as string}
-        headers={{
-          UserId: userId as string,
-        }}
-        getAccessToken={getAccessToken}
-      >
-        <AppContextProvider>
-          <Component {...pageProps} />
-        </AppContextProvider>
-      </AuthContextProvider>
-    </MantineProvider>
-  );
-}
-```
-
-<Note>
-  SignalR connections require access tokens to be passed via query string due to WebSocket limitations with headers.
-</Note>
-
-Ensure `getAccessToken` is ready before initializing SignalR connections:
-
-```tsx {{ title: 'src/pages/Chat.tsx' }}
-const Chat = () => {
-  const appContext = useAppContext();
-  const auth = useAuth();
-  
-  ...
-
-  useEffect(() => {
-    let cleanup: (() => void) | undefined;
-    // Ensure the connection is established before using it
-    appContext.signalR();
-    if (auth.isReady && appContext.signalRState === HubConnectionState.Connected) {
-      const connect = async () => {
-        const signalR = await appContext.signalR();
-        signalR.on("ReceiveMessage", (message: string) => {
-          setMessages((msgs) => [...msgs, `${message}`]);
-        });
-
-        cleanup = () => signalR.off("ReceiveMessage");
-      };
-      connect();
-    }
-    
-    return () => cleanup?.();
-  }, [auth.isReady, appContext.signalRState]);
-
-  return (
-    ...
-  );
-};
 ```

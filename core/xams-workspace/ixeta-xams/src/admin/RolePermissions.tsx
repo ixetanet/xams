@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
 import useAuthRequest from "../hooks/useAuthRequest";
-import { TablesResponse } from "../api/TablesResponse";
 import PermissionIcon from "./PermissionIcon";
 import Query from "../utils/Query";
 import { RolePermission } from "../api/RolePermission";
@@ -16,23 +15,13 @@ import SystemPermissions from "./components/SystemPermissions";
 import ActionPermissions from "./components/ActionPermissions";
 import HubPermissions from "./components/HubPermissions";
 import CopyId from "./components/CopyId";
+import { RolePermissionState } from "./types/RolePermissionTypes";
+import { TablesResponse } from "../api/TablesResponse";
 
 interface RolePermissionsProps {
   roleId?: string;
   formBuilder: useFormBuilderType;
 }
-
-export type RolePermissionState = {
-  tables: TablesResponse[];
-  allPermissions: Permission[];
-  rolePermissions: RolePermission[];
-  createRolePermissions: RolePermission[];
-  updateRolePermissions: RolePermission[];
-  deleteRolePermissions: RolePermission[];
-  isLoaded: boolean;
-};
-
-export const SystemAdministratorRoleId = "64589861-0481-4dbb-a96f-9b8b6546c40d";
 
 const RolePermissions = (props: RolePermissionsProps) => {
   const authRequest = useAuthRequest();

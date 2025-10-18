@@ -212,6 +212,8 @@ namespace Xams.Core.Utils
                 foreach (var field in fields)
                 {
                     PropertyInfo? property = type.GetProperty(field.Key);
+                    
+                    
                     if (property == null)
                     {
                         return new MapEntityResult()
@@ -220,7 +222,11 @@ namespace Xams.Core.Utils
                             Message = $"Property {field.Key} not found."
                         };
                     }
-
+                    
+                    if (property.IsICollection())
+                    {
+                        continue;
+                    }
 
                     object? convertedValue = null;
 

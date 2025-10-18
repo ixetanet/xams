@@ -2,10 +2,9 @@ import { Button, Loader, Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import React, { useMemo, useState } from "react";
 import dayjs from "dayjs";
-import localizedFormat from "dayjs/plugin/localizedFormat";
+import localizedFormat from "dayjs/plugin/localizedFormat.js";
 import { useSignalR, useSignalRResponse } from "../hooks/useSignalR";
 import { useAuthContext } from "./AuthContext";
-import { HubConnectionState } from "@microsoft/signalr";
 
 export type AppContextShape = {
   showError: (message: string | React.ReactElement, title?: string) => void;
@@ -19,7 +18,7 @@ export type AppContextShape = {
   ) => void;
   userId?: string | undefined;
   signalR: () => Promise<useSignalRResponse>;
-  signalRState: HubConnectionState | undefined;
+  signalRState: string | undefined;
 };
 
 export const AppContext = React.createContext<AppContextShape | null>(null);
@@ -93,7 +92,7 @@ export const AppContextProvider = (props: AppContextProviderProps) => {
       signalR: () => signalR.getConnection(),
       signalRState: signalR.connectionState,
     }),
-    [signalR.connectionState]
+    [signalR.connectionState, authContext.getAccessToken]
   );
 
   return (

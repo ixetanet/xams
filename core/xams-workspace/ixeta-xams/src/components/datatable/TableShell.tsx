@@ -8,7 +8,7 @@ import {
 } from "@mantine/core";
 import React, { useEffect, useState } from "react";
 import { IconPlus, IconDotsVertical } from "@tabler/icons-react";
-import { useDataTableContext } from "../DataTableImp";
+import { useDataTableContext } from "./DataTableContext";
 import { getDataOptions } from "./DataTableTypes";
 import SearchBox from "./SearchBox";
 import { PermissionLevel } from "../../stores/usePermissionStore";

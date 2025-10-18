@@ -88,10 +88,9 @@ dotnet ef migrations add migration01
 dotnet ef database update
 ```
 
-9. Run the project. You can access the admin dashboard by navigating to `/x` in your browser. In development you can provide the user id of any user you want to impersonate via the query string. For example, to impersonate the SYSTEM user:
+9. Run the project. You can access the admin dashboard by navigating to `/xams` in your browser. In development you can provide the user id of any user you want to impersonate via the query string. For example, to impersonate the SYSTEM user:
 
-
-[http://localhost/x?userid=f8a43b04-4752-4fda-a89f-62bebcd8240c](http://localhost:port/x?userid=f8a43b04-4752-4fda-a89f-62bebcd8240c)
+[http://localhost/xams?userid=f8a43b04-4752-4fda-a89f-62bebcd8240c](http://localhost:port/xams?userid=f8a43b04-4752-4fda-a89f-62bebcd8240c)
 
 <Note>
   A new Xams project isn't configured with Authentication or Authorization but
@@ -174,7 +173,7 @@ export default function App({ Component, pageProps }: AppProps) {
 1. In the ASP.NET project create a new class file in the Entities folder and name it "Widget.cs"
 
 ```c# {{ title: 'Project / Entities / Widget.cs' }}
-[Table("Widget")]
+[Table(nameof(Widget))]
 public class Widget
 {
     public Guid WidgetId { get; set; }
@@ -233,10 +232,10 @@ If you click the "Add" button on the table, a form will open where a new record 
 
 We can have the service layer automatically set a price for the Widget based on the number of Widgets in the database.
 
-1. Create a new folder named `Logic`. Create a new class file in the `Logic` folder and name it "WidgetService.cs"
+1. Create a new folder named `Services`. Create a new class file in the `Services` folder and name it "WidgetService.cs"
 2. Replace the class in the file with the code below.
 
-```c# {{ title: 'Project / Logic / WidgetService.cs' }}
+```c# {{ title: 'Project / Services / WidgetService.cs' }}
 // Execute on Create or Update of the Widget entity before the Save to the database.
 [ServiceLogic(nameof(Widget), DataOperation.Create | DataOperation.Update, LogicStage.PreOperation)]
 public class WidgetService : IServiceLogic

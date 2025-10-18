@@ -1,7 +1,7 @@
 import React from "react";
 import { IconCaretDown, IconCaretUp } from "@tabler/icons-react";
 import { useMantineTheme, useMantineColorScheme, Table } from "@mantine/core";
-import { useDataTableContext } from "../DataTableImp";
+import { useDataTableContext } from "./DataTableContext";
 
 interface DataTableHeaderProps {}
 

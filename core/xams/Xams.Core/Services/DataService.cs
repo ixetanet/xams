@@ -543,13 +543,19 @@ namespace Xams.Core.Services
             var hub = (IServiceHub)hubInstance;
             try
             {
-                var serviceScope = ServiceProvider.CreateScope();
-                var dataService = serviceScope.ServiceProvider.GetRequiredService<IDataService>();
-                var response = await dataService.ExecuteTransaction(ExecutingUserId, async (pipelineContext) =>
+                var pipelineContext = new PipelineContext()
                 {
-                    var response = await hub.Send(new HubSendContext(pipelineContext, message, signalRInstance));
-                    return response;
-                });
+                    UserId = ExecutingUserId,
+                    DataOperation = DataOperation.Read,
+                    InputParameters = new Dictionary<string, JsonElement>(),
+                    OutputParameters = new Dictionary<string, JsonElement>(),
+                    SystemParameters = new SystemParameters(),
+                    DataService = this,
+                    DataRepository = _dataRepository,
+                    MetadataRepository = _metadataRepository,
+                    SecurityRepository = _securityRepository,
+                };
+                var response = await hub.Send(new HubSendContext(pipelineContext, message, signalRInstance));
                 return response;
             }
             catch (Exception e)

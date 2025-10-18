@@ -8,7 +8,7 @@ import PermissionIcon from "../PermissionIcon";
 import {
   RolePermissionState,
   SystemAdministratorRoleId,
-} from "../RolePermissions";
+} from "../types/RolePermissionTypes";
 import useAdminPermission, {
   PermissionLevels,
 } from "../../hooks/useAdminPermission";

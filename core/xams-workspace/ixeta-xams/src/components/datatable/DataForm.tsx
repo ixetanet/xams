@@ -4,7 +4,7 @@ import Field from "../Field";
 import useFormBuilder, { useFormBuilderType } from "../../hooks/useFormBuilder";
 import SaveButton from "../SaveButton";
 import FormContainer from "../FormContainer";
-import { useDataTableContext } from "../DataTableImp";
+import { useDataTableContext } from "./DataTableContext";
 import { getDataOptions } from "./DataTableTypes";
 
 export interface DataFormRef {

@@ -8,7 +8,7 @@ import {
 } from "@tabler/icons-react";
 import React from "react";
 import RolePermissions from "../RolePermissions";
-import { useAdminDashContext } from "../AdminDashboard";
+import { useAdminDashContext } from "../contexts/AdminDashContext";
 import DataTable from "../../components/DataTable";
 import CopyId from "../components/CopyId";
 

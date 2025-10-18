@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { CellLocation, Row } from "../components/datagrid/DataGridTypes";
 import PermissionIcon from "../admin/PermissionIcon";
-import { RolePermissionState } from "../admin/RolePermissions";
+import { RolePermissionState } from "../admin/types/RolePermissionTypes";
 
 interface useAdminPermissionProps {
   roleId: string;

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./src/index.ts"],
+  "out": "docs",
+  "plugin": ["typedoc-plugin-markdown"],
+  "readme": "API_REFERENCE.md",
+  "name": "@ixeta/xams API Documentation",
+  "includeVersion": true,
+  "exclude": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ],
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "excludeInternal": false,
+  "hideGenerator": false,
+  "disableSources": false,
+  "categorizeByGroup": true,
+  "defaultCategory": "Other",
+  "categoryOrder": [
+    "Hooks",
+    "Components",
+    "Contexts",
+    "API Types",
+    "Utilities",
+    "Admin",
+    "Other"
+  ],
+  "sort": ["source-order", "required-first", "alphabetical"],
+  "kindSortOrder": [
+    "Function",
+    "Interface",
+    "TypeAlias",
+    "Variable",
+    "Class",
+    "Enum"
+  ],
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  },
+  "githubPages": false,
+  "visibilityFilters": {
+    "protected": false,
+    "private": false,
+    "inherited": true,
+    "external": false
+  },
+  "outputFileStrategy": "modules",
+  "flattenOutputFiles": true,
+  "mergeReadme": true
+}

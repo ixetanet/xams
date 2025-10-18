@@ -265,14 +265,14 @@ internal static class EntityExtensions
         return propertyType;
     }
     
-    public static bool IsValidEntityProperty(this PropertyInfo propertyInfo)
+    public static bool IsICollection(this PropertyInfo propertyInfo)
     {
         Type propertyType = propertyInfo.PropertyType;
         if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(ICollection<>))
         {
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
     public static Type GetUnderlyingType(this PropertyInfo propertyInfo)
     {
@@ -286,7 +286,7 @@ internal static class EntityExtensions
             if (property.Name == "Item")
                 continue;
             
-            if (!property.IsValidEntityProperty())
+            if (property.IsICollection())
             {
                 continue;
             }

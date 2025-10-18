@@ -1,6 +1,6 @@
 import React from "react";
 import DataCell from "./DataCell";
-import { useDataTableContext } from "../DataTableImp";
+import { useDataTableContext } from "./DataTableContext";
 import { Table } from "@mantine/core";
 
 const DataRows = () => {

@@ -5,6 +5,7 @@ import imgRecommended from '@/images/widget_uirecommended.png'
 import imgDisplayName from '@/images/attribute_displayname.png'
 import imgCreateOption from '@/images/admin_create_option.png'
 import imgCreateWidgetOption from '@/images/option_create_widget.png'
+import imgUiMultiSelect from '@/images/attribute_uimultiselect.png'
 
 export const metadata = {
   title: 'Attributes',
@@ -13,191 +14,273 @@ export const metadata = {
 
 # Attributes
 
-Attributes can be assigned to fields in model classes to modify their behavior on both the front end and the back end. {{ className: 'lead' }}
+Attributes modify field behavior on both the frontend and backend. {{ className: 'lead' }}
 
-## UIName
+## Quick Reference
 
-The `UIName` attribute sets the name of the record when searching for records in a select box from the UI.
+| Attribute         | Effect                                                            | Enforcement  | Example                                                |
+| ----------------- | ----------------------------------------------------------------- | ------------ | ------------------------------------------------------ |
+| **UIName**        | Sets lookup display field                                         | UI           | `[UIName] public string Name { get; set; }`            |
+| **UIDescription** | Sets lookup description                                           | UI           | `[UIDescription] public string Info { get; set; }`     |
+| **UIDisplayName** | Custom field label (field) or BaseEntity overrides (class)        | UI           | `[UIDisplayName("Serial #")] public string Name`       |
+| **UIRequired**    | Required field with validation                                    | UI + Backend | `[UIRequired] public string Name { get; set; }`        |
+| **UIRecommended** | Shows blue cross indicator                                        | UI only      | `[UIRecommended] public decimal Price { get; set; }`   |
+| **UIHide**        | Hidden from UI                                                    | Backend      | `[UIHide] public decimal InternalCost { get; set; }`   |
+| **UIReadOnly**    | Display only, no editing (field) or BaseEntity protection (class) | Backend      | `[UIReadOnly] public decimal Price { get; set; }`      |
+| **UICreateOnly**  | Editable on create only (field) or BaseEntity protection (class)  | Backend      | `[UICreateOnly] public Guid OfferId { get; set; }`     |
+| **UIOption**      | Dropdown from Options table                                       | UI           | `[UIOption("Category")] public Guid? CategoryId`       |
+| **UIDateFormat**  | Date display format                                               | UI           | `[UIDateFormat("lll")] public DateTime OrderDate`      |
+| **UIMultiSelect** | Many-to-many via junction table                                   | Backend      | `[UIMultiSelect(...)] public ICollection<T> Tags`      |
+| **CascadeDelete** | Cascade delete on FK                                              | Backend      | `[CascadeDelete] public Guid? AddressId { get; set; }` |
 
-<DocImage image={imgName} full={true} />
+## Complete Example
 
-```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
+```c# {{ title: 'Widget Entity with Multiple Attributes' }}
 [Table(nameof(Widget))]
-public class Widget
+// Override BaseEntity field display names (supports multiple)
+[UIDisplayName("Owner", nameof(OwningUserId))]
+[UIDisplayName("Created", nameof(CreatedDate))]
+[UIDisplayName("Last Modified", nameof(UpdatedDate))]
+// Make BaseEntity fields read-only (single attribute, multiple fields)
+[UIReadOnly(nameof(OwningUserId), nameof(CreatedDate), nameof(UpdatedDate))]
+// Make BaseEntity fields create-only (single attribute, multiple fields)
+[UICreateOnly(nameof(OwningUserId), nameof(CreatedDate))]
+public class Widget : BaseEntity
 {
     public Guid WidgetId { get; set; }
+
+    // UIName - Used in lookup dropdowns
     [UIName]
-    public string WidgetName { get; set; }
-}
+    public string Name { get; set; }
 
-[Table(nameof(Order))]
-public class Order
-{
-    public Guid OrderId { get; set; }
-    public Guid WidgetId { get; set; }
-    public Widget Widget { get; set; }
-    public int Quantity { get; set; }
-}
-```
-
-## UIDescription
-
-The `UIDescription` attribute sets the description of the record when searching for records in a select box from the UI.
-
-<DocImage image={imgDescription} full={true} />
-
-```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
-[Table(nameof(Widget))]
-public class Widget
-{
-    public Guid WidgetId { get; set; }
-    [UIName]
-    public string WidgetName { get; set; }
+    // UIDescription - Shown below name in lookups
     [UIDescription]
-    public string Information { get; set; }
-}
+    public string Description { get; set; }
 
-[Table(nameof(Order))]
-public class Order
-{
-    public Guid OrderId { get; set; }
-    public Guid WidgetId { get; set; }
-    public Widget Widget { get; set; }
-    public int Quantity { get; set; }
-}
-```
+    // UIRequired - Mandatory field (asterisk shown)
+    [UIRequired]
+    public string SerialNumber { get; set; }
 
-## UIDisplayName
-
-The `UIDisplayName` attribute sets the label for the field on forms in the user interface (UI).
-
-```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
-[Table(nameof(Widget))]
-public class Widget
-{
-    public Guid WidgetId { get; set; }
-    [UIDisplayName("Serial Number")]
-    public string Name { get; set; }
-    public decimal Price { get; set; }
-}
-```
-
-<DocImage image={imgDisplayName} full={false} />
-
-## UIRequired
-
-The `UIRequired` attribute ensures that a value is provided both on the UI and the backend. An asterisk will appear on the form, along with form validation. If the value is not provided and sent to the server, the server will return a 400 error.
-
-```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
-[Table(nameof(Widget))]
-public class Widget
-{
-    public Guid WidgetId { get; set; }
-    [UIRequired] // Add the UIRequired attribute to a field
-    public string Name { get; set; }
-    public decimal Price { get; set; }
-}
-```
-
-<DocImage image={imgRequired} full={false} />
-
-## UIRecommended
-
-The `UIRecommended` attribute displays a blue cross, indicating to the user that filling out the field is recommended.
-
-```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
-[Table(nameof(Widget))]
-public class Widget
-{
-    public Guid WidgetId { get; set; }
-    public string Name { get; set; }
+    // UIRecommended - Blue cross indicator
     [UIRecommended]
     public decimal Price { get; set; }
-}
-```
 
-<DocImage image={imgRecommended} full={false} />
+    // UIDisplayName - Custom label
+    [UIDisplayName("Internal Cost")]
+    public decimal Cost { get; set; }
 
-## UIHide
+    // UIHide - Hidden from UI but queryable
+    [UIHide(queryable: true)]
+    public decimal InternalMargin { get; set; }
 
-The `UIHide` attribute ensures that a field is accessible only on the server within the service layer of your application. This field cannot be displayed in the user interface or queried from JavaScript.
+    // UIReadOnly - Can read but not edit from UI
+    [UIReadOnly]
+    public decimal CalculatedTotal { get; set; }
 
-```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
-[Table(nameof(Widget))]
-public class Widget
-{
-    public Guid WidgetId { get; set; }
-    public string Name { get; set; }
-    [UIHide] // Hide this field from the UI
-    public decimal Price { get; set; }
-}
-```
+    // UICreateOnly - Set on create, then becomes read-only
+    [UICreateOnly]
+    public string BatchNumber { get; set; }
 
-The field can be made queryable by passing a value of true into the first parameter.
-
-```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
-[Table(nameof(Widget))]
-public class Widget
-{
-    public Guid WidgetId { get; set; }
-    public string Name { get; set; }
-    [UIHide(true)] // Cannot but read from the UI but can be filtered on
-    public decimal Price { get; set; }
-}
-```
-
-## UIReadOnly
-
-The `UIReadOnly` attribute ensures that a field can only be read from the UI, even if the user has Update or Create permissions. The only way to update read-only fields is by using the DbContext directly to bypass the Service Logic pipeline.
-
-```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
-[Table(nameof(Widget))]
-public class Widget
-{
-    public Guid WidgetId { get; set; }
-    public string Name { get; set; }
-    [UIReadOnly] // Field is read only from the UI
-    public decimal Price { get; set; }
-}
-```
-
-## UIOption
-
-The `UIOption` attribute allows the selection of an option record.
-Options are created from the Admin Dashboard.
-
-<DocImage image={imgCreateOption} full={true} />
-
-<DocImage image={imgCreateWidgetOption} full={false} />
-
-```c# {{ title: 'Project.Common / Entities / Widget.cs' }}
-[Table(nameof(Widget))]
-public class Widget
-{
-    public Guid WidgetId { get; set; }
-    public string Name { get; set; }
+    // UIOption - Dropdown from Options table
     [UIOption("WidgetType")]
     public Guid? WidgetTypeId { get; set; }
     public Option WidgetType { get; set; }
-}
-```
 
-## UIDateFormat
-
-The `UIDateFormat` attribute defines the display format for DateTime fields.
-
-Set this parameter to any valid [Day.js format](https://day.js.org/docs/en/display/format).
-
-
-```c# {{ title: 'Project.Common / Entities / Order.cs' }}
-[Table(nameof(Order))]
-public class Order
-{
-    public Guid OrderId { get; set; }
-    public Guid WidgetId { get; set; }
-    public Widget Widget { get; set; }
-    public int Quantity { get; set; }
+    // UIDateFormat - Custom date format (Day.js)
     [UIDateFormat("lll")]
-    public DateTime OrderDate { get; set; }
+    public DateTime ManufacturedDate { get; set; }
+
+    // UIMultiSelect - Many-to-many relationship via junction table
+    [UIMultiSelect(nameof(WidgetTag.WidgetId), nameof(WidgetTag.TagId))]
+    public ICollection<WidgetTag> Tags { get; set; }
+
+    // Relationships with cascade behavior
+    public Guid CompanyId { get; set; }  // Required - cascade delete
+    public Company Company { get; set; }
+
+    public Guid? ManufacturerId { get; set; }  // Optional - set null on delete
+    public Manufacturer? Manufacturer { get; set; }
+
+    [CascadeDelete]
+    public Guid? WarrantyId { get; set; }  // Optional but cascade delete
+    public Warranty? Warranty { get; set; }
 }
 ```
+
+## Visual Examples
+
+### UIName & UIDescription
+
+When selecting a Widget in a lookup, the Name field is displayed with the Description underneath.
+
+<DocImage image={imgName} full={true} />
+<DocImage image={imgDescription} full={true} />
+
+### UIRequired
+
+Shows asterisk (\*) and validates on submit.
+
+<DocImage image={imgRequired} full={false} />
+
+### UIRecommended
+
+Shows blue cross (✚) to indicate recommended field.
+
+<DocImage image={imgRecommended} full={false} />
+
+### UIDisplayName
+
+Custom label instead of property name.
+
+<DocImage image={imgDisplayName} full={false} />
+
+## UIOption Setup
+
+Options are managed from the Admin Dashboard under System → Options.
+
+<DocImage image={imgCreateOption} full={true} />
+<DocImage image={imgCreateWidgetOption} full={false} />
+
+**Option Entity Fields:**
+
+- **Name**: Option group identifier (matches UIOption parameter, e.g. "TodoPriority")
+- **Label**: Display text shown in dropdown
+- **Value**: Optional code/value for the option
+- **Order**: Sort order in dropdown
+
+**Example**:
+
+```c#
+[UIOption("TodoPriority")]
+public Guid? PriorityId { get; set; }
+public Option Priority { get; set; }
+```
+
+This creates a dropdown populated with all Options where `Name == "TodoPriority"`.
+
+## Special Behaviors
+
+### UIHide
+
+```c#
+// Hidden and not queryable
+[UIHide]
+public decimal Secret { get; set; }
+
+// Hidden but can be used in filters
+[UIHide(queryable: true)]
+public decimal InternalCost { get; set; }
+```
+
+### UICreateOnly
+
+Field can be set on create but becomes read-only afterward.
+
+**Field-level:**
+
+```c#
+[UICreateOnly]
+public Guid OfferId { get; set; }
+```
+
+**Class-level (BaseEntity fields):**
+
+```c#
+[UICreateOnly(nameof(OwningUserId), nameof(CampaignId))]
+public class Coupon : BaseEntity
+```
+
+### UIDateFormat
+
+Uses [Day.js format strings](https://day.js.org/docs/en/display/format):
+
+- `"lll"` → Oct 14, 2025 9:30 PM
+- `"YYYY-MM-DD"` → 2025-10-14
+- `"MMM D, YYYY"` → Oct 14, 2025
+
+### UIMultiSelect
+
+Creates many-to-many relationships through junction tables with automatic UI and data management.
+
+<DocImage image={imgUiMultiSelect} full={false} />
+
+**Entity with UIMultiSelect:**
+
+```c#
+[Table(nameof(EmailMessage))]
+public class EmailMessage : BaseEntity
+{
+    public Guid EmailMessageId { get; set; }
+
+    [UIDisplayName("To Recipients")]
+    [UIMultiSelect(nameof(EmailMessageContact.EmailMessageId), nameof(EmailMessageContact.ContactId))]
+    public ICollection<EmailMessageContact> To { get; set; }
+}
+```
+
+**Junction Table:**
+
+```c#
+public class EmailMessageContact
+{
+    public Guid EmailMessageContactId { get; set; }
+
+    // Owner FK (first parameter)
+    public Guid EmailMessageId { get; set; }
+    public EmailMessage EmailMessage { get; set; }
+
+    // Target FK (second parameter)
+    public Guid ContactId { get; set; }
+    public Contact Contact { get; set; }
+
+    // Optional: Additional fields (preserved but not managed by UIMultiSelect)
+    public DateTime? SentDate { get; set; }
+}
+```
+
+**Target Entity:**
+
+```c#
+public class Contact : BaseEntity
+{
+    public Guid ContactId { get; set; }
+
+    [UIName]
+    public string Name { get; set; }
+
+    [UIDescription]  // Optional: shows below name in dropdown
+    public string Email { get; set; }
+}
+```
+
+**Frontend Usage:**
+
+```tsx
+<Field name="To" /> // Automatically renders MultiSelect
+```
+
+**Permissions:**
+
+- Parent entity Update permission required
+- Junction table Create/Delete permissions checked via pipeline
+
+<Note>
+  **Limitations:** Requires Guid primary keys. Target entity must have Name
+  property or [UIName] attribute. Junction table can have additional fields but
+  UIMultiSelect only manages the two FK fields.
+</Note>
+
+## Cascade Delete Rules
+
+Cascade behavior is determined by nullable operator and `[CascadeDelete]` attribute:
+
+| Configuration                            | Behavior                            |
+| ---------------------------------------- | ----------------------------------- |
+| `public Guid ForeignId` (required)       | Deleting parent deletes this record |
+| `public Guid? ForeignId` (optional)      | Deleting parent sets FK to null     |
+| `[CascadeDelete] public Guid? ForeignId` | Deleting parent deletes this record |
+
+<Note>
+  Delete permissions are only checked on the record being deleted, not on
+  cascaded records. This matches enterprise CRM behavior.
+</Note>

@@ -1,12 +1,23 @@
 {
   "name": "@ixeta/xams",
-  "version": "1.0.10",
+  "version": "1.0.16",
   "description": "Xams React Components",
   "source": "src/index.ts",
   "types": "dist/types/index.d.ts",
   "module": "dist/index.js",
   "type": "module",
   "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./dist/styles.css": "./dist/styles.css",
+    "./dist/global.css": "./dist/global.css",
+    "./styles.css": "./dist/styles.css",
+    "./global.css": "./dist/global.css",
+    "./package.json": "./package.json"
+  },
   "files": [
     "/dist/**/*",
     "/dist/styles.css",
@@ -19,7 +30,11 @@
     "build:rollup": "rollup -c && copyfiles ./styles.css ./global.css ./dist",
     "watch:tsc": "tsc -w",
     "publish": "npm publish --access public",
-    "tailwind": "tailwindcss -i ./src/input.css -o ./styles.css --watch"
+    "tailwind": "tailwindcss -i ./src/input.css -o ./styles.css --watch",
+    "docs": "typedoc",
+    "docs:md": "typedoc --plugin typedoc-plugin-markdown",
+    "docs:watch": "typedoc --watch",
+    "docs:api": "node extract-api.cjs"
   },
   "keywords": [
     "xams",
@@ -33,6 +48,7 @@
     "@mantine/dates": "^8.3.0",
     "@mantine/hooks": "^8.3.0",
     "@mantine/tiptap": "^8.3.0",
+    "@microsoft/signalr": "^9.0.6",
     "@tabler/icons-react": "^3.34.1",
     "@tiptap/extension-highlight": "^2.1.12",
     "@tiptap/extension-link": "^2.11.3",
@@ -50,9 +66,6 @@
     "react-window": "^1.8.10",
     "uuid": "^9.0.0",
     "zustand": "^4.4.0"
-  },
-  "dependencies": {
-    "@microsoft/signalr": "^9.0.6"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^26.0.1",
@@ -75,6 +88,8 @@
     "rollup-plugin-peer-deps-external": "^2.2.4",
     "rollup-plugin-postcss": "^4.0.2",
     "tailwindcss": "^3.3.5",
+    "typedoc": "^0.28.14",
+    "typedoc-plugin-markdown": "^4.9.0",
     "typescript": "^5.4.5"
   },
   "author": "iXeta, LLC. <support@ixeta.net> (https://xams.io)",

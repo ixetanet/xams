@@ -31,20 +31,7 @@ import DataRows from "./datatable/DataRows";
 import { FormContext } from "../contexts/FormContext";
 import useGuid from "../hooks/useGuid";
 import { isNotNull } from "../utils/Util";
-
-export const DataTableContext = React.createContext<DataTableShape | null>(
-  null
-);
-
-export const useDataTableContext = () => {
-  const context = React.useContext(DataTableContext);
-  if (context == null) {
-    throw new Error(
-      "useDataTableContext must be used within a DataTableContextProvider"
-    );
-  }
-  return context;
-};
+import { DataTableContext } from "./datatable/DataTableContext";
 
 const DataTable = forwardRef(
   (props: DataTableProps, ref: Ref<DataTableRef>) => {
@@ -166,7 +153,7 @@ const DataTable = forwardRef(
           (f) => f.lookupName == null || f.lookupName === ""
         ).length;
       let fields =
-        props.fields ??
+        props.fields?.filter((f) => typeof f === "string") ??
         metadata.fields.map((f) => f.name).slice(0, sliceCount + 1);
       // Fields the user has selected to show
       if (state.visibleFields != null && state.visibleFields?.length > 0) {
