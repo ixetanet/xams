@@ -298,6 +298,13 @@ public class QueryFactory
             readInput.fields = fieldsToKeep.ToArray();
         }
 
+        // Remove UIMultiSelect fields from root table filters
+        if (readInput.filters != null && readInput.filters.Length > 0)
+        {
+            var metadata = Cache.Instance.GetTableMetadata(readInput.tableName);
+            readInput.filters = RemoveMultiSelectFilters(readInput.filters, metadata.Type, readInput.joins);
+        }
+
         // Remove UIMultiSelect fields from joins
         if (readInput.joins != null)
         {
@@ -320,6 +327,13 @@ public class QueryFactory
 
                     join.fields = joinFieldsToKeep.ToArray();
                 }
+
+                // Remove UIMultiSelect fields from join filters
+                if (join.filters != null && join.filters.Length > 0)
+                {
+                    var joinMetadata = Cache.Instance.GetTableMetadata(join.toTable);
+                    join.filters = RemoveMultiSelectFilters(join.filters, joinMetadata.Type, readInput.joins);
+                } 
             }
         }
 
@@ -331,6 +345,76 @@ public class QueryFactory
                 RemoveMultiSelectFields(exclude.query);
             }
         }
+    }
+
+    private Filter[] RemoveMultiSelectFilters(Filter[]? filters, Type entityType, Join[]? joins = null)
+    {
+        if (filters == null || filters.Length == 0)
+        {
+            return Array.Empty<Filter>();
+        }
+
+        List<Filter> validFilters = new();
+
+        foreach (var filter in filters)
+        {
+            // Handle logical grouping filters (AND/OR)
+            if (!string.IsNullOrEmpty(filter.logicalOperator))
+            {
+                // Recursively process nested filters
+                var nestedFilters = RemoveMultiSelectFilters(filter.filters, entityType, joins);
+                if (nestedFilters.Length > 0)
+                {
+                    filter.filters = nestedFilters;
+                    validFilters.Add(filter);
+                }
+                continue;
+            }
+
+            // Skip empty field filters
+            if (string.IsNullOrEmpty(filter.field))
+            {
+                continue;
+            }
+
+            // Check if this is a filter on a joined table
+            if (filter.field.Contains('.'))
+            {
+                string[] fieldParts = filter.field.Split('.');
+                string joinAlias = fieldParts[0];
+                string joinField = fieldParts[1];
+
+                var join = joins?.FirstOrDefault(x =>
+                    x.alias == joinAlias || (string.IsNullOrEmpty(x.alias) && x.toTable == joinAlias));
+
+                if (join != null)
+                {
+                    var joinMetadata = Cache.Instance.GetTableMetadata(join.toTable);
+                    var joinProperty = joinMetadata.Type.GetEntityProperties()
+                        .FirstOrDefault(p => p.Name == joinField);
+
+                    // Only keep filter if the property exists on the joined entity
+                    if (joinProperty != null)
+                    {
+                        validFilters.Add(filter);
+                    }
+                }
+            }
+            else
+            {
+                // Check if property exists on the root entity
+                var property = entityType.GetEntityProperties()
+                    .FirstOrDefault(p => p.Name == filter.field);
+
+                // Only keep filter if the property exists
+                if (property != null)
+                {
+                    validFilters.Add(filter);
+                }
+            }
+        }
+
+        return validFilters.ToArray();
     }
 
     private void AddOwnerFields(ReadInput readInput)

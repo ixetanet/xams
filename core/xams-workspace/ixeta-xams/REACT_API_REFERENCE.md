@@ -762,7 +762,7 @@ interface FieldProps {
   name: string;                          // Field name (REQUIRED)
   label?: string | React.ReactNode;      // Custom label
   focus?: boolean;                       // Auto-focus
-  varient?: "rich" | "textarea";         // Input variant
+  varient?: "textarea";                  // Input variant
   placeholder?: string;                  // Placeholder text
   dateInput?: DateInputProps;            // Date input config (Mantine)
   onChange?: (value: string | boolean | null | undefined, data?: string | null) => void;
@@ -779,7 +779,36 @@ interface FieldProps {
 <Field name="Description" varient="textarea" />
 <Field name="Price" allowNegative={false} />
 <Field name="BirthDate" />
-<Field name="Notes" varient="rich" />  // Rich text editor
+<FieldRichText name="Notes" />  // Rich text editor
+```
+
+---
+
+### FieldRichText
+
+Rich text editor field component using TipTap. Use this instead of `<Field varient="rich" />` (removed in v2.0.0).
+
+```tsx
+interface FieldRichTextProps {
+  name: string;                          // Field name (REQUIRED, must be String type)
+  label?: string | React.ReactNode;      // Custom label (not rendered in current version)
+  onChange?: (value: string) => void;    // Value change callback
+}
+
+// Usage
+<FieldRichText name="Description" />
+<FieldRichText name="Notes" onChange={(html) => console.log(html)} />
+```
+
+**Note:** This component loads ~80-120KB of TipTap dependencies. Only use when rich text editing is required.
+
+**Migration from v1.x:**
+```tsx
+// v1.x (deprecated)
+<Field name="Notes" varient="rich" />
+
+// v2.0.0+
+<FieldRichText name="Notes" />
 ```
 
 ---

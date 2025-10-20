@@ -55,6 +55,12 @@ const FormContainer = (props: FormContainerProps) => {
 
   const isLoading = getIsLoading() || props.showLoading === true;
 
+  const hideChildren =
+    isLoading ||
+    props.formBuilder.canRead.canRead === false ||
+    (props.formBuilder.operation === "CREATE" &&
+      props.formBuilder.canCreate === false);
+
   return (
     <FormContextProvider formBuilder={props.formBuilder}>
       <form
@@ -68,16 +74,6 @@ const FormContainer = (props: FormContainerProps) => {
             : ``
         } ${props.className}`}
       >
-        {/* <div
-        className={`${
-          isLoading ||
-          props.showLoading === true ||
-          !props.formBuilder.canRead.canRead ||
-          !props.formBuilder.canCreate
-            ? `relative overflow-hidden`
-            : ``
-        } ${props.className}`}
-      > */}
         {isLoading && (
           <div
             className="absolute w-full h-full flex justify-center items-center"
@@ -111,19 +107,8 @@ const FormContainer = (props: FormContainerProps) => {
             </div>
           )}
 
-        <div
-          className={`${
-            isLoading ||
-            props.formBuilder.canRead.canRead === false ||
-            (props.formBuilder.operation === "CREATE" &&
-              props.formBuilder.canCreate === false)
-              ? `invisible`
-              : ``
-          } ${props.className}`}
-        >
-          {props.children}
-        </div>
-        {/* </div> */}
+        {hideChildren && <div className={`invisible`}>{props.children}</div>}
+        {!hideChildren && props.children}
       </form>
     </FormContextProvider>
   );

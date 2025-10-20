@@ -68,12 +68,12 @@ const AuditHistoryForm = (props: AuditHistoryFormProps) => {
         <Grid>
           <Grid.Col span={6}>
             <div className="w-full h-[60vh]">
-              <Field name="Query" varient="textarea" />
+              <Field name="Query" variant="textarea" />
             </div>
           </Grid.Col>
           <Grid.Col span={6}>
             <div className="w-full h-[60vh]">
-              <Field name="Results" varient="textarea" />
+              <Field name="Results" variant="textarea" />
             </div>
           </Grid.Col>
         </Grid>

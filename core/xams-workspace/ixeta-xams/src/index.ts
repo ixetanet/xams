@@ -13,6 +13,7 @@ export { default as useAuthRequest } from "./hooks/useAuthRequest";
 export type { ReadFilter as ReadFilter } from "./api/ReadRequest";
 export { default as useFormBuilder } from "./hooks/useFormBuilder";
 export * from "./hooks/useFormBuilder";
+export * from "./hooks/useFieldHelpers";
 export {
   default as AppContextProvider,
   useAppContext,
@@ -29,6 +30,15 @@ export type { ApiResponse as ApiResponse } from "./api/ApiResponse";
 export * from "./components/datagrid/DataGridTypes";
 export { default as FormContainer } from "./components/FormContainer";
 export { default as Field } from "./components/Field";
+export { default as FieldRichText } from "./components/FieldRichText";
+export { default as FieldText } from "./components/FieldText";
+export { default as FieldTextarea } from "./components/FieldTextarea";
+export { default as FieldDate } from "./components/FieldDate";
+export { default as FieldBoolean } from "./components/FieldBoolean";
+export { default as FieldLookup } from "./components/FieldLookup";
+export type { LookupValue } from "./components/FieldLookup";
+export { default as FieldMultiSelect } from "./components/FieldMultiSelect";
+export type { MultiSelectValue } from "./components/FieldMultiSelect";
 export { default as SaveButton } from "./components/SaveButton";
 export { default as ToggleMode } from "./components/ToggleMode";
 export { default as useColor } from "./hooks/useColor";

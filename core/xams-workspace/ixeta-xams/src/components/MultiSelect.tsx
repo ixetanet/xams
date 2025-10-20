@@ -216,7 +216,7 @@ const MultiSelectComponent = forwardRef(
     const selectedItemsAsData = useMemo(() => {
       if (props.value && Array.isArray(props.value) && props.value.length > 0) {
         return props.value.map((item) => ({
-          value: item.id,
+          value: `${item.id}`,
           label: item.name,
         }));
       }
@@ -229,7 +229,9 @@ const MultiSelectComponent = forwardRef(
         return searchResults;
       }
 
-      const selectedIds = new Set(selectedItemsAsData.map((item) => item.value));
+      const selectedIds = new Set(
+        selectedItemsAsData.map((item) => item.value)
+      );
       const uniqueSearchResults = searchResults.filter(
         (item) => !selectedIds.has(item.value)
       );
@@ -255,10 +257,32 @@ const MultiSelectComponent = forwardRef(
       }
     };
 
-    // Override the default filter function to return all options
-    // This allows for description fields to be used in search
+    // Custom filter that hides selected items and searches both label and description
     const optionsFilter: OptionsFilter = ({ options, search }) => {
-      return options;
+      // Filter out already-selected items (skip groups)
+      const filtered = options.filter((option) => {
+        // Skip groups (they have a 'group' property)
+        if ('group' in option) return true;
+        // Type guard: at this point we know it's a regular item
+        return !selectedValues.includes(option.value);
+      });
+
+      // If no search, return filtered options
+      if (!search) return filtered;
+
+      // Search in both label and description
+      const searchLower = search.toLowerCase();
+      return filtered.filter((option) => {
+        // Skip groups
+        if ('group' in option) return true;
+
+        // Type guard: at this point we know it's a regular item with label
+        const labelMatch = option.label.toLowerCase().includes(searchLower);
+        const descMatch = (option as CustomMultiSelectOption).description
+          ?.toLowerCase()
+          .includes(searchLower);
+        return labelMatch || descMatch;
+      });
     };
 
     // Check permissions on mount
@@ -301,6 +325,7 @@ const MultiSelectComponent = forwardRef(
         error={props.error}
         disabled={props.disabled}
         filter={multiSelect.targetDescriptionField ? optionsFilter : undefined}
+        hidePickedOptions={true}
       />
     );
   }

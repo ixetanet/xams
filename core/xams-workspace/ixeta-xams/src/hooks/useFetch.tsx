@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 interface UseFetchOptions<T> {
-  fetcher: () => Promise<T>;
+  fetcher: (signal?: AbortSignal) => Promise<T>;
   enabled?: boolean;
   initialData?: T;
 }
@@ -26,27 +26,64 @@ export function useFetch<T>({
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
 
+  // Store fetcher in ref to avoid stale closures
+  const fetcherRef = useRef(fetcher);
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+  }, [fetcher]);
+
+  // Track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef(true);
+
   // To handle race conditions, we use a request identifier
   const activeRequestId = useRef<number>(0);
 
+  // Store current AbortController to cancel in-flight requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const fetchData = useCallback(async () => {
+    // Abort any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new AbortController for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     // Increment the request ID to identify this specific request
     const requestId = ++activeRequestId.current;
 
-    setIsLoading(true);
-    setIsError(false);
-    setError(null);
+    if (isMountedRef.current) {
+      setIsLoading(true);
+      setIsError(false);
+      setError(null);
+    }
 
     try {
-      const result = await fetcher();
+      const result = await fetcherRef.current(abortController.signal);
 
-      if (requestId === activeRequestId.current) {
+      // Only update state if this is still the active request, component is mounted, and not aborted
+      if (
+        requestId === activeRequestId.current &&
+        isMountedRef.current &&
+        !abortController.signal.aborted
+      ) {
         setData(result);
         setIsSuccess(true);
         setIsLoading(false);
       }
     } catch (err) {
-      if (requestId === activeRequestId.current) {
+      // Don't treat abort errors as real errors
+      const isAbortError =
+        err instanceof Error && err.name === "AbortError";
+
+      // Only update state if this is still the active request, component is mounted, and not aborted
+      if (
+        requestId === activeRequestId.current &&
+        isMountedRef.current &&
+        !isAbortError
+      ) {
         setIsError(true);
         setError(err instanceof Error ? err : new Error(String(err)));
         setIsSuccess(false);
@@ -60,17 +97,23 @@ export function useFetch<T>({
   }, [fetchData]);
 
   useEffect(() => {
-    setIsSuccess(false);
-
     if (enabled) {
       fetchData();
     }
 
-    // Cleanup function to handle component unmounting or refetching
+    // Cleanup function to handle component unmounting
     return () => {
-      // No explicit abort needed as we're using the requestId approach
+      isMountedRef.current = false;
+      // Abort in-flight request on unmount or when dependencies change
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
   }, [fetchData, enabled]);
 
-  return { data, isLoading, isError, isSuccess, error, refetch };
+  // Memoize return value to prevent unnecessary re-renders
+  return useMemo(
+    () => ({ data, isLoading, isError, isSuccess, error, refetch }),
+    [data, isLoading, isError, isSuccess, error, refetch]
+  );
 }
