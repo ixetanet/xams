@@ -44,7 +44,7 @@ Attributes modify field behavior on both the frontend and backend. {{ className:
 // Make BaseEntity fields read-only (single attribute, multiple fields)
 [UIReadOnly(nameof(OwningUserId), nameof(CreatedDate), nameof(UpdatedDate))]
 // Make BaseEntity fields create-only (single attribute, multiple fields)
-[UICreateOnly(nameof(OwningUserId), nameof(CreatedDate))]
+[UICreateOnly(nameof(OwningUserId), nameof(OwningTeamId))]
 public class Widget : BaseEntity
 {
     public Guid WidgetId { get; set; }
@@ -107,28 +107,26 @@ public class Widget : BaseEntity
 }
 ```
 
-## Visual Examples
-
-### UIName & UIDescription
+## UIName & UIDescription
 
 When selecting a Widget in a lookup, the Name field is displayed with the Description underneath.
 
 <DocImage image={imgName} full={true} />
 <DocImage image={imgDescription} full={true} />
 
-### UIRequired
+## UIRequired
 
 Shows asterisk (\*) and validates on submit.
 
 <DocImage image={imgRequired} full={false} />
 
-### UIRecommended
+## UIRecommended
 
 Shows blue cross (✚) to indicate recommended field.
 
 <DocImage image={imgRecommended} full={false} />
 
-### UIDisplayName
+## UIDisplayName
 
 Custom label instead of property name.
 
@@ -158,9 +156,7 @@ public Option Priority { get; set; }
 
 This creates a dropdown populated with all Options where `Name == "TodoPriority"`.
 
-## Special Behaviors
-
-### UIHide
+## UIHide
 
 ```c#
 // Hidden and not queryable
@@ -172,7 +168,7 @@ public decimal Secret { get; set; }
 public decimal InternalCost { get; set; }
 ```
 
-### UICreateOnly
+## UICreateOnly
 
 Field can be set on create but becomes read-only afterward.
 
@@ -190,7 +186,7 @@ public Guid OfferId { get; set; }
 public class Coupon : BaseEntity
 ```
 
-### UIDateFormat
+## UIDateFormat
 
 Uses [Day.js format strings](https://day.js.org/docs/en/display/format):
 
@@ -198,7 +194,7 @@ Uses [Day.js format strings](https://day.js.org/docs/en/display/format):
 - `"YYYY-MM-DD"` → 2025-10-14
 - `"MMM D, YYYY"` → Oct 14, 2025
 
-### UIMultiSelect
+## UIMultiSelect
 
 Creates many-to-many relationships through junction tables with automatic UI and data management.
 
@@ -259,10 +255,37 @@ public class Contact : BaseEntity
 <Field name="To" /> // Automatically renders MultiSelect
 ```
 
+**Data Format:**
+
+Read requests return UIMultiSelect fields as arrays of objects with `id` (target entity ID) and `name` properties:
+
+```json
+{
+  "data": {
+    "results": [
+      {
+        "EmailMessageId": "3b7be37c-4389-4a52-88d5-b763b4809fd8",
+        "To": [
+          {
+            "id": "b0d50638-9d7e-493d-9d7b-b159262a9746",
+            "name": "John Smith"
+          },
+          { "id": "68fbc5c5-fdeb-45d8-b435-dfc040eb383a", "name": "Sandy Jean" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+On create or update, adding/removing objects with `id` (target entity ID) and `name` properties will add or remove the corresponding N:N junction records.
+
 **Permissions:**
 
-- Parent entity Update permission required
-- Junction table Create/Delete permissions checked via pipeline
+- Primary entity: CREATE (on create) or UPDATE (on update) required
+- Junction entity: CREATE and DELETE required
+- Target entity: READ required
+- Permissions can be at USER, TEAM, or SYSTEM level
 
 <Note>
   **Limitations:** Requires Guid primary keys. Target entity must have Name

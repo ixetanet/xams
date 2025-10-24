@@ -15,8 +15,8 @@ Service Logic can execute at the listed stages below.
 
 - <b>PreValidation</b>: Before security validation and before the save to the
   database. This occurs before validation attributes such as `UIRequired`,
-  `UIReadOnly`, and `UIHidden` are checked. If setting a required field in
-  Service Logic, use PreValidation.
+  `UIReadOnly`, `UICreateOnly`, and `UICharacterLimit` are checked. If setting a
+  required field in Service Logic, use PreValidation.
 - <b>PreOperation</b>: After security validation and before the save to the
   database
 - <b>PostOperation</b>: After the save to the database

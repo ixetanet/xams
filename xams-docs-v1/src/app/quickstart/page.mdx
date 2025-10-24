@@ -11,8 +11,6 @@ export const metadata = {
 
 This guide will get you up and running with Xams and covers the following: {{ className: 'lead' }}
 
-- Creating a Xams Api project {{ className: 'lead' }}
-- Creating a Xams React project {{ className: 'lead' }}
 - Creating tables {{ className: 'lead' }}
 - Displaying and creating records from a datatable {{ className: 'lead' }}
 - Writing service logic {{ className: 'lead' }}
@@ -23,149 +21,19 @@ This guide will get you up and running with Xams and covers the following: {{ cl
 - [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 - [NodeJS (LTS)](https://nodejs.org)
 
+## Templates
+
+Clone one of the following templates from GitHub to get started quickly.
+
+- [Xams Template](https://github.com/ixetanet/xams-template)
+- [Xams Template (Firebase Auth)](https://github.com/ixetanet/xams-template-firebase)
+
 ## Install EF Core Tools
 
 Ensure you have version 8+ of the Entity Framework Core tools installed.
 
 ```cmd {{ title: 'Terminal' }}
 dotnet tool install --global dotnet-ef
-```
-
-## Create Api Project
-
-1. In your c# IDE of choice create a new ASP.NET web based project using .NET 8
-2. Install the required nuget packages.
-
-```cmd {{ title: 'Terminal' }}
-dotnet add package Xams.Core
-dotnet add package Microsoft.EntityFrameworkCore.Sqlite --version 8.0.14
-dotnet add package Microsoft.EntityFrameworkCore.Design --version 8.0.14
-```
-
-3. Create a new DbContext that inherits from XamsDbContext.
-
-```c# {{ title: 'Project' }}
-public class DataContext : XamsDbContext
-{
-    protected override void OnConfiguring(DbContextOptionsBuilder options)
-    {
-        base.OnConfiguring(options);
-        var folder = Environment.SpecialFolder.LocalApplicationData;
-        var path = Environment.GetFolderPath(folder);
-        var dbPath = Path.Join(path, "app.db");
-        options.UseSqlite($"Data Source={dbPath}");
-    }
-}
-```
-
-4. Add the Xams services and provide the DbContext. Remove the property naming policy.
-
-```c# {{ title: 'Program.cs' }}
-builder.Services.AddXamsServices<DataContext>();
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.PropertyNamingPolicy = null;
-    });
-```
-
-5. Add the Xams Api's and enable the dashboard.
-
-```c# {{ title: 'Program.cs' }}
-// app.UseAuthentication();
-// app.UseAuthorization();
-
-app.AddXamsApi(options =>
-{
-    options.UseDashboard = true;
-});
-```
-
-6. Create and run the migration.
-
-```cmd {{ title: 'Terminal' }}
-dotnet ef migrations add migration01
-dotnet ef database update
-```
-
-9. Run the project. You can access the admin dashboard by navigating to `/xams` in your browser. In development you can provide the user id of any user you want to impersonate via the query string. For example, to impersonate the SYSTEM user:
-
-[http://localhost/xams?userid=f8a43b04-4752-4fda-a89f-62bebcd8240c](http://localhost:port/xams?userid=f8a43b04-4752-4fda-a89f-62bebcd8240c)
-
-<Note>
-  A new Xams project isn't configured with Authentication or Authorization but
-  still has users. Whenever the api starts, it creates system records. One of
-  those system records is the "SYSTEM" user. The Id of this user is always
-  f8a43b04-4752-4fda-a89f-62bebcd8240c.
-</Note>
-
-10. Enable CORS to allow the client application to connect
-
-```c# {{ title: 'Program.cs' }}
-string corsPolicy = "_myAllowOrigins";
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddCors(x => x.AddPolicy(corsPolicy, builder =>
-    {
-        builder.AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyMethod()
-            .AllowAnyHeader();
-    }));
-}
-```
-
-```c# {{ title: 'Program.cs' }}
-var app = builder.Build();
-app.UseCors(corsPolicy);
-```
-
-## Create React project
-
-1. Create a new react project using [Vite](https://vite.dev/) or [NextJS](https://nextjs.org/) using React v18.
-2. Install the Xams npm package and its dependencies.
-
-```cmd {{ title: 'Terminal' }}
-npm install dayjs@^1.11.13
-npm install @mantine/core@^7.16.2 @mantine/dates@^7.16.2 @mantine/hooks@^7.16.2 @mantine/tiptap@^7.16.2 @tabler/icons-react@^2.40.0 @tiptap/extension-highlight@^2.1.12 @tiptap/extension-link@^2.11.3 @tiptap/extension-subscript@^2.1.12 @tiptap/extension-superscript@^2.1.12 @tiptap/extension-text-align@^2.1.12 @tiptap/extension-underline@^2.1.12 @tiptap/pm@^2.11.3 @tiptap/react@^2.11.3 @tiptap/starter-kit@^2.11.3 dayjs@^1.11.13 react-virtualized-auto-sizer@^1.0.22 react-window@^1.8.10 uuid@^9.0.0 zustand@^4.4.0 --legacy-peer-deps
-npm install @ixeta/xams
-```
-
-3. Configure the root component with the MantineProvider and Xams providers.
-
-```tsx {{ title: 'NextJs - _app.tsx' }}
-import '@/styles/globals.css'
-import type { AppProps } from 'next/app'
-import '@mantine/core/styles.css'
-import '@mantine/dates/styles.css'
-import { MantineProvider } from '@mantine/core'
-import {
-  AppContextProvider,
-  AuthContextProvider,
-  getQueryParam,
-} from '@ixeta/xams'
-import '@ixeta/xams/dist/styles.css'
-import '@ixeta/xams/dist/global.css'
-import { useRouter } from 'next/router'
-
-export default function App({ Component, pageProps }: AppProps) {
-  const router = useRouter()
-  const userId = getQueryParam('userid', router.asPath)
-  return (
-    <MantineProvider>
-      <AuthContextProvider
-        apiUrl={'https://localhost:8000'} // <- change to your api
-        headers={{
-          UserId: userId as string, // <- provide userid from query string in development
-        }}
-      >
-        <AppContextProvider>
-          <Component {...pageProps} />
-        </AppContextProvider>
-      </AuthContextProvider>
-    </MantineProvider>
-  )
-}
 ```
 
 ## Create an Entity
@@ -192,18 +60,27 @@ public class DataContext : XamsDbContext
 }
 ```
 
-4. In the ASP.NET project directory execute the code below to create a migration and update the database.
+4. In the ASP.NET project directory execute the commands below to create a migration and update the database.
 
 ```cmd {{ title: 'Terminal' }}
-dotnet ef migrations add migration02
+dotnet ef migrations add migration01
 dotnet ef database update
 ```
 
-6. Start the project
+6. Run the `https` project. You can access the admin dashboard by navigating to `/xams` in your browser. In development you can provide the user id of any user you want to impersonate via the query string. For example, to impersonate the SYSTEM user: [https://localhost:7102/xams?userid=f8a43b04-4752-4fda-a89f-62bebcd8240c](https://localhost:7102/xams?userid=f8a43b04-4752-4fda-a89f-62bebcd8240c)
+
+<Note>
+  A new Xams project isn't configured with Authentication or Authorization but
+  still has users. Whenever the api starts, it creates system records. One of
+  those system records is the "SYSTEM" user. The Id of this user is always
+  f8a43b04-4752-4fda-a89f-62bebcd8240c.
+</Note>
 
 ## Create a Datatable
 
-1. Paste the following code in index.tsx
+1. In the NextJs project run `npm install`
+2. Run `npm run dev` to start the development server and navigate to `http://localhost:3000/?userid=f8a43b04-4752-4fda-a89f-62bebcd8240c`
+3. Paste the following code in index.tsx
 
 ```tsx {{ title: 'src / pages / index.tsx' }}
 import { DataTable } from '@ixeta/xams'
@@ -334,3 +211,17 @@ export default Index
 This will create the below form:
 
 <DocImage image={widgetForm} />
+
+## Build and Deploy
+
+When you're ready to deploy your application:
+
+1. In the NextJS project directory, build the static site:
+
+```cmd {{ title: 'Terminal' }}
+npm run build
+```
+
+2. The build outputs to the `out` folder. Copy the contents of this folder to the `wwwroot` directory in your ASP.NET project.
+
+3. Run your ASP.NET application - it will serve the static NextJS site.
