@@ -85,6 +85,19 @@ async function main() {
       });
     }
 
+    // Detect notifications vs requests
+    // Notification = no id field, Requests = has id field
+    const isNotification = message.id === undefined;
+
+    if (isNotification) {
+      // Handle notifications (one-way messages, no response expected)
+      console.log(`Received notification: ${message.method}`);
+
+      // Per MCP spec: return HTTP 202 Accepted for notifications
+      return res.status(202).end();
+    }
+
+    // Handle requests (messages with id that expect a response)
     try {
       // Route message based on method
       if (message.method === "resources/list") {
