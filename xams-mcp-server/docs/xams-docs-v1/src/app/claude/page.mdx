@@ -1,0 +1,18 @@
+export const metadata = {
+  title: 'Claude Code',
+  description: 'Using the Xams MCP Server with Claude Code',
+}
+
+# Claude Code
+
+The Xams MCP Server provides all Xams Framework documentation to Claude Code via the Model Context Protocol.
+
+## Setup
+
+Add the Xams MCP Server to your Claude Code configuration:
+
+```bash
+claude mcp add --transport http xams https://mcp.xams.io
+```
+
+Once configured, Claude Code will have access to all Xams documentation via MCP URIs like `xams://docs/quickstart`, `xams://docs/entities`, `xams://ref/core-essentials`, etc.

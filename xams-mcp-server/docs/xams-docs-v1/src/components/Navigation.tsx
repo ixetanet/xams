@@ -249,7 +249,7 @@ export const navigation: Array<NavGroup> = [
       { title: 'Queries', href: '/queries' },
       { title: 'Attributes', href: '/attributes' },
       { title: 'API', href: '/api' },
-      // { title: 'Claude Code', href: '/claudecode' },
+      { title: 'Claude Code', href: '/claude' },
       // { title: 'Performance', href: '/performance' },
     ],
   },
