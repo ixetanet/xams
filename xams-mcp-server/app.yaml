@@ -1,0 +1,49 @@
+# Digital Ocean App Platform Configuration
+# https://docs.digitalocean.com/products/app-platform/reference/app-spec/
+
+name: xams-mcp-server
+
+services:
+  - name: web
+    # GitHub repository (update with your username/org)
+    github:
+      repo: YOUR_USERNAME/xams-mcp-server
+      branch: main
+      deploy_on_push: true
+
+    # Build configuration
+    build_command: npm run build
+
+    # Run configuration
+    run_command: npm start
+
+    # Node.js environment
+    environment_slug: node-js
+
+    # Environment variables
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "8080"
+
+    # Health check configuration
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 10
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+
+    # HTTP port
+    http_port: 8080
+
+    # Instance configuration
+    instance_count: 1
+    instance_size_slug: basic-xxs
+
+# Domain configuration (optional)
+# domains:
+#   - domain: mcp.yourdomain.com
+#     type: PRIMARY
