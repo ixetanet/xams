@@ -161,9 +161,7 @@ const GridContainer = (props: GridContainerProps) => {
   useLayoutEffect(() => {
     const el = props.scrollRef.current;
     if (el == null) return;
-    const update = () => {
-      const width = el.clientWidth;
-      const height = el.clientHeight;
+    const update = (width: number, height: number) => {
       const last = lastClientSize.current;
       if (last != null && last.width === width && last.height === height) {
         return;
@@ -176,9 +174,17 @@ const GridContainer = (props: GridContainerProps) => {
       gridContext.virtualized.rowVirtualizer.measure();
       gridContext.virtualized.columnVirtualizer.measure();
     };
-    update();
-    // content-box observation also fires when a scrollbar appears/disappears
-    const observer = new ResizeObserver(update);
+    // clientWidth/clientHeight round to the nearest integer; a rounded-up
+    // chrome box overflows the true (fractional) scrollport by a sub-pixel,
+    // conjuring a scrollbar whose appearance re-fires this observer — an
+    // infinite flicker loop. The observer entry carries the un-rounded
+    // content-box size; floor it so chrome never exceeds the scrollport.
+    // An observer fires once on observe(), covering the initial measurement,
+    // scrollbar appearance/disappearance, and display:none→visible recovery.
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[0].contentRect;
+      update(Math.floor(rect.width), Math.floor(rect.height));
+    });
     observer.observe(el);
     return () => observer.disconnect();
   }, [totalWidth, totalHeight, props.width, props.height]);
