@@ -28,13 +28,13 @@ const FormContainer = (props: FormContainerProps) => {
       props.formBuilder.data !== undefined
     ) {
       for (const metadataField of props.formBuilder.metadata.fields.filter(
-        (f) => f.name !== props.formBuilder.metadata?.primaryKey
+        (f) => f.name !== props.formBuilder.metadata?.primaryKey,
       )) {
         if (props.formBuilder.data[metadataField.name] === undefined) {
           console.warn(
             "No data for field: " +
               metadataField.name +
-              ". Ensure lookup fields are spelled correctly."
+              ". Ensure lookup fields are spelled correctly.",
           );
           return true;
         }
@@ -47,16 +47,16 @@ const FormContainer = (props: FormContainerProps) => {
     e.preventDefault();
     e.stopPropagation();
     if (props.formBuilder.isSaveSilent) {
-      props.formBuilder.saveSilent(
+      await props.formBuilder.saveSilent(
         props.onPreValidate,
         props.onPreSave,
-        props.onPostSave
+        props.onPostSave,
       );
     } else {
       props.formBuilder.save(
         props.onPreValidate,
         props.onPreSave,
-        props.onPostSave
+        props.onPostSave,
       );
     }
   };

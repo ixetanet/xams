@@ -253,6 +253,7 @@ const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
   usePaste({
     props,
     activeCell,
+    selectedRange,
     isEditing,
   });
 

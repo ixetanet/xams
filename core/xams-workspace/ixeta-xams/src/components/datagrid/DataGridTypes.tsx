@@ -18,11 +18,15 @@ export interface DataGridProps {
    * Fires when clipboard content (e.g. cells copied from Excel) is pasted
    * while a cell is active and not being edited. `value` holds the pasted
    * cell values and `data` the target cells' `data` property, both indexed
-   * as [row][col] relative to `cellLocation` (the active cell the paste is
-   * anchored at). The matrices are clipped to the grid bounds; positions
-   * whose target cell is read-only or disabled are `undefined` in both
-   * matrices and must not be pasted. No event fires when the anchor cell
-   * itself is read-only or disabled.
+   * as [row][col] relative to `cellLocation` — the top-left of the selected
+   * range (or the active cell when nothing is range-selected), where the
+   * paste is anchored. Like other spreadsheets, a selection that is an
+   * exact multiple of the copied block in both dimensions is filled by
+   * tiling the block (a single copied cell fills the whole selection); any
+   * other selection receives the block once at the anchor. The matrices are
+   * clipped to the grid bounds; positions whose target cell is read-only or
+   * disabled are `undefined` in both matrices and must not be pasted. No
+   * event fires when the anchor cell itself is read-only or disabled.
    */
   onPaste?: (
     data: any[][],
