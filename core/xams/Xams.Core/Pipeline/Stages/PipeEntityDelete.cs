@@ -118,6 +118,9 @@ public class PipeEntityDelete : BasePipelineStage
                         {
                             Dependency = dependency,
                             PipelineContext = new PipelineContext()
+                            {
+                                TransactionBag = context.TransactionBag
+                            }
                         });
                         continue;
                     }
@@ -152,6 +155,7 @@ public class PipeEntityDelete : BasePipelineStage
                         SecurityRepository = context.SecurityRepository,
                         MetadataRepository = context.MetadataRepository,
                         DataService = context.DataService,
+                        TransactionBag = context.TransactionBag,
                     };
                     newPipelineContext.CreateServiceContext();
                     deletePipelines.Add(id, new PipelineDependency()

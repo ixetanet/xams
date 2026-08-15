@@ -27,6 +27,7 @@ public class BaseServiceContext(PipelineContext pipelineContext)
     public Dictionary<string, JsonElement> Parameters => PipelineContext.InputParameters;
     public ILogger Logger => PipelineContext.DataService.GetLogger();
     public SecurityBuilder SecurityBuilder => new SecurityBuilder(GetDbContext<IXamsDbContext>());
+    public Dictionary<string, object> TransactionBag => PipelineContext.TransactionBag;
 
     /// <summary>
     /// Create entity record and execute service logic.
@@ -265,6 +266,7 @@ public class BaseServiceContext(PipelineContext pipelineContext)
         // Execute on a specific server
         else if (job.ExecuteJobOn is ExecuteJobOn.One && !string.IsNullOrEmpty(job.ServerName))
         {
+            jobOptions.JobServer = job.ServerName;
             await ExecuteJobOnServer(jobOptions);
         }
         // Execute on all servers

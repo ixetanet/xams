@@ -1,4 +1,5 @@
 using System.Linq.Dynamic.Core;
+using Microsoft.EntityFrameworkCore;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
 using Xams.Core.Contexts;
@@ -16,21 +17,13 @@ public class JobHistoryRetentionJob : IServiceJob
     public async Task<Response<object?>> Execute(JobServiceContext context)
     {
         var db = context.GetDbContext<IXamsDbContext>();
-        Type jobHistoryType = Cache.Instance.GetTableMetadata("JobHistory").Type;
         
-        var retentionDays = int.Parse((await Queries.GetCreateSetting(db, JobStartupService.SettingName, "30") ?? "30"));
-        
-        DynamicLinq dynamicLinq = new DynamicLinq(db, jobHistoryType);
-        var query = dynamicLinq.Query.Where("CreatedDate < @0", DateTime.UtcNow.AddDays(-retentionDays));
-        var results = await query.ToDynamicArrayAsync();
-        
-        foreach (var result in results)
-        {
-            // Use the DataService to delete the records to ensure no exceptions are thrown
-            // for foreign key constraints
-            await context.Delete(result);
-        }
+        var retentionDays = int.Parse(await Queries.GetCreateSetting(db, JobStartupService.SettingName, "30") ?? "30");
 
+        await db.JobHistoriesBase
+            .Where("CreatedDate < @0", DateTime.UtcNow.AddDays(-retentionDays))
+            .ExecuteDeleteAsync();
+        
         return ServiceResult.Success();
     }
 }

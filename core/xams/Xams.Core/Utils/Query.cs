@@ -72,11 +72,18 @@ public class Query
             else
             {
                 string lookupName = GetNameLookup(property.PropertyType);
-                resultSelector.Add($"{property.Name}.{lookupName} as {RootAlias}_{property.Name}");
+                bool isNullable = IsNavigationPropertyNullable(baseType, property);
+                string projection = isNullable
+                    ? $"np({property.Name}.{lookupName})"
+                    : $"{property.Name}.{lookupName}";
+                resultSelector.Add($"{projection} as {RootAlias}_{property.Name}");
             }
 
             _allFields.Add($"{RootAlias}_{property.Name}");
-            _allFieldTypes.Add($"{RootAlias}_{property.Name}", property.PropertyType);
+            Type projectedType = IsPrimitive(property.PropertyType)
+                ? property.PropertyType
+                : GetProjectedType(property.PropertyType, GetNameLookup(property.PropertyType));
+            _allFieldTypes.Add($"{RootAlias}_{property.Name}", projectedType);
             _fieldMap.Add($"{RootAlias}_{property.Name}", tableName);
             if (selectAll)
             {
@@ -132,11 +139,18 @@ public class Query
             else
             {
                 string lookupName = GetNameLookup(property.PropertyType);
-                resultSelector.Add($"inner.{property.Name}.{lookupName} as {alias}_{property.Name}");
+                bool isNullable = IsNavigationPropertyNullable(joinType, property);
+                string projection = isNullable
+                    ? $"np(inner.{property.Name}.{lookupName})"
+                    : $"inner.{property.Name}.{lookupName}";
+                resultSelector.Add($"{projection} as {alias}_{property.Name}");
             }
 
             _allFields.Add($"{alias}_{property.Name}");
-            _allFieldTypes.Add($"{alias}_{property.Name}", property.PropertyType);
+            Type projectedType = IsPrimitive(property.PropertyType)
+                ? property.PropertyType
+                : GetProjectedType(property.PropertyType, GetNameLookup(property.PropertyType));
+            _allFieldTypes.Add($"{alias}_{property.Name}", projectedType);
             _fieldMap.Add($"{alias}_{property.Name}", toParts[0]);
             if (selectAll)
             {
@@ -226,7 +240,11 @@ public class Query
             else
             {
                 string lookupName = GetNameLookup(property.PropertyType);
-                joinQueryFields.Add($"{property.Name}.{lookupName} as {RootAlias}_{property.Name}");
+                bool isNullable = IsNavigationPropertyNullable(joinType, property);
+                string projection = isNullable
+                    ? $"np({property.Name}.{lookupName})"
+                    : $"{property.Name}.{lookupName}";
+                joinQueryFields.Add($"{projection} as {RootAlias}_{property.Name}");
             }
 
             Type fieldType = property.PropertyType;
@@ -234,7 +252,7 @@ public class Query
             if (fieldType == typeof(string))
             {
                 selectManyInnerFields.Add($"y.{RootAlias}_{property.Name} as {alias}_{property.Name}");
-            } 
+            }
             else if (IsPrimitive(fieldType))
             {
                 // In case the joined record is null, we have to make sure the field is nullable
@@ -244,9 +262,12 @@ public class Query
             {
                 selectManyInnerFields.Add($"y.{RootAlias}_{property.Name} as {alias}_{property.Name}");
             }
-            
+
             _allFields.Add($"{alias}_{property.Name}");
-            _allFieldTypes.Add($"{alias}_{property.Name}", property.PropertyType);
+            Type projectedType = IsPrimitive(property.PropertyType)
+                ? property.PropertyType
+                : GetProjectedType(property.PropertyType, GetNameLookup(property.PropertyType));
+            _allFieldTypes.Add($"{alias}_{property.Name}", projectedType);
             _fieldMap.Add($"{alias}_{property.Name}", toParts[0]);
             if (selectAll)
             {
@@ -614,6 +635,35 @@ public class Query
         }
 
         return propertyName;
+    }
+
+    private Type GetProjectedType(Type navigationPropertyType, string lookupFieldName)
+    {
+        var relatedMetadata = Cache.Instance.GetTableMetadata(navigationPropertyType);
+
+        // If lookupFieldName is the primary key (fallback case)
+        if (lookupFieldName == relatedMetadata.PrimaryKey)
+        {
+            // Return the actual type of the primary key property (e.g., Guid)
+            var pkProperty = navigationPropertyType.GetProperty(lookupFieldName);
+            return pkProperty?.PropertyType ?? navigationPropertyType;
+        }
+
+        // Otherwise, lookup field is a Name/UIName field, which is always string
+        return typeof(string);
+    }
+
+    private bool IsNavigationPropertyNullable(Type entityType, PropertyInfo navigationProperty)
+    {
+        // Find the corresponding FK property (e.g., Comment -> CommentId)
+        string fkPropertyName = navigationProperty.Name + "Id";
+        var fkProperty = entityType.GetProperty(fkPropertyName);
+
+        if (fkProperty == null)
+            return false; // No FK found, assume non-nullable
+
+        // Check if FK type is nullable (Guid?, int?, etc.)
+        return Nullable.GetUnderlyingType(fkProperty.PropertyType) != null;
     }
 }
 /* Examples

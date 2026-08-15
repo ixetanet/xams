@@ -20,6 +20,7 @@ public class PipelineContext
     public Dictionary<string, JsonElement> InputParameters { get; internal set; } = new();
     public Dictionary<string, JsonElement> OutputParameters { get; internal set; } = new();
     public SystemParameters SystemParameters { get; internal set; }
+    public required Dictionary<string, object> TransactionBag { get; set; }
     public ReadInput? ReadInput { get; internal set; }
     public ReadOutput? ReadOutput { get; internal set; }
     public Dictionary<string, dynamic>? Fields { get; internal set; }

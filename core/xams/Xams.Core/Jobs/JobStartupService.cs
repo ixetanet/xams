@@ -1,4 +1,5 @@
 using System.Linq.Dynamic.Core;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
@@ -40,17 +41,14 @@ public class JobStartupService : IServiceStartup
         IXamsDbContext xamsDbContext = _dataService.GetDataRepository().CreateNewDbContext();
         var baseDbContextType = Cache.Instance.GetTableMetadata("Job");
 
-        DynamicLinq dynamicLinq = new DynamicLinq(xamsDbContext, baseDbContextType.Type);
-        IQueryable query = dynamicLinq.Query;
-
         // Get all jobs
-        var jobs = await query.ToDynamicListAsync();
+        var jobs = await xamsDbContext.JobsBase.ToListAsync();
         
         // Delete any jobs that no longer exist
-        List<dynamic> removedJobs = new List<dynamic>();
+        List<Xams.Core.Entities.Job> removedJobs = new List<Xams.Core.Entities.Job>();
         foreach (var job in jobs)
         {
-            var jobName = (string)job.Name;
+            var jobName = job.Name;
             var actualJobExists = Cache.Instance.ServiceJobs.Any(m => m.Value.ServiceJobAttribute.Name == jobName);
             if (actualJobExists == false)
             {
@@ -61,6 +59,21 @@ public class JobStartupService : IServiceStartup
         
         foreach (var job in removedJobs)
         {
+            var jobHistories = await xamsDbContext
+                .JobHistoriesBase.Where(jh => jh.JobId == job.JobId)
+                .ToListAsync();
+
+            foreach (var jobHistory in jobHistories)
+            {
+                await xamsDbContext.LogsBase
+                    .Where(x => x.JobHistoryId == jobHistory.JobHistoryId)
+                    .ExecuteDeleteAsync();
+            }
+            
+            await xamsDbContext.JobHistoriesBase
+                .Where(jh => jh.JobId == job.JobId)
+                .ExecuteDeleteAsync();
+            
             jobs.Remove(job);
         }
 

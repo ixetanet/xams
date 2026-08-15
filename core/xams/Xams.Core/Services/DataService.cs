@@ -200,14 +200,15 @@ namespace Xams.Core.Services
                     DataService = this,
                     DataRepository = _dataRepository,
                     MetadataRepository = _metadataRepository,
-                    SecurityRepository = _securityRepository
+                    SecurityRepository = _securityRepository,
+                    TransactionBag = new Dictionary<string, object>()
                 };
                 pipelineContext.CreateServiceContext();
                 ServiceContexts.Add(pipelineContext.ServiceContext);
 
                 var result = await ExecutePipeline(pipelineContext);
 
-                await TryExecuteBulkServiceLogic(BulkStage.Post, userId);
+                await TryExecuteBulkServiceLogic(BulkStage.Post, userId, pipelineContext.TransactionBag);
 
                 return new Response<ReadOutput>()
                 {
@@ -392,7 +393,7 @@ namespace Xams.Core.Services
                 ])!);
                 
                 // If there were create \ update \ delete pipelines executed, then execute bulk service logic
-                Response<object?> bulkServiceLogicResponse = await TryExecuteBulkServiceLogic(BulkStage.Post, userId);
+                Response<object?> bulkServiceLogicResponse = await TryExecuteBulkServiceLogic(BulkStage.Post, userId, pipelineContext.TransactionBag);
 
                 if (response.Succeeded && bulkServiceLogicResponse.Succeeded)
                 {
@@ -440,11 +441,11 @@ namespace Xams.Core.Services
         /// <param name="userId"></param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        public async Task<Response<object?>> TryExecuteBulkServiceLogic(BulkStage bulkStage, Guid userId)
+        public async Task<Response<object?>> TryExecuteBulkServiceLogic(BulkStage bulkStage, Guid userId, Dictionary<string, object> transactionBag)
         {
             if (ServiceContexts.Count > 0)
             {
-                return await ExecuteBulkServiceLogic(bulkStage, userId);
+                return await ExecuteBulkServiceLogic(bulkStage, userId, transactionBag);
             }
 
             return ServiceResult.Success();
@@ -463,6 +464,7 @@ namespace Xams.Core.Services
                 DataRepository = _dataRepository,
                 MetadataRepository = _metadataRepository,
                 SecurityRepository = _securityRepository,
+                TransactionBag = new Dictionary<string, object>()
             };
 
             try
@@ -554,6 +556,7 @@ namespace Xams.Core.Services
                     DataRepository = _dataRepository,
                     MetadataRepository = _metadataRepository,
                     SecurityRepository = _securityRepository,
+                    TransactionBag = new Dictionary<string, object>()
                 };
                 var response = await hub.Send(new HubSendContext(pipelineContext, message, signalRInstance));
                 return response;
@@ -758,6 +761,7 @@ namespace Xams.Core.Services
 
                 List<PipelineContext> pipelineContexts = new List<PipelineContext>();
 
+                var transactionBag = new Dictionary<string, object>();
                 foreach (var operation in operations)
                 {
                     var pipelineContext = new PipelineContext()
@@ -780,7 +784,8 @@ namespace Xams.Core.Services
                         DataRepository = _dataRepository,
                         MetadataRepository = _metadataRepository,
                         SecurityRepository = _securityRepository,
-                        Fields = operation.Input.fields
+                        Fields = operation.Input.fields,
+                        TransactionBag =  transactionBag,
                     };
                     ServiceContexts.Add(pipelineContext.CreateServiceContext());
                     pipelineContexts.Add(pipelineContext);
@@ -797,7 +802,7 @@ namespace Xams.Core.Services
                 await _dataRepository.BeginTransaction();
 
                 var preBulkServiceLogicResponse =
-                    await ExecuteBulkServiceLogic(BulkStage.Pre, userId);
+                    await ExecuteBulkServiceLogic(BulkStage.Pre, userId, transactionBag);
                 if (!preBulkServiceLogicResponse.Succeeded)
                 {
                     return preBulkServiceLogicResponse;
@@ -841,7 +846,7 @@ namespace Xams.Core.Services
                 }
 
                 var postBulkServiceLogicResponse =
-                    await ExecuteBulkServiceLogic(BulkStage.Post, userId);
+                    await ExecuteBulkServiceLogic(BulkStage.Post, userId, transactionBag);
                 if (!postBulkServiceLogicResponse.Succeeded)
                 {
                     return postBulkServiceLogicResponse;
@@ -967,7 +972,8 @@ namespace Xams.Core.Services
                 DataService = this,
                 DataRepository = _dataRepository,
                 MetadataRepository = _metadataRepository,
-                SecurityRepository = _securityRepository
+                SecurityRepository = _securityRepository,
+                TransactionBag = parent != null ? parent.TransactionBag : new Dictionary<string, object>()
             };
             ServiceContexts.Add(pipelineContext.CreateServiceContext());
             var securityResponse = await Pipelines.SecurityPipeline.Execute(pipelineContext);
@@ -987,7 +993,7 @@ namespace Xams.Core.Services
         }
 
         private async Task<Response<object?>> ExecuteBulkServiceLogic(
-            BulkStage bulkStage, Guid userId)
+            BulkStage bulkStage, Guid userId, Dictionary<string, object> transactionBag)
         {
             // Call Bulk Service Logic
             var preBulkServiceLogics = Cache.Instance.BulkServiceLogics
@@ -1007,7 +1013,8 @@ namespace Xams.Core.Services
                             DataService = this,
                             DataRepository = _dataRepository,
                             MetadataRepository = _metadataRepository,
-                            SecurityRepository = _securityRepository
+                            SecurityRepository = _securityRepository,
+                            TransactionBag =  transactionBag,
                         };
 
                         BulkServiceContext bulkServiceContext =

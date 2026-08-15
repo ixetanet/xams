@@ -191,8 +191,11 @@ public class TABLE_ImportData : IServiceAction
                             lookupType = nameProperty.PropertyType;
                         }
                         
+                        var metadata = Cache.Instance.TableTypeMetadata[lookupType];
+                        lookupType = metadata.Type;
+                        
                         DynamicLinq dynamicLinq = new DynamicLinq(db, lookupType);
-                        var lookupRecord = (await dynamicLinq.Query.Where($"{lookupType.Name}Id == @0", lookupId)
+                        var lookupRecord = (await dynamicLinq.Query.Where($"{metadata.PrimaryKey} == @0", lookupId)
                             .ToDynamicListAsync()).FirstOrDefault();
                         if (lookupRecord == null)
                         {

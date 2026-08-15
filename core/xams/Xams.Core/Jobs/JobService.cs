@@ -129,6 +129,12 @@ public class JobService
             {
                 continue;
             }
+            
+            if (!Cache.Instance.ServiceJobs.ContainsKey(options.JobName))
+            {
+                Console.WriteLine($"Job {options.JobName} not found or not active");
+                continue;
+            }
 
             var parameters = new Dictionary<string, JsonElement>();
             if (options.Parameters != null)
@@ -173,7 +179,9 @@ public class JobService
         IQueryable query = dLinqJobs.Query;
         // Get all jobs every execution because the job might have been actived\deactivated
         var dynamicJobs = query.ToDynamicList();
-        var jobs = dynamicJobs.Select(x => new Job(x, new Dictionary<string, JsonElement>())).ToList();
+        var jobs = dynamicJobs
+            .Where(x => Cache.Instance.ServiceJobs.ContainsKey((string)x.Name))
+            .Select(x => new Job(x, new Dictionary<string, JsonElement>())).ToList();
                 
         // Get the default server to execute jobs that should only run on 1 server, where a specific
         // server hasn't been specified
@@ -187,7 +195,10 @@ public class JobService
 
         await Parallel.ForEachAsync(_jobQueues, async (jobQueue, _) =>
         {
-            var jobsInQueue = jobs.Where(x => x.Queue == jobQueue.Name).ToList();
+            var jobsInQueue = jobs
+                .Where(x => x.Queue == jobQueue.Name)
+                .Where(x => Cache.Instance.ServiceJobs.ContainsKey(x.Name))
+                .ToList();
             await jobQueue.Execute(jobsInQueue);
         });
     }

@@ -602,7 +602,7 @@ public class QueryFactory
             .SelectMany(x => x.filters ?? Array.Empty<Filter>()) ?? Array.Empty<Filter>()).ToArray();
 
         Type targetType = Cache.Instance.GetTableMetadata(query.TableName).Type;
-        FilterData filterData =
+        var (filterData, _) =
             GetFilters(targetType, query, readInput.filters, readInput.joins, logicalOperator);
 
         if (filterData.Values.Count == 0)
@@ -613,14 +613,14 @@ public class QueryFactory
         query.Where(filterData.Filter.ToString(), filterData.Values.ToArray());
     }
 
-    private FilterData GetFilters(Type targetType, Query query, Filter[]? filters, Join[]? joins = null,
+    private (FilterData, int) GetFilters(Type targetType, Query query, Filter[]? filters, Join[]? joins = null,
         string? logicalOperator = null, int index = 0)
     {
         FilterData filterData = new FilterData();
 
         if (filters == null)
         {
-            return filterData;
+            return (filterData, index);
         }
 
         logicalOperator ??= "&&";
@@ -1006,15 +1006,16 @@ public class QueryFactory
         {
             if (!string.IsNullOrEmpty(filter.logicalOperator))
             {
-                var childFilterData = GetFilters(targetType, query, filter.filters, joins, filter.logicalOperator,
+                var (childFilterData, newIndex) = GetFilters(targetType, query, filter.filters, joins, filter.logicalOperator,
                     index);
+                index = newIndex;
                 string filterOperator = filterData.Filter.Length > 0 ? $" {logicalOperator} " : "";
                 filterData.Filter.Append($" {filterOperator} ({childFilterData.Filter.ToString()})");
                 filterData.Values.AddRange(childFilterData.Values);
             }
         }
 
-        return filterData;
+        return (filterData, index);
     }
 
     /// <summary>

@@ -84,6 +84,10 @@ public class TABLE_ExportData : IServiceAction
             var row1 = worksheet.Row(1);
             for (int i = 0; i < propertyInfos.Count; i++)
             {
+                if (propertyInfos[i].Name == "Discriminator")
+                {
+                    continue;
+                }
                 row1.Cell(i + 1).Value = propertyInfos[i].Name;
             }
             
@@ -95,6 +99,10 @@ public class TABLE_ExportData : IServiceAction
                 for (int j = 0; j < propertyInfos.Count; j++)
                 {
                     var propertyInfo = propertyInfos[j];
+                    if (propertyInfo.Name == "Discriminator")
+                    {
+                        continue;
+                    }
                     var value = record[propertyInfo.Name];
                     var cell = row.Cell(j + 1); 
                     if (value != null)

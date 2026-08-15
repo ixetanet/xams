@@ -165,7 +165,7 @@ namespace Xams.Core.Repositories
 
                 if (readInput.maxResults == null)
                 {
-                    readInput.maxResults = 5;
+                    readInput.maxResults = 50;
                 }
 
                 string[] permissions = readOptions.Permissions;
@@ -921,7 +921,7 @@ namespace Xams.Core.Repositories
                 }
 
                 // Check if toField was auto-added (it's auto-added in QueryFactory lines 70-73)
-                if (!joinFields.Contains(join.toField))
+                if (!joinFields.Contains(join.toField) && !joinFields.Contains("*"))
                 {
                     if (!autoAddedJoinFields.TryGetValue(alias, out var autoFields))
                     {

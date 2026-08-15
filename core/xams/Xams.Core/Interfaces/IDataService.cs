@@ -46,7 +46,7 @@ namespace Xams.Core.Interfaces
         Task<Response<object?>> Metadata(MetadataInput metadataInput, Guid userId);
         Task<Response<object?>> Permissions(PermissionsInput permissionsInput, Guid userId);
         public T GetDbContext<T>() where T : IXamsDbContext;
-        internal Task<Response<object?>> TryExecuteBulkServiceLogic(BulkStage bulkStage, Guid userId);
+        internal Task<Response<object?>> TryExecuteBulkServiceLogic(BulkStage bulkStage, Guid userId, Dictionary<string, object> transactionBag);
 
         internal Task<Response<object?>> BatchPreEntity(List<PipelineContext> pipelineContexts,
             bool checkSecurity);

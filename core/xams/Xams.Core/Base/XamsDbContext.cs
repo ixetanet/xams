@@ -186,12 +186,13 @@ namespace Xams.Core.Base
                     e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
             }
 
+            var result = await base.SaveChangesAsync(cancellationToken);
+            
             if (SaveChangesCalledWithPendingChanges)
             {
                 await AuditLogic.Audit(this, cancellationToken);
             }
-
-            var result = await base.SaveChangesAsync(cancellationToken);
+            
             ChangeTracker.Clear();
             return result;
         }
@@ -203,13 +204,14 @@ namespace Xams.Core.Base
                 SaveChangesCalledWithPendingChanges = ChangeTracker.Entries().Any(e =>
                     e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
             }
-
+            
+            var result = base.SaveChanges();
+            
             if (SaveChangesCalledWithPendingChanges)
             {
                 AuditLogic.Audit(this, CancellationToken.None).GetAwaiter().GetResult();
             }
-
-            var result = base.SaveChanges();
+            
             ChangeTracker.Clear();
             return result;
         }
