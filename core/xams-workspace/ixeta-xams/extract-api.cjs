@@ -222,7 +222,8 @@ outputCategory("API Types", types);
 outputCategory("Utilities", utilities);
 outputCategory("Other Exports", other);
 
-// Write output
+// Write output (single trailing newline)
+output = output.replace(/\n+$/, "\n");
 fs.writeFileSync(OUTPUT_FILE, output);
 console.log(`✅ Generated ${OUTPUT_FILE}`);
 console.log(`📄 Size: ${(output.length / 1024).toFixed(1)}KB`);

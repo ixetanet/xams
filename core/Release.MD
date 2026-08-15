@@ -1,5 +1,46 @@
 # Release Notes
 
+## 1.0.22
+
+- DataGrid performance reimplementation, including ability to merge cells and paste from excel
+- Added DataTable headerLabels
+- Added TransactionBag, holder for any transaction variables
+- Fixed SQLite Nullable object must have a value when navigation property is nullable and is null
+- Fixed adding null checks for nullable properties
+- Fixed join fields omitting fields when "\*" is used
+- Fixed queries with multiple nested filter incorrect index
+- Fixed job missing in code but exists in Job table
+- Increased default maxResults read from 5 to 50
+
+## 1.0.21
+
+- Added FieldBoolean, FieldDate, FieldLookup, FieldMultiSelect, FieldText and FieldTextarea to breakout Field component logic for better onChange handling and prop forwarding. Refactored Field component.
+- RichText box moved to FieldRichText to reduce Field bundle size
+- Fixed FormContainer now renders children in a single element versus double
+- Fixed spelling on Field component varient -> variant
+- Fixed Audit now occurs after the save to attain entity id
+- Fixed MultiSelect Lookup filters
+
+## 1.0.20
+
+- Changed UIDisplayNameXXX attributes for BaseEntity
+- Added UICreateOnly attribute
+- Added UIMultiSelect attribute
+- Fixed UIReadOnly only executing on the API
+
+## 1.0.19
+
+- Added OwningUser attribute for multiple user owners
+- Fixed context.SendHub now shares a transaction with the service preventing SQLite locks
+- Fixed security builder erroring on changing permission levels for tables
+
+## 1.0.18
+
+- Added “Startup Complete.” message
+- Fixed querying on invalid join query prefix
+- Fixed PatchEntity occurring after Pre-Validation service logic when it should be before
+- Fixed late system audit record caching
+
 ## 1.0.17
 
 - Added SecurityBuilder to context to easily create RolePermissions

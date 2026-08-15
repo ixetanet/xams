@@ -25,8 +25,12 @@ const SearchBox = () => {
       .map((f, i) => {
         const fieldName = f.metadataField?.lookupName ?? f.metadataField?.name;
         const withAlias = `${f.alias}${f.alias !== "" ? `.` : ``}${fieldName}`;
+        const label = ctx.props.headerLabels
+          ? ctx.props.headerLabels[withAlias] ??
+            (f.metadataField?.displayName as string)
+          : (f.metadataField?.displayName as string);
         return {
-          value: withAlias,
+          value: label,
           label: f.metadataField?.displayName as string,
         };
       });

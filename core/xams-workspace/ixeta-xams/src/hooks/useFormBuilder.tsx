@@ -42,6 +42,7 @@ interface useFormBuilderProps {
   onPostSave?: PostSaveEvent;
   forceShowLoading?: boolean; // If true, loading will be displayed until setShowLoading(false) is called
   keepLoadingOnSuccess?: boolean; // If true, loading will be displayed until setShowLoading(false) is called
+  saveSilent?: boolean; // If true no loading
 }
 
 type OnLoadOptions = {
@@ -494,7 +495,60 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
     reloadDataTables();
   };
 
-  const onSaveSilent = async (parameters?: any) => {
+  const onSaveSilent = async (
+    preValidate?: PreSaveEvent,
+    preSaveEvent?: PreSaveEvent,
+    postSaveEvent?: PostSaveEvent,
+    parameters?: any
+  ) => {
+    const submissionData = {
+      ...(state.data as any),
+    };
+
+    parameters = parameters ?? ({} as any);
+
+    const preValidateEvents = [
+      props.onPreValidate,
+      preValidate,
+      onPreValidateRef.current,
+    ];
+    for (const preValidateEvent of preValidateEvents) {
+      if (preValidateEvent == null) {
+        continue;
+      }
+      const preValidateResult = await preValidateEvent(submissionData);
+      if (preValidateResult.continue === false) {
+        return;
+      }
+      // Append to parameters
+      parameters = {
+        ...parameters,
+        ...preValidateResult.parameters,
+      };
+    }
+    // End of onPreValidate event
+
+    if (!onValidate()) {
+      return;
+    }
+
+    const preSaveEvents = [props.onPreSave, preSaveEvent, onPreSaveRef.current];
+    for (const saveEvent of preSaveEvents) {
+      if (saveEvent == null) {
+        continue;
+      }
+      const preSaveResult = await saveEvent(submissionData);
+      if (preSaveResult.continue === false) {
+        return;
+      }
+      // Append to parameters
+      parameters = {
+        ...parameters,
+        ...preSaveResult.parameters,
+      };
+    }
+    // End of onPreSave event
+
     const resp = await authRequest.execute<any>({
       url: state.snapshot === undefined ? API_DATA_CREATE : API_DATA_UPDATE,
       method: state.snapshot === undefined ? "POST" : "PATCH",
@@ -504,6 +558,34 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
         parameters: parameters,
       },
     });
+
+    const postSaveEvents = [
+      props.onPostSave,
+      postSaveEvent,
+      onPostSaveRef.current,
+    ];
+
+    // Handle Post Save events
+    if (resp?.succeeded === true) {
+      for (let saveEvent of postSaveEvents) {
+        if (saveEvent == null) {
+          continue;
+        }
+        await saveEvent(
+          state.snapshot === undefined ? "CREATE" : "UPDATE",
+          state.metadata ? resp.data[state.metadata.primaryKey] : "",
+          resp.data
+        );
+      }
+    } else {
+      for (const saveEvent of postSaveEvents) {
+        if (saveEvent == null) {
+          continue;
+        }
+        await saveEvent("FAILED", "", {});
+      }
+    }
+
     return resp.data;
   };
 
@@ -663,6 +745,7 @@ const useFormBuilder = <T,>(props: useFormBuilderProps) => {
     validationMessages: state.validationMessages,
     isLoading: state.isLoading || state.forceIsLoading,
     isSubmitted: state.isSubmitted,
+    isSaveSilent: props.saveSilent === true,
     operation: (props.snapshot != null || state.snapshot != null
       ? "UPDATE"
       : "CREATE") as "UPDATE" | "CREATE",

@@ -39,6 +39,7 @@ const AdminDashJobs = () => {
                         value: "System",
                       },
                     ]}
+                    maxResults={100}
                     canCreate={false}
                     canDelete={false}
                     formCloseOnEscape={true}

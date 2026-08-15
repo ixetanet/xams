@@ -5,9 +5,8 @@ export type {
   NavItem,
   AdminDashContextShape,
 } from "./admin/contexts/AdminDashContext";
-export type {
-  RolePermissionState,
-} from "./admin/types/RolePermissionTypes";
+export { default as CopyId } from "./admin/components/CopyId";
+export type { RolePermissionState } from "./admin/types/RolePermissionTypes";
 export { SystemAdministratorRoleId } from "./admin/types/RolePermissionTypes";
 export { default as useAuthRequest } from "./hooks/useAuthRequest";
 export type { ReadFilter as ReadFilter } from "./api/ReadRequest";

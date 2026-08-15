@@ -95,6 +95,12 @@ html {
   border-radius: 10px;
 }
 
+/* Corner where both scrollbars meet — default is opaque white, which
+   flashes in dark mode */
+.thin-scrollbar-x::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Handle */
 ::-webkit-scrollbar-thumb {
   background: #d0d0d0;

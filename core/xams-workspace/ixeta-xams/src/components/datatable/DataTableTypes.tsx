@@ -70,6 +70,8 @@ export type DataTableProps = {
   filters?: ReadFilter[]; // Default filters to apply
   joins?: ReadJoin[];
   except?: ReadExcept[];
+  parameters?: any; // Additional parameters to send to the API
+  headerLabels?: { [key: string]: string }; // Override the header labels
 
   scrollable?: boolean;
   searchable?: boolean;

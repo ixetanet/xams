@@ -14,6 +14,40 @@ export interface DataGridProps {
     cellLocation: CellLocation,
     data?: any
   ) => void;
+  /**
+   * Fires when clipboard content (e.g. cells copied from Excel) is pasted
+   * while a cell is active and not being edited. `value` holds the pasted
+   * cell values and `data` the target cells' `data` property, both indexed
+   * as [row][col] relative to `cellLocation` (the active cell the paste is
+   * anchored at). The matrices are clipped to the grid bounds; positions
+   * whose target cell is read-only or disabled are `undefined` in both
+   * matrices and must not be pasted. No event fires when the anchor cell
+   * itself is read-only or disabled.
+   */
+  onPaste?: (
+    data: any[][],
+    value: (string | undefined)[][],
+    cellLocation: CellLocation
+  ) => void;
+  /**
+   * Fires when the fill handle (the square at the bottom-right corner of the
+   * selection) is dragged and released. The grid tiles the source selection's
+   * values across the drag target and reports the result — it computes no
+   * series; consumers may substitute their own series logic using
+   * `sourceRange`/`targetRange`. `value` holds the tiled source values and
+   * `data` the target cells' `data` property, both indexed as [row][col]
+   * relative to `targetRange.start` (the source cells are not included).
+   * Unlike `selectedRange`, both ranges are normalized (start is the
+   * top-left). Positions whose target cell is read-only or disabled are
+   * `undefined` in both matrices and must not be filled. The handle only
+   * renders when this prop is set and `editable` is not false.
+   */
+  onFill?: (
+    data: any[][],
+    value: (string | undefined)[][],
+    sourceRange: CellRange,
+    targetRange: CellRange
+  ) => void;
   snapColumns?: number;
   snapRows?: number;
   zIndex?: number;
@@ -23,6 +57,27 @@ export interface DataGridProps {
   styletr?: React.CSSProperties;
   styletl?: React.CSSProperties;
   stylebl?: React.CSSProperties;
+  onSelectionChange?: (
+    cellLocation: CellLocation | undefined,
+    range: CellRange | null
+  ) => void;
+  onMergeCells?: (mergedCell: MergedCell) => void;
+  onUnmergeCells?: (mergedCell: MergedCell) => void;
+  resizableRows?: boolean;
+  defaultRowHeight?: number;
+}
+
+export interface CellRange {
+  start: CellLocation;
+  end: CellLocation;
+}
+
+export interface MergedCell {
+  start: CellLocation;
+  end: CellLocation;
+  spanRows: number;
+  spanColumns: number;
+  primaryCell: CellLocation;
 }
 
 export interface CellLocation {
@@ -59,4 +114,5 @@ export interface Cell {
 
 export interface Row {
   columns: Cell[];
+  rowHeight?: number;
 }

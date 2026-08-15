@@ -9,6 +9,7 @@ import {
   useFieldRequired,
 } from "../hooks/useFieldHelpers";
 import MultiSelectComponent from "./MultiSelect";
+import { LookupQuery } from "../reducers/formbuilderReducer";
 
 export interface MultiSelectValue {
   id: string;
@@ -24,6 +25,7 @@ interface FieldMultiSelectProps {
   readOnly?: boolean;
   required?: boolean;
   size?: MantineSize;
+  query?: LookupQuery;
 }
 
 const FieldMultiSelect = (props: FieldMultiSelectProps) => {
@@ -89,6 +91,12 @@ const FieldMultiSelect = (props: FieldMultiSelectProps) => {
       required={isRequired}
       error={error}
       disabled={props.disabled}
+      query={
+        props.query ||
+        (formContext.formBuilder.lookupQueries?.find(
+          (x) => x.field === field.name
+        ) as LookupQuery)
+      }
     />
   );
 };

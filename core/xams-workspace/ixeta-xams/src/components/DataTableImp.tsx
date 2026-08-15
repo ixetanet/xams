@@ -303,6 +303,9 @@ const DataTable = forwardRef(
             : []),
         ],
         joins: props.joins !== undefined ? props.joins : [],
+        parameters: {
+          ...(props.parameters !== undefined ? props.parameters : {}),
+        },
       } as ReadRequest);
 
       if (options?.setData != null && options.setData === true) {

@@ -18,6 +18,7 @@ import React, {
   useState,
 } from "react";
 import { ReadRequest } from "../api/ReadRequest";
+import { LookupQuery } from "../reducers/formbuilderReducer";
 
 type DataItem = {
   label: string;
@@ -38,6 +39,7 @@ interface MultiSelectComponentProps {
   className?: string;
   disabled?: boolean;
   size?: string;
+  query?: LookupQuery | undefined;
 }
 
 interface CustomMultiSelectOption {
@@ -175,7 +177,10 @@ const MultiSelectComponent = forwardRef(
                 },
               ]
             : []),
+          ...(props.query?.filters ?? []),
         ],
+        joins: props.query?.joins,
+        except: props.query?.except,
       } as ReadRequest;
 
       const readResp = await authRequest.read(readRequest);
@@ -262,7 +267,7 @@ const MultiSelectComponent = forwardRef(
       // Filter out already-selected items (skip groups)
       const filtered = options.filter((option) => {
         // Skip groups (they have a 'group' property)
-        if ('group' in option) return true;
+        if ("group" in option) return true;
         // Type guard: at this point we know it's a regular item
         return !selectedValues.includes(option.value);
       });
@@ -274,7 +279,7 @@ const MultiSelectComponent = forwardRef(
       const searchLower = search.toLowerCase();
       return filtered.filter((option) => {
         // Skip groups
-        if ('group' in option) return true;
+        if ("group" in option) return true;
 
         // Type guard: at this point we know it's a regular item with label
         const labelMatch = option.label.toLowerCase().includes(searchLower);

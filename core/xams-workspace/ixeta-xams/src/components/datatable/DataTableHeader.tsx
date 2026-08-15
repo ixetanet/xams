@@ -47,6 +47,10 @@ const DataTableHeader = (props: DataTableHeaderProps) => {
         const m = f.metadataField;
         const fieldName = m?.lookupName != null ? m.lookupName : m.name;
         const withAlias = `${f.alias}${f.alias !== "" ? `.` : ``}${fieldName}`;
+        const label = ctx.props.headerLabels
+          ? ctx.props.headerLabels[withAlias] ??
+            (f.metadataField?.displayName as string)
+          : (f.metadataField?.displayName as string);
         if (m == null) {
           return;
         }
@@ -65,7 +69,7 @@ const DataTableHeader = (props: DataTableHeaderProps) => {
                   ctx.sort(withAlias);
                 }}
               >
-                {m.displayName}
+                {label}
               </span>
               {orderByName === withAlias && orderByOrder === "desc" && (
                 <IconCaretDown

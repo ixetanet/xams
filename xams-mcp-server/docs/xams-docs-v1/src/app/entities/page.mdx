@@ -14,6 +14,34 @@ Entity definitions need to follow certain rules in order to work with Xams. {{ c
 3. Self-referencing entities must NOT include navigation properties to themselves.
 4. **System entities use base table names**: `User`, `Team`, `Role`, `Setting` are always the table names—even when extended (e.g., `public class AppUser : User` → table name is `"User"` for queries and permissions).
 
+## Field Types: UIOption vs Enums
+
+**Never use C# enums for user-facing choice fields.** Always use `[UIOption("GroupName")]` instead.
+
+```c# {{ title: 'Project / Entities / Post.cs' }}
+[Table(nameof(Post))]
+public class Post : BaseEntity
+{
+    public Guid PostId { get; set; }
+
+    [UIName]
+    public string Title { get; set; }
+
+    // ✅ CORRECT - Use UIOption for choice fields
+    [UIOption("PostStatus")]
+    public string Status { get; set; } = "Draft";
+
+    // ❌ WRONG - Don't use enums
+    // public PostStatus Status { get; set; }
+}
+```
+
+**Why UIOption?**
+- Options are manageable via Admin Dashboard without code changes
+- Supports dropdown UI components automatically
+- Values can be added/modified at runtime
+- See [Attributes](/attributes) for UIOption setup details
+
 ## Self-Referencing Entities
 
 For entities that reference themselves (like nested comments), use only the ID field - do not include the navigation property.

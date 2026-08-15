@@ -1,7 +1,7 @@
 # @ixeta/xams - API Signatures
 
 **Version**: 1.0.16
-**Auto-generated**: 2025-10-12
+**Auto-generated**: 2026-08-15
 
 This document contains concise TypeScript signatures for all exported items from @ixeta/xams.
 
@@ -12,31 +12,33 @@ This document contains concise TypeScript signatures for all exported items from
 ### useAuthRequest
 
 ```typescript
-interface useAuthRequestProps {}
+interface useAuthRequestProps {
+}
 ```
 
 ### useFormBuilder
 
 ```typescript
 interface useFormBuilderProps {
-  tableName: string;
-  id?: string | null;
-  metadata?: MetadataResponse;
-  defaults?: FieldValue[];
-  snapshot?: any;
-  lookupExclusions?: LookupExclusions[];
-  lookupQueries?: LookupQuery[];
-  canUpdate?: boolean;
-  canCreate?: boolean;
-  onPreValidate?: PreSaveEvent;
-  onPreSave?: PreSaveEvent;
-  onPostSave?: PostSaveEvent;
-  forceShowLoading?: boolean;
-  keepLoadingOnSuccess?: boolean;
+    tableName: string;
+    id?: string | null;
+    metadata?: MetadataResponse;
+    defaults?: FieldValue[];
+    snapshot?: any;
+    lookupExclusions?: LookupExclusions[];
+    lookupQueries?: LookupQuery[];
+    canUpdate?: boolean;
+    canCreate?: boolean;
+    onPreValidate?: PreSaveEvent;
+    onPreSave?: PreSaveEvent;
+    onPostSave?: PostSaveEvent;
+    forceShowLoading?: boolean;
+    keepLoadingOnSuccess?: boolean;
+    saveSilent?: boolean;
 }
 ```
 
-### \*
+### *
 
 ```typescript
 export type SaveEventResponse = {
@@ -44,6 +46,16 @@ export type PreSaveEvent = (submissionData: any) => Promise<SaveEventResponse>;
 export type PostSaveEvent = (operation: "CREATE" | "UPDATE" | "FAILED", id: string, data: any) => void;
 export type useFormBuilderType<T = any> = ReturnType<typeof useFormBuilder<T>>;
 export default useFormBuilder;
+```
+
+### *
+
+```typescript
+export declare const useFieldValue: (fieldName: string) => readonly [any, (newValue: any) => void];
+export declare const useFieldValidation: (fieldName: string) => string | undefined;
+export declare const useFieldPermissions: (field: MetadataField) => {
+export declare const useFieldLabel: (field: MetadataField, customLabel?: string | React.ReactNode) => React.ReactNode;
+export declare const useFieldRequired: (fieldName: string, required?: boolean) => void;
 ```
 
 ### useColor
@@ -67,12 +79,17 @@ export type useFormBuilderType<T = any> = ReturnType<typeof useFormBuilder<T>>;
 
 ## Components
 
+### CopyId
+
+```typescript
+declare const CopyId: (props: CopyProps) => React.JSX.Element;
+export default CopyId;
+```
+
 ### DataTable
 
 ```typescript
-declare const DataTable: React.ForwardRefExoticComponent<
-  DataTableProps & React.RefAttributes<unknown>
->;
+declare const DataTable: React.ForwardRefExoticComponent<DataTableProps & React.RefAttributes<unknown>>;
 export default DataTable;
 ```
 
@@ -83,7 +100,7 @@ declare const DataTableSelectable: (props: DataTableProps & {
 export default DataTableSelectable;
 ```
 
-### \*
+### *
 
 ```typescript
 export type SetDataFunction = (records: any[]) => any[];
@@ -103,12 +120,26 @@ export {};
 
 ```typescript
 export interface DataGridRef {
-  reset: () => void;
-  activeCell?: CellLocation;
-  setActiveCell: (cell: CellLocation) => void;
-  isEditing?: boolean;
-  editValue?: string;
-  setEditValue: (value: string) => void;
+    reset: () => void;
+    activeCell?: CellLocation;
+    setActiveCell: (cell: CellLocation) => void;
+    isEditing?: boolean;
+    editValue?: string;
+    setEditValue: (value: string) => void;
+    /**
+     * Merges the given range into a single cell anchored at its top-left
+     * (primary) cell. Optional because it was added after the initial
+     * DataGridRef shape — existing structural implementations remain valid.
+     *
+     * A range may not cross a frozen-pane boundary (`snapRows`/`snapColumns`):
+     * each pane renders independently, so such a range cannot be displayed as
+     * one cell. Cross-pane ranges are rejected and `undefined` is returned.
+     * Changing `snapRows`/`snapColumns` clears all merged regions.
+     */
+    mergeCells?: (range: CellRange) => MergedCell | undefined;
+    /** Unmerges every merged region intersecting the given range. Optional —
+     * added after the initial DataGridRef shape. */
+    unmergeCells?: (range: CellRange) => MergedCell[];
 }
 ```
 
@@ -116,19 +147,35 @@ export interface DataGridRef {
 
 ```typescript
 export interface DataGridRef {
-  reset: () => void;
-  activeCell?: CellLocation;
-  setActiveCell: (cell: CellLocation) => void;
-  isEditing?: boolean;
-  editValue?: string;
-  setEditValue: (value: string) => void;
+    reset: () => void;
+    activeCell?: CellLocation;
+    setActiveCell: (cell: CellLocation) => void;
+    isEditing?: boolean;
+    editValue?: string;
+    setEditValue: (value: string) => void;
+    /**
+     * Merges the given range into a single cell anchored at its top-left
+     * (primary) cell. Optional because it was added after the initial
+     * DataGridRef shape — existing structural implementations remain valid.
+     *
+     * A range may not cross a frozen-pane boundary (`snapRows`/`snapColumns`):
+     * each pane renders independently, so such a range cannot be displayed as
+     * one cell. Cross-pane ranges are rejected and `undefined` is returned.
+     * Changing `snapRows`/`snapColumns` clears all merged regions.
+     */
+    mergeCells?: (range: CellRange) => MergedCell | undefined;
+    /** Unmerges every merged region intersecting the given range. Optional —
+     * added after the initial DataGridRef shape. */
+    unmergeCells?: (range: CellRange) => MergedCell[];
 }
 ```
 
-### \*
+### *
 
 ```typescript
 export interface DataGridProps {
+export interface CellRange {
+export interface MergedCell {
 export interface CellLocation {
 export interface Cell {
 export interface Row {
@@ -138,13 +185,13 @@ export interface Row {
 
 ```typescript
 interface FormContainerProps {
-  formBuilder: useFormBuilderType;
-  className?: string;
-  children?: any;
-  showLoading?: boolean;
-  onPreValidate?: PreSaveEvent;
-  onPreSave?: PreSaveEvent;
-  onPostSave?: PostSaveEvent;
+    formBuilder: useFormBuilderType;
+    className?: string;
+    children?: any;
+    showLoading?: boolean;
+    onPreValidate?: PreSaveEvent;
+    onPreSave?: PreSaveEvent;
+    onPostSave?: PostSaveEvent;
 }
 ```
 
@@ -152,22 +199,155 @@ interface FormContainerProps {
 
 ```typescript
 interface FieldProps {
-  name: string;
-  label?: string | React.ReactNode;
-  focus?: boolean;
-  varient?: "rich" | "textarea";
-  placeholder?: string;
-  dateInput?: DateInputProps;
-  onChange?: (
-    value: string | boolean | null | undefined,
-    data?: string | null
-  ) => void;
-  onBlur?: () => void;
-  disabled?: boolean;
-  readOnly?: boolean;
-  required?: boolean;
-  allowNegative?: boolean;
-  size?: MantineSize;
+    name: string;
+    label?: string | React.ReactNode;
+    focus?: boolean;
+    variant?: "rich" | "textarea";
+    placeholder?: string;
+    dateInput?: DateInputProps;
+    onChange?: (value: Array<{
+        id: string;
+        name: string;
+    }> | string[] | string | boolean | null | undefined, data?: string | null) => void;
+    onBlur?: () => void;
+    disabled?: boolean;
+    readOnly?: boolean;
+    required?: boolean;
+    allowNegative?: boolean;
+    size?: MantineSize;
+}
+```
+
+### FieldRichText
+
+```typescript
+interface FieldRichTextProps {
+    name: string;
+    label?: string | React.ReactNode;
+    onChange?: (value: string) => void;
+}
+```
+
+### FieldText
+
+```typescript
+interface FieldTextProps {
+    name: string;
+    label?: string | React.ReactNode;
+    focus?: boolean;
+    placeholder?: string;
+    onChange?: (value: string) => void;
+    onBlur?: () => void;
+    disabled?: boolean;
+    readOnly?: boolean;
+    required?: boolean;
+    allowNegative?: boolean;
+    size?: MantineSize;
+    inputProps?: Omit<TextInputProps, "value" | "onChange" | "onBlur" | "label" | "required" | "disabled" | "readOnly" | "error" | "size" | "placeholder">;
+}
+```
+
+### FieldTextarea
+
+```typescript
+interface FieldTextareaProps {
+    name: string;
+    label?: string | React.ReactNode;
+    placeholder?: string;
+    onChange?: (value: string) => void;
+    onBlur?: () => void;
+    disabled?: boolean;
+    readOnly?: boolean;
+    required?: boolean;
+    size?: MantineSize;
+    textareaProps?: Omit<TextareaProps, "value" | "onChange" | "onBlur" | "label" | "required" | "disabled" | "readOnly" | "error" | "size" | "placeholder">;
+}
+```
+
+### FieldDate
+
+```typescript
+interface FieldDateProps {
+    name: string;
+    label?: string | React.ReactNode;
+    focus?: boolean;
+    onChange?: (value: string | null) => void;
+    onBlur?: () => void;
+    disabled?: boolean;
+    readOnly?: boolean;
+    required?: boolean;
+    size?: MantineSize;
+    dateInputProps?: Omit<DateInputProps, "value" | "onChange" | "onBlur" | "label" | "required" | "disabled" | "readOnly" | "error" | "size" | "clearable">;
+}
+```
+
+### FieldBoolean
+
+```typescript
+interface FieldBooleanProps {
+    name: string;
+    label?: string | React.ReactNode;
+    focus?: boolean;
+    onChange?: (checked: boolean) => void;
+    onBlur?: () => void;
+    disabled?: boolean;
+    readOnly?: boolean;
+    required?: boolean;
+    size?: MantineSize;
+    checkboxProps?: Omit<CheckboxProps, "checked" | "onChange" | "onBlur" | "label" | "required" | "disabled" | "readOnly" | "error" | "size">;
+}
+```
+
+### FieldLookup
+
+```typescript
+interface FieldLookupProps {
+    name: string;
+    label?: string | React.ReactNode;
+    focus?: boolean;
+    onChange?: (value: LookupValue | null) => void;
+    onBlur?: () => void;
+    disabled?: boolean;
+    readOnly?: boolean;
+    required?: boolean;
+    size?: MantineSize;
+    excludeValues?: string[];
+    query?: LookupQuery;
+}
+```
+
+### LookupValue
+
+```typescript
+export interface LookupValue {
+    id: string | null;
+    value: string | null;
+    label: string | null;
+}
+```
+
+### FieldMultiSelect
+
+```typescript
+interface FieldMultiSelectProps {
+    name: string;
+    label?: string | React.ReactNode;
+    onChange?: (values: Array<MultiSelectValue>) => void;
+    onBlur?: () => void;
+    disabled?: boolean;
+    readOnly?: boolean;
+    required?: boolean;
+    size?: MantineSize;
+    query?: LookupQuery;
+}
+```
+
+### MultiSelectValue
+
+```typescript
+export interface MultiSelectValue {
+    id: string;
+    name: string;
 }
 ```
 
@@ -175,17 +355,10 @@ interface FieldProps {
 
 ```typescript
 interface SaveButtonProps {
-  label?: string;
-  varient?:
-    | "filled"
-    | "outline"
-    | "light"
-    | "white"
-    | "default"
-    | "subtle"
-    | "gradient";
-  className?: string;
-  size?: MantineSize;
+    label?: string;
+    varient?: "filled" | "outline" | "light" | "white" | "default" | "subtle" | "gradient";
+    className?: string;
+    size?: MantineSize;
 }
 ```
 
@@ -193,8 +366,8 @@ interface SaveButtonProps {
 
 ```typescript
 interface ToggleModeProps {
-  darkColor?: string;
-  lightColor?: string;
+    darkColor?: string;
+    lightColor?: string;
 }
 ```
 
@@ -210,17 +383,17 @@ export declare const useAdminDashContext: () => AdminDashContextShape;
 
 ```typescript
 export interface AdminDashboardProps {
-  title?: string;
-  visibleEntities?: string[];
-  showEntityDisplayNames?: boolean;
-  addMenuItems?: NavItem[];
-  hiddenEntities?: string[];
-  hiddenMenuItems?: string[];
-  forceHideImportData?: boolean;
-  forceHideExportData?: boolean;
-  forceHideToggleMode?: boolean;
-  userCard?: ReactNode;
-  accessDeniedMessage?: ReactNode;
+    title?: string;
+    visibleEntities?: string[];
+    showEntityDisplayNames?: boolean;
+    addMenuItems?: NavItem[];
+    hiddenEntities?: string[];
+    hiddenMenuItems?: string[];
+    forceHideImportData?: boolean;
+    forceHideExportData?: boolean;
+    forceHideToggleMode?: boolean;
+    userCard?: ReactNode;
+    accessDeniedMessage?: ReactNode;
 }
 ```
 
@@ -228,8 +401,8 @@ export interface AdminDashboardProps {
 
 ```typescript
 export interface NavItem {
-  order: number;
-  navLink: React.JSX.Element;
+    order: number;
+    navLink: React.JSX.Element;
 }
 ```
 
@@ -237,18 +410,13 @@ export interface NavItem {
 
 ```typescript
 export type AdminDashContextShape = {
-  props: AdminDashboardProps;
-  tables: TablesResponse[];
-  color: string;
-  setActiveComponent: React.Dispatch<
-    React.SetStateAction<
-      | {
-          component: React.ReactNode;
-        }
-      | undefined
-    >
-  >;
-  emptyTableInfo: any;
+    props: AdminDashboardProps;
+    tables: TablesResponse[];
+    color: string;
+    setActiveComponent: React.Dispatch<React.SetStateAction<{
+        component: React.ReactNode;
+    } | undefined>>;
+    emptyTableInfo: any;
 };
 ```
 
@@ -268,14 +436,14 @@ export declare const useAppContext: () => AppContextShape;
 
 ```typescript
 export interface AuthContextProviderProps {
-  onUnauthorized?: () => void;
-  apiUrl: string;
-  headers?: {
-    [key: string]: string;
-  };
-  children?: any;
-  withCredentials?: boolean;
-  getAccessToken?: () => Promise<string | undefined>;
+    onUnauthorized?: () => void;
+    apiUrl: string;
+    headers?: {
+        [key: string]: string;
+    };
+    children?: any;
+    withCredentials?: boolean;
+    getAccessToken?: () => Promise<string | undefined>;
 }
 ```
 
@@ -297,11 +465,11 @@ export declare const useFormContext: () => FormContextShape;
 
 ```typescript
 export interface ReadFilter {
-  logicalOperator?: "AND" | "OR";
-  filters?: ReadFilter[];
-  field?: string;
-  value?: string | null;
-  operator?: "==" | "!=" | ">" | ">=" | "<" | "<=" | "contains";
+    logicalOperator?: "AND" | "OR";
+    filters?: ReadFilter[];
+    field?: string;
+    value?: string | null;
+    operator?: "==" | "!=" | ">" | ">=" | "<" | "<=" | "Contains";
 }
 ```
 
@@ -309,11 +477,11 @@ export interface ReadFilter {
 
 ```typescript
 export interface ApiResponse<T> {
-  succeeded: boolean;
-  data: T;
-  friendlyMessage: string;
-  logMessage: string;
-  response: Response | undefined;
+    succeeded: boolean;
+    data: T;
+    friendlyMessage: string;
+    logMessage: string;
+    response: Response | undefined;
 }
 ```
 
@@ -333,13 +501,13 @@ export type usePermissionStoreType = ReturnType<typeof usePermissionStore>;
 export default usePermissionStore;
 ```
 
-### \*
+### *
 
 ```typescript
 export interface TablesResponse {
 ```
 
-### \*
+### *
 
 ```typescript
 export interface ReadRequest {
@@ -349,7 +517,7 @@ export interface ReadExcept {
 export interface ReadOrderBy {
 ```
 
-### \*
+### *
 
 ```typescript
 export type ReadResponse<T, U = any> = {
@@ -357,7 +525,7 @@ export type ReadResponse<T, U = any> = {
 
 ## Utilities
 
-### \*
+### *
 
 ```typescript
 export declare class Query {
@@ -378,39 +546,32 @@ export default AdminDashboard;
 
 ```typescript
 export type RolePermissionState = {
-  tables: TablesResponse[];
-  allPermissions: Permission[];
-  rolePermissions: RolePermission[];
-  createRolePermissions: RolePermission[];
-  updateRolePermissions: RolePermission[];
-  deleteRolePermissions: RolePermission[];
-  isLoaded: boolean;
+    tables: TablesResponse[];
+    allPermissions: Permission[];
+    rolePermissions: RolePermission[];
+    createRolePermissions: RolePermission[];
+    updateRolePermissions: RolePermission[];
+    deleteRolePermissions: RolePermission[];
+    isLoaded: boolean;
 };
 ```
 
 ### SystemAdministratorRoleId
 
 ```typescript
-export declare const SystemAdministratorRoleId =
-  "64589861-0481-4dbb-a96f-9b8b6546c40d";
+export declare const SystemAdministratorRoleId = "64589861-0481-4dbb-a96f-9b8b6546c40d";
 ```
 
 ### getQueryParam
 
 ```typescript
-export declare function getQueryParam(
-  name: string,
-  url?: string
-): string | null;
+export declare function getQueryParam(name: string, url?: string): string | null;
 ```
 
 ### addUserIdUrlParam
 
 ```typescript
-export declare function addUserIdUrlParam(
-  currentUrl: string,
-  destinationUrl: string
-): string;
+export declare function addUserIdUrlParam(currentUrl: string, destinationUrl: string): string;
 ```
 
 ### API_DATA_PERMISSIONS

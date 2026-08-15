@@ -43,14 +43,22 @@ const FormContainer = (props: FormContainerProps) => {
     return false;
   };
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    props.formBuilder.save(
-      props.onPreValidate,
-      props.onPreSave,
-      props.onPostSave
-    );
+    if (props.formBuilder.isSaveSilent) {
+      props.formBuilder.saveSilent(
+        props.onPreValidate,
+        props.onPreSave,
+        props.onPostSave
+      );
+    } else {
+      props.formBuilder.save(
+        props.onPreValidate,
+        props.onPreSave,
+        props.onPostSave
+      );
+    }
   };
 
   const isLoading = getIsLoading() || props.showLoading === true;
