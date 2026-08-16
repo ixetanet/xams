@@ -7,6 +7,7 @@ using Xams.Core.Attributes;
 using Xams.Core.Builders;
 using Xams.Core.Contexts;
 using Xams.Core.Dtos;
+using Xams.Core.Dtos.Data;
 using Xams.Core.Interfaces;
 using Xams.Core.Jobs;
 using Xams.Core.Pipeline;
@@ -18,10 +19,10 @@ namespace Xams.Core.Base;
 public class BaseServiceContext(PipelineContext pipelineContext)
 {
     internal PipelineContext PipelineContext { get; private set; } = pipelineContext;
-    internal IDataService DataService => PipelineContext.DataService;
-    internal DataRepository DataRepository => PipelineContext.DataRepository;
-    internal MetadataRepository MetadataRepository => PipelineContext.MetadataRepository;
-    internal SecurityRepository SecurityRepository => PipelineContext.SecurityRepository;
+    public IDataService DataService => PipelineContext.DataService;
+    public DataRepository DataRepository => PipelineContext.DataRepository;
+    public MetadataRepository MetadataRepository => PipelineContext.MetadataRepository;
+    public SecurityRepository SecurityRepository => PipelineContext.SecurityRepository;
     public Guid ExecutionId => PipelineContext.DataService.GetExecutionId();
     public Guid ExecutingUserId => PipelineContext.UserId;
     public Dictionary<string, JsonElement> Parameters => PipelineContext.InputParameters;
@@ -166,6 +167,82 @@ public class BaseServiceContext(PipelineContext pipelineContext)
         }
     }
     
+    /// <summary>
+    /// Execute a ServiceQuery through the DataRepository. Results are returned in the same
+    /// shape as a frontend read request: ExpandoObjects with lookup name fields resolved.
+    /// </summary>
+    /// <param name="query">ServiceQuery</param>
+    /// <param name="bypassSecurity">If true, read with system level permissions instead of the executing user's read permissions</param>
+    /// <param name="appendUIInfo">If true, execute the full read pipeline as a frontend read request does: _ui_info_ is
+    /// populated on each record and Read service logic executes. Cannot be combined with bypassSecurity.</param>
+    /// <returns></returns>
+    public async Task<ReadOutput> Read(ServiceQuery query, bool bypassSecurity = false, bool appendUIInfo = false)
+    {
+        return await Read(ExecutingUserId, query, bypassSecurity, appendUIInfo);
+    }
+
+    /// <summary>
+    /// Execute a ServiceQuery through the DataRepository as a specific user. Results are returned
+    /// in the same shape as a frontend read request: ExpandoObjects with lookup name fields resolved.
+    /// </summary>
+    /// <param name="executingUserId">User to execute as</param>
+    /// <param name="query">ServiceQuery</param>
+    /// <param name="bypassSecurity">If true, read with system level permissions instead of the executing user's read permissions</param>
+    /// <param name="appendUIInfo">If true, execute the full read pipeline as a frontend read request does: _ui_info_ is
+    /// populated on each record and Read service logic executes. Cannot be combined with bypassSecurity.</param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public async Task<ReadOutput> Read(Guid executingUserId, ServiceQuery query, bool bypassSecurity = false, bool appendUIInfo = false)
+    {
+        var readInput = query.ToReadInput();
+
+        if (appendUIInfo)
+        {
+            if (bypassSecurity)
+            {
+                throw new Exception(
+                    "bypassSecurity cannot be combined with appendUIInfo. The read pipeline always enforces the executing user's read permissions.");
+            }
+
+            var readResponse = await DataService.Read(executingUserId, readInput, PipelineContext);
+            if (!readResponse.Succeeded)
+            {
+                throw new Exception(readResponse.FriendlyMessage);
+            }
+
+            return readResponse.Data!;
+        }
+
+        string[] tables = QueryUtil.GetTables(readInput).Distinct().ToArray();
+
+        string[] permissions;
+        if (bypassSecurity)
+        {
+            permissions = tables.Select(x => $"TABLE_{x}_READ_SYSTEM").ToArray();
+        }
+        else
+        {
+            permissions = await PermissionCache.GetUserPermissions(executingUserId, tables.SelectMany(x => new[]
+            {
+                $"TABLE_{x}_READ_USER",
+                $"TABLE_{x}_READ_TEAM",
+                $"TABLE_{x}_READ_SYSTEM"
+            }).ToArray());
+        }
+
+        var response = await DataRepository.Read(executingUserId, readInput, new ReadOptions()
+        {
+            Permissions = permissions
+        });
+
+        if (!response.Succeeded)
+        {
+            throw new Exception(response.FriendlyMessage);
+        }
+
+        return response.Data!;
+    }
+
     /// <summary>
     /// Get the DbContext for this transaction.
     /// </summary>
