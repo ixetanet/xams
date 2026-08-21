@@ -300,4 +300,27 @@ const Cell = (props: CellProps) => {
   );
 };
 
-export default Cell;
+// Everything a cell renders besides its rect comes from GridContext, whose
+// identity only changes when grid data or interaction state changes — a
+// context change re-renders every cell regardless of this memo. What the memo
+// filters out is scroll-frame re-renders: the virtualizer updates state on
+// every scroll, but cells still in view get the same row/col/rect and bail
+// out here, so only entering cells mount.
+const sameStyle = (a: CSSProperties, b: CSSProperties) => {
+  if (a === b) return true;
+  const aKeys = Object.keys(a) as (keyof CSSProperties)[];
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  for (const key of aKeys) {
+    if (a[key] !== b[key]) return false;
+  }
+  return true;
+};
+
+export default React.memo(
+  Cell,
+  (prev, next) =>
+    prev.row === next.row &&
+    prev.col === next.col &&
+    sameStyle(prev.style, next.style)
+);

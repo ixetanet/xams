@@ -1,5 +1,5 @@
 import React, { CSSProperties, useLayoutEffect, useState } from "react";
-import { useGridContext } from "./GridContext";
+import { useGridContext, useVirtualizedContext } from "./GridContext";
 import VirtualGrid from "./VirtualGrid";
 import StickyColumn from "./StickyColumn";
 import StickyHeader from "./StickyHeader";
@@ -143,7 +143,8 @@ const FrozenChromeLayer = (props: { width: number; height: number }) => {
 
 const GridContainer = (props: GridContainerProps) => {
   const gridContext = useGridContext();
-  const { totalWidth, totalHeight } = gridContext.virtualized;
+  const virtualized = useVirtualizedContext();
+  const { totalWidth, totalHeight } = virtualized;
   const gridProps = gridContext.props;
 
   // The chrome boxes must span the scrollport (client area), not the outer
@@ -171,8 +172,8 @@ const GridContainer = (props: GridContainerProps) => {
       // The virtualizers do not recover their range on their own after the
       // scroll element was hidden (display:none in an inactive tab collapses
       // its rect to 0) and shown again — force a re-measure on size change.
-      gridContext.virtualized.rowVirtualizer.measure();
-      gridContext.virtualized.columnVirtualizer.measure();
+      virtualized.rowVirtualizer.measure();
+      virtualized.columnVirtualizer.measure();
     };
     // clientWidth/clientHeight round to the nearest integer; a rounded-up
     // chrome box overflows the true (fractional) scrollport by a sub-pixel,

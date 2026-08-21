@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CellLocation, CellRange, DataGridProps } from "../DataGridTypes";
 import { useMergedCellsType } from "./useMergedCells";
 
@@ -76,6 +76,7 @@ const sameRange = (a: CellRange | null, b: CellRange | null) => {
 
 const useFill = (params: useFillProps) => {
   const { props, mergedCells } = params;
+  const { activeCell, selectedRange, expandRangeToIncludeMergedCells } = params;
 
   const [dragState, setDragState] = useState<FillDragState | null>(null);
   // The release ending a drag synthesizes a click on the cell under the
@@ -85,24 +86,25 @@ const useFill = (params: useFillProps) => {
   const handleVisible =
     props.onFill != null && props.editable !== false && !params.isEditing;
 
-  const startFillDrag = (e: React.MouseEvent) => {
-    if (!handleVisible) return;
-    const base =
-      params.selectedRange ??
-      (params.activeCell != null
-        ? { start: params.activeCell, end: params.activeCell }
-        : null);
-    if (base == null) return;
-    // preventDefault stops the drag extending native text selection;
-    // stopPropagation keeps the cell's own mousedown handling out of it
-    e.preventDefault();
-    e.stopPropagation();
-    suppressClickRef.current = true;
-    setDragState({
-      source: params.expandRangeToIncludeMergedCells(normalize(base)),
-      target: null,
-    });
-  };
+  const startFillDrag = useCallback(
+    (e: React.MouseEvent) => {
+      if (!handleVisible) return;
+      const base =
+        selectedRange ??
+        (activeCell != null ? { start: activeCell, end: activeCell } : null);
+      if (base == null) return;
+      // preventDefault stops the drag extending native text selection;
+      // stopPropagation keeps the cell's own mousedown handling out of it
+      e.preventDefault();
+      e.stopPropagation();
+      suppressClickRef.current = true;
+      setDragState({
+        source: expandRangeToIncludeMergedCells(normalize(base)),
+        target: null,
+      });
+    },
+    [handleVisible, selectedRange, activeCell, expandRangeToIncludeMergedCells]
+  );
 
   const onDragMove = (e: MouseEvent) => {
     e.preventDefault();
@@ -295,41 +297,61 @@ const useFill = (params: useFillProps) => {
   // exactly the selection the fill commits. Same merged-cell edge logic as
   // getRangeEdges: a merged cell renders as one rect, so its far edges are
   // the region's end row/col.
-  const getFillPreviewEdges = (
-    row: number,
-    col: number
-  ): { top: boolean; right: boolean; bottom: boolean; left: boolean } | null => {
-    if (dragState == null || dragState.target == null) return null;
-    const preview = union(dragState.source, dragState.target);
-    if (
-      row < preview.start.row ||
-      row > preview.end.row ||
-      col < preview.start.col ||
-      col > preview.end.col
-    ) {
-      return null;
-    }
-    const merged = mergedCells.getCellMergeInfo(row, col);
-    const edges = {
-      top: row === preview.start.row,
-      left: col === preview.start.col,
-      bottom: (merged ? merged.end.row : row) === preview.end.row,
-      right: (merged ? merged.end.col : col) === preview.end.col,
-    };
-    return edges.top || edges.left || edges.bottom || edges.right
-      ? edges
-      : null;
-  };
+  const getFillPreviewEdges = useCallback(
+    (
+      row: number,
+      col: number
+    ): {
+      top: boolean;
+      right: boolean;
+      bottom: boolean;
+      left: boolean;
+    } | null => {
+      if (dragState == null || dragState.target == null) return null;
+      const preview = union(dragState.source, dragState.target);
+      if (
+        row < preview.start.row ||
+        row > preview.end.row ||
+        col < preview.start.col ||
+        col > preview.end.col
+      ) {
+        return null;
+      }
+      const merged = mergedCells.getCellMergeInfo(row, col);
+      const edges = {
+        top: row === preview.start.row,
+        left: col === preview.start.col,
+        bottom: (merged ? merged.end.row : row) === preview.end.row,
+        right: (merged ? merged.end.col : col) === preview.end.col,
+      };
+      return edges.top || edges.left || edges.bottom || edges.right
+        ? edges
+        : null;
+    },
+    [dragState, mergedCells]
+  );
 
-  const shouldSuppressClick = () => suppressClickRef.current;
+  const shouldSuppressClick = useCallback(() => suppressClickRef.current, []);
 
-  return {
-    handleVisible,
-    isFillDragging,
-    startFillDrag,
-    getFillPreviewEdges,
-    shouldSuppressClick,
-  };
+  // Stable identity across renders whose inputs didn't change — the grid
+  // context value is memoized on this object, so scroll-frame re-renders
+  // must not churn it
+  return useMemo(
+    () => ({
+      handleVisible,
+      isFillDragging,
+      startFillDrag,
+      getFillPreviewEdges,
+      shouldSuppressClick,
+    }),
+    [
+      handleVisible,
+      isFillDragging,
+      startFillDrag,
+      getFillPreviewEdges,
+      shouldSuppressClick,
+    ]
+  );
 };
 
 export default useFill;

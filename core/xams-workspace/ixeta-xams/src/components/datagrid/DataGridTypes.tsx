@@ -69,6 +69,15 @@ export interface DataGridProps {
   onUnmergeCells?: (mergedCell: MergedCell) => void;
   resizableRows?: boolean;
   defaultRowHeight?: number;
+  /**
+   * Rows rendered beyond the visible viewport on each side so fast scrolling
+   * doesn't outrun rendering and show blank space. Default 10.
+   */
+  overscanRows?: number;
+  /**
+   * Columns rendered beyond the visible viewport on each side. Default 2.
+   */
+  overscanColumns?: number;
 }
 
 export interface CellRange {

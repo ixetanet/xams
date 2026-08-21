@@ -1,6 +1,6 @@
 import React from "react";
 import Cell from "../Cell";
-import { useGridContext } from "./GridContext";
+import { useGridContext, useVirtualizedContext } from "./GridContext";
 
 const sumTo = (values: number[], to: number) => {
   let total = 0;
@@ -16,7 +16,7 @@ const StickyColumn = () => {
   const gridContext = useGridContext();
   const { snapRows, snapColumns, columnWidths, rowHeights, mergedCells } =
     gridContext;
-  const { virtualRows } = gridContext.virtualized;
+  const { virtualRows } = useVirtualizedContext();
 
   if (snapColumns === 0) {
     return null;
@@ -55,9 +55,11 @@ const StickyColumn = () => {
 
   return (
     <div className="sticky left-0 z-20" style={{ width: 0, height: 0 }}>
-      {virtualRows.map((row) => {
+      {/* flatMap, not nested map — see VirtualGrid: positional matching of
+          per-row arrays remounts every cell when the row window shifts */}
+      {virtualRows.flatMap((row) => {
         if (row.index < snapRows) {
-          return null;
+          return [];
         }
         return Array.from({ length: snapColumns }, (_, colIndex) => {
           const mergedCell = mergedCells.getCellMergeInfo(row.index, colIndex);

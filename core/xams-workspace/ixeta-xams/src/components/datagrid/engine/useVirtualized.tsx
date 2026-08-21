@@ -8,6 +8,8 @@ interface useVirtualizedProps {
   rowHeights: number[];
   defaultRowHeight: number;
   scrollRef: React.RefObject<HTMLDivElement | null>;
+  overscanRows?: number;
+  overscanColumns?: number;
 }
 
 const useVirtualized = (props: useVirtualizedProps) => {
@@ -15,7 +17,7 @@ const useVirtualized = (props: useVirtualizedProps) => {
     count: props.rows.length,
     getScrollElement: () => props.scrollRef.current,
     estimateSize: (index) => props.rowHeights[index] ?? props.defaultRowHeight,
-    overscan: 5,
+    overscan: props.overscanRows ?? 10,
   });
 
   const columnVirtualizer = useVirtualizer({
@@ -23,7 +25,7 @@ const useVirtualized = (props: useVirtualizedProps) => {
     count: props.rows.length > 0 ? props.rows[0].columns.length : 0,
     getScrollElement: () => props.scrollRef.current,
     estimateSize: (index) => props.columnWidths[index] ?? 100,
-    overscan: 2,
+    overscan: props.overscanColumns ?? 2,
   });
 
   return {

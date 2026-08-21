@@ -1,6 +1,6 @@
 import React from "react";
 import Cell from "../Cell";
-import { useGridContext } from "./GridContext";
+import { useGridContext, useVirtualizedContext } from "./GridContext";
 import { MergedCell } from "../DataGridTypes";
 
 const sumTo = (values: number[], to: number) => {
@@ -15,7 +15,7 @@ const VirtualGrid = () => {
   const gridContext = useGridContext();
   const { snapRows, snapColumns, columnWidths, rowHeights, mergedCells } =
     gridContext;
-  const { virtualRows, virtualColumns } = gridContext.virtualized;
+  const { virtualRows, virtualColumns } = useVirtualizedContext();
 
   // Virtual items are contiguous, so containment is an index-range check
   const virtualRowStart = virtualRows.length > 0 ? virtualRows[0].index : 0;
@@ -54,9 +54,13 @@ const VirtualGrid = () => {
   return (
     // z-0 isolates cell-internal z-indexes so body overlays stay below the frozen panes
     <div className="absolute inset-0 z-0">
-      {virtualRows.map((row) => {
+      {/* flatMap, not nested map: an array of per-row arrays reconciles the
+          inner arrays by position, so a one-row window shift mismatches every
+          cell key and remounts the whole grid each scroll frame. One flat
+          keyed list lets React match persisting cells across frames. */}
+      {virtualRows.flatMap((row) => {
         if (row.index < snapRows) {
-          return null;
+          return [];
         }
         return virtualColumns.map((column) => {
           if (column.index < snapColumns) {

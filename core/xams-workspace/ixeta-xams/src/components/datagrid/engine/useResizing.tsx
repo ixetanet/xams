@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // 32px matches the pre-engine resize clamp; published consumers may rely on it
 const MIN_COLUMN_WIDTH = 32;
@@ -75,11 +75,18 @@ const useResizing = (props: useResizingProps) => {
     };
   }, [resizeState]);
 
-  return {
-    isResizing: resizeState != null,
-    startColumnResize,
-    startRowResize,
-  };
+  // Stable identity across renders whose inputs didn't change — the grid
+  // context value is memoized on this object, so scroll-frame re-renders
+  // must not churn it
+  const isResizing = resizeState != null;
+  return useMemo(
+    () => ({
+      isResizing,
+      startColumnResize,
+      startRowResize,
+    }),
+    [isResizing, startColumnResize, startRowResize]
+  );
 };
 
 export default useResizing;

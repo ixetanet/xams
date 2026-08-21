@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { CellRange, MergedCell } from "../DataGridTypes";
 
 export type MergedCellsMap = Map<string, MergedCell>;
@@ -201,16 +201,31 @@ const useMergedCells = (props: useMergedCellsProps) => {
     []
   );
 
-  return {
-    mergedCells,
-    mergeCells,
-    unmergeCells,
-    getCellMergeInfo,
-    isPrimaryCellOfMergedRegion,
-    getMergedCellsIntersecting,
-    calculateMergedCellWidth,
-    calculateMergedCellHeight,
-  };
+  // Stable identity across renders whose inputs didn't change — the grid
+  // context value is memoized on this object, so scroll-frame re-renders
+  // must not churn it
+  return useMemo(
+    () => ({
+      mergedCells,
+      mergeCells,
+      unmergeCells,
+      getCellMergeInfo,
+      isPrimaryCellOfMergedRegion,
+      getMergedCellsIntersecting,
+      calculateMergedCellWidth,
+      calculateMergedCellHeight,
+    }),
+    [
+      mergedCells,
+      mergeCells,
+      unmergeCells,
+      getCellMergeInfo,
+      isPrimaryCellOfMergedRegion,
+      getMergedCellsIntersecting,
+      calculateMergedCellWidth,
+      calculateMergedCellHeight,
+    ]
+  );
 };
 
 export default useMergedCells;

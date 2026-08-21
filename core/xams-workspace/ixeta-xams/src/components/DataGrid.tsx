@@ -15,7 +15,11 @@ import {
   MergedCell,
 } from "./datagrid/DataGridTypes";
 import DataGridValidation from "./datagrid/DataGridValidation";
-import { GridContext } from "./datagrid/engine/GridContext";
+import {
+  GridContext,
+  GridContextShape,
+  VirtualizedContext,
+} from "./datagrid/engine/GridContext";
 import GridContainer from "./datagrid/engine/GridContainer";
 import useVirtualized from "./datagrid/engine/useVirtualized";
 import useResizing from "./datagrid/engine/useResizing";
@@ -59,7 +63,54 @@ const sameWidths = (a: number[], b: number[]) => {
   return true;
 };
 
-const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
+type GridContextCore = Omit<GridContextShape, "width" | "height">;
+
+// React 19 hands a forwardRef component a freshly spread props object on
+// every render when the element carries a ref, so props identity alone can't
+// key the memoized context value. Reuse the previous object while every prop
+// is reference-equal — any real prop change still yields a new identity.
+const useStableProps = (props: DataGridProps): DataGridProps => {
+  const ref = useRef(props);
+  const prev = ref.current;
+  if (prev !== props) {
+    const prevKeys = Object.keys(prev) as (keyof DataGridProps)[];
+    const nextKeys = Object.keys(props) as (keyof DataGridProps)[];
+    const same =
+      prevKeys.length === nextKeys.length &&
+      nextKeys.every((key) => prev[key] === props[key]);
+    if (!same) {
+      ref.current = props;
+    }
+  }
+  return ref.current;
+};
+
+// Folds the AutoSizer-measured size into the memoized context value. This is
+// its own component (AutoSizer's render callback can't call hooks) so the
+// value keeps its identity across scroll-frame re-renders — that stability is
+// what lets memoized cells bail out while scrolling.
+interface SizedGridProviderProps {
+  core: GridContextCore;
+  width: number;
+  height: number;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+}
+
+const SizedGridProvider = (props: SizedGridProviderProps) => {
+  const { core, width, height, scrollRef } = props;
+  const value = useMemo<GridContextShape>(
+    () => ({ ...core, width, height }),
+    [core, width, height]
+  );
+  return (
+    <GridContext.Provider value={value}>
+      <GridContainer width={width} height={height} scrollRef={scrollRef} />
+    </GridContext.Provider>
+  );
+};
+
+const DataGrid = forwardRef((rawProps: DataGridProps, ref: Ref<DataGridRef>) => {
+  const props = useStableProps(rawProps);
   const defaultRowHeight = props.defaultRowHeight ?? 30;
   const snapRows = props.snapRows ?? 0;
   const snapColumns = props.snapColumns ?? 0;
@@ -172,6 +223,8 @@ const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
     rowHeights,
     defaultRowHeight,
     scrollRef,
+    overscanRows: props.overscanRows,
+    overscanColumns: props.overscanColumns,
   });
 
   useEffect(() => {
@@ -315,49 +368,72 @@ const DataGrid = forwardRef((props: DataGridProps, ref: Ref<DataGridRef>) => {
     },
   }));
 
+  // Everything cells render from, memoized so scroll-frame re-renders (the
+  // virtualizer updates state on every scroll) keep the same identity. Any
+  // prop or interaction-state change lands in a dep here and invalidates the
+  // whole grid, exactly like the old inline value did.
+  const contextCore = useMemo<GridContextCore>(
+    () => ({
+      props,
+      rows: props.rows,
+      columnWidths,
+      rowHeights,
+      snapRows,
+      snapColumns,
+      activeCell:
+        activeCell != null &&
+        props.rows[activeCell.row] != null &&
+        props.rows[activeCell.row].columns[activeCell.col] != null
+          ? props.rows[activeCell.row].columns[activeCell.col]
+          : undefined,
+      activeCellLocation: activeCell,
+      editValue,
+      setEditValue,
+      isEditing,
+      selectedRange,
+      onKeyDown: keyboard.onKeyDown,
+      onEndEdit: keyboard.onEndEdit,
+      onCellClick: mouse.onCellClick,
+      isCellInRange: mouse.isCellInRange,
+      getRangeEdges: mouse.getRangeEdges,
+      resizing,
+      mergedCells,
+      fill,
+      copy,
+    }),
+    [
+      props,
+      columnWidths,
+      rowHeights,
+      snapRows,
+      snapColumns,
+      activeCell,
+      editValue,
+      isEditing,
+      selectedRange,
+      keyboard,
+      mouse,
+      resizing,
+      mergedCells,
+      fill,
+      copy,
+    ]
+  );
+
   return (
     <div ref={divRef} className="w-full h-full relative">
-      <AutoSizer>
-        {({ height, width }) => {
-          return (
-            <GridContext.Provider
-              value={{
-                props,
-                rows: props.rows,
-                columnWidths,
-                rowHeights,
-                snapRows,
-                snapColumns,
-                width,
-                height,
-                activeCell:
-                  activeCell != null &&
-                  props.rows[activeCell.row] != null &&
-                  props.rows[activeCell.row].columns[activeCell.col] != null
-                    ? props.rows[activeCell.row].columns[activeCell.col]
-                    : undefined,
-                activeCellLocation: activeCell,
-                editValue,
-                setEditValue,
-                isEditing,
-                selectedRange,
-                onKeyDown: keyboard.onKeyDown,
-                onEndEdit: keyboard.onEndEdit,
-                onCellClick: mouse.onCellClick,
-                isCellInRange: mouse.isCellInRange,
-                getRangeEdges: mouse.getRangeEdges,
-                virtualized,
-                resizing,
-                mergedCells,
-                fill,
-                copy,
-              }}
-            >
-              <GridContainer width={width} height={height} scrollRef={scrollRef} />
-            </GridContext.Provider>
-          );
-        }}
-      </AutoSizer>
+      <VirtualizedContext.Provider value={virtualized}>
+        <AutoSizer>
+          {({ height, width }) => (
+            <SizedGridProvider
+              core={contextCore}
+              width={width}
+              height={height}
+              scrollRef={scrollRef}
+            />
+          )}
+        </AutoSizer>
+      </VirtualizedContext.Provider>
     </div>
   );
 });

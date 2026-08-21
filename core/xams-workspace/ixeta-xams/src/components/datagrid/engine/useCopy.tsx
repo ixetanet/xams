@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { CellLocation, CellRange, DataGridProps } from "../DataGridTypes";
 import { useMergedCellsType } from "./useMergedCells";
 
@@ -101,35 +101,50 @@ const useCopy = (params: useCopyProps) => {
   // Which edges of the copied block this cell's rendered rect sits on —
   // drives the dashed copy border. Same merged-cell edge logic as
   // getRangeEdges; copiedRange is always normalized.
-  const getCopiedRangeEdges = (
-    row: number,
-    col: number
-  ): { top: boolean; right: boolean; bottom: boolean; left: boolean } | null => {
-    const range = params.copiedRange;
-    if (range == null) return null;
-    if (
-      row < range.start.row ||
-      row > range.end.row ||
-      col < range.start.col ||
-      col > range.end.col
-    ) {
-      return null;
-    }
-    const merged = mergedCells.getCellMergeInfo(row, col);
-    const edges = {
-      top: row === range.start.row,
-      left: col === range.start.col,
-      bottom: (merged ? merged.end.row : row) === range.end.row,
-      right: (merged ? merged.end.col : col) === range.end.col,
-    };
-    return edges.top || edges.left || edges.bottom || edges.right
-      ? edges
-      : null;
-  };
+  const copiedRange = params.copiedRange;
+  const getCopiedRangeEdges = useCallback(
+    (
+      row: number,
+      col: number
+    ): {
+      top: boolean;
+      right: boolean;
+      bottom: boolean;
+      left: boolean;
+    } | null => {
+      const range = copiedRange;
+      if (range == null) return null;
+      if (
+        row < range.start.row ||
+        row > range.end.row ||
+        col < range.start.col ||
+        col > range.end.col
+      ) {
+        return null;
+      }
+      const merged = mergedCells.getCellMergeInfo(row, col);
+      const edges = {
+        top: row === range.start.row,
+        left: col === range.start.col,
+        bottom: (merged ? merged.end.row : row) === range.end.row,
+        right: (merged ? merged.end.col : col) === range.end.col,
+      };
+      return edges.top || edges.left || edges.bottom || edges.right
+        ? edges
+        : null;
+    },
+    [copiedRange, mergedCells]
+  );
 
-  return {
-    getCopiedRangeEdges,
-  };
+  // Stable identity across renders whose inputs didn't change — the grid
+  // context value is memoized on this object, so scroll-frame re-renders
+  // must not churn it
+  return useMemo(
+    () => ({
+      getCopiedRangeEdges,
+    }),
+    [getCopiedRangeEdges]
+  );
 };
 
 export default useCopy;

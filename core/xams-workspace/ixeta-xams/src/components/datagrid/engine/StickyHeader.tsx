@@ -1,6 +1,6 @@
 import React from "react";
 import Cell from "../Cell";
-import { useGridContext } from "./GridContext";
+import { useGridContext, useVirtualizedContext } from "./GridContext";
 
 const sumTo = (values: number[], to: number) => {
   let total = 0;
@@ -16,7 +16,7 @@ const StickyHeader = () => {
   const gridContext = useGridContext();
   const { rows, snapRows, snapColumns, columnWidths, rowHeights, mergedCells } =
     gridContext;
-  const { virtualColumns } = gridContext.virtualized;
+  const { virtualColumns } = useVirtualizedContext();
 
   if (snapRows === 0) {
     return null;
@@ -58,6 +58,7 @@ const StickyHeader = () => {
 
   return (
     <div className="sticky top-0 z-30" style={{ width: 0, height: 0 }}>
+      {/* flat keyed list — see VirtualGrid for the nested-array remount trap */}
       {Array.from({ length: snapRows }, (_, rowIndex) =>
         virtualColumns.map((column) => {
           if (column.index < snapColumns) {
@@ -107,7 +108,7 @@ const StickyHeader = () => {
             />
           );
         })
-      )}
+      ).flat()}
       {outOfRangePrimaries.map((mergedCell) => (
         <Cell
           key={`${mergedCell.primaryCell.row}-${mergedCell.primaryCell.col}`}
