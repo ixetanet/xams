@@ -9,14 +9,17 @@ using Xams.Core.Utils;
 namespace Xams.Core.Services.Auditing;
 
 /// <summary>
-/// If the Name property is changed, this service will update all Audit History records to reflect the new name.
+/// If the name property is changed, this service will update all Audit History records to reflect the new name.
 /// </summary>
+/// <remarks>
+/// Inside a DataRepository transaction the renames are applied together just before the commit.
+/// </remarks>
 [ServiceLogic("*", DataOperation.Update, LogicStage.PreOperation, int.MaxValue)]
 public class AuditNameService : IServiceLogic
 {
     public async Task<Response<object?>> Execute(ServiceContext context)
     {
-        // Make sure this entity has a Name property
+        // Make sure this entity has a name property
         var metadata = Cache.Instance.GetTableMetadata(context.TableName);
         var nameProperty = metadata.NameProperty;
         if (nameProperty == null)
@@ -24,17 +27,14 @@ public class AuditNameService : IServiceLogic
             return ServiceResult.Success();
         }
 
-        if (context.ValueChanged(nameof(nameProperty.Name)))
+        if (context.ValueChanged(nameProperty.Name))
         {
             var db = context.GetDbContext<IXamsDbContext>();
             var entity = context.GetEntity<object>();
-            string name = entity.GetNameFieldValue() ?? "";
-            object id = entity.GetId();
-            // On change of the Name attribute of an entity update its name on all the audit history records
-            await db.AuditHistoriesBase
-                .Where(x => x.TableName == context.TableName && x.EntityId == Convert.ToString(id))
-                .ExecuteUpdateAsync(x => 
-                    x.SetProperty(y => y.Name, name));
+            var name = (entity.GetNameFieldValue() ?? "").Truncate(AuditLogic.NameMaxLength)!;
+            var id = Convert.ToString(entity.GetId(), System.Globalization.CultureInfo.InvariantCulture)!;
+            // On change of the name of an entity update its name on all the audit history records
+            await AuditHistoryNames.RenameAsync(db, context.TableName, id, name);
         }
 
         return ServiceResult.Success();

@@ -275,8 +275,8 @@ public static class PermissionCache
         // If the user is found but still doesn't have any roles
         // and was created in the last 5 seconds, wait 3 seconds and re-attempt to retrieve permissions
         // The server creating the user may not have completed assigning permissions to the user yet
-        bool hasRoles = _users.ContainsKey(userId) && _userRoles[userId].Count != 0;
-        bool hasTeams = _users.ContainsKey(userId) && _userTeams[userId].Count != 0;
+        bool hasRoles = _userRoles.TryGetValue(userId, out var cachedRoles) && cachedRoles.Count != 0;
+        bool hasTeams = _userTeams.TryGetValue(userId, out var cachedTeams) && cachedTeams.Count != 0;
         if (!hasRoles && !hasTeams && DateTime.UtcNow.AddSeconds(-5) < _users[userId].CreatedDate)
         {
             await Task.Delay(3000);
@@ -359,8 +359,10 @@ public static class PermissionCache
     {
         foreach (var hashSet in _rolePermissions.Values)
         {
-            hashSet.Remove(oldName);
-            hashSet.Add(newName);
+            if (hashSet.Remove(oldName))
+            {
+                hashSet.Add(newName);
+            }
         }
     }
     public static void RemovePermission(string permissionName)

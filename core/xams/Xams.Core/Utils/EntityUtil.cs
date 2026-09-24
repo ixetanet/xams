@@ -313,7 +313,7 @@ namespace Xams.Core.Utils
                                 }
                                 else
                                 {
-                                    convertedValue = Convert.ChangeType(value, targetType);
+                                    convertedValue = Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
                                     if (targetType == typeof(string) && convertedValue != null)
                                     {
                                         convertedValue = ((string)convertedValue).Trim();

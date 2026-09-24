@@ -1,4 +1,5 @@
 using System.Linq.Dynamic.Core;
+using Microsoft.EntityFrameworkCore;
 using Xams.Core.Base;
 
 namespace Xams.Core.Utils;
@@ -11,7 +12,7 @@ public static class Queries
         DynamicLinq dynamicLinq = new DynamicLinq(db, settingType);
         var settings = (await dynamicLinq.Query.Where("Name == @0", name)
             .ToDynamicListAsync()).Select(x => (object)x).ToList();
-        
+
         if (!settings.Any())
         {
             var entity = EntityUtil.DictionaryToEntity(settingType, new Dictionary<string, dynamic>
@@ -27,19 +28,25 @@ public static class Queries
         return settings.First().GetValue<string?>("Value");
     }
 
+    /// <summary>
+    /// Sets the value of the named System record, creating the record if it doesn't exist.
+    /// </summary>
     public static async Task UpdateSystemRecord(IXamsDbContext db, string name, string value)
     {
-        var systemType = Cache.Instance.GetTableMetadata("System").Type;
-        var dynamicLinq = new DynamicLinq(db, systemType);
-        var query = dynamicLinq.Query.Where("Name == @0", "AuditLastRefresh");
-        var auditSystemRecord = (await query.ToDynamicListAsync()).FirstOrDefault();
-        if (auditSystemRecord == null)
+        var systemRecord = await db.SystemsBase.AsNoTracking()
+            .Where(x => x.Name == name)
+            .OrderBy(x => x.SystemId)
+            .FirstOrDefaultAsync();
+        if (systemRecord == null)
         {
-            throw new Exception($"Could not find system record with name 'AuditLastRefresh'");
+            db.Add(new Entities.System { SystemId = Guid.NewGuid(), Name = name, Value = value });
+        }
+        else
+        {
+            systemRecord.Value = value;
+            db.Update(systemRecord);
         }
 
-        auditSystemRecord.Value = value;
-        db.Update(auditSystemRecord);
         await db.SaveChangesAsync();
     }
 }

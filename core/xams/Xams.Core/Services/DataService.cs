@@ -13,6 +13,7 @@ using Xams.Core.Entities;
 using Xams.Core.Interfaces;
 using Xams.Core.Pipeline;
 using Xams.Core.Repositories;
+using Xams.Core.Services.Auditing;
 using Xams.Core.Startup;
 using Xams.Core.Utils;
 
@@ -78,8 +79,7 @@ namespace Xams.Core.Services
         private readonly MetadataRepository _metadataRepository = new(typeof(TDbContext));
         private readonly SecurityRepository _securityRepository = new();
         private readonly Dictionary<string, HashSet<dynamic>> _deletes = new();
-        // Type is the entity type, object is the id, and object is the pre-entity
-        private readonly ConcurrentDictionary<Type, ConcurrentDictionary<object, object>> _preEntities = new();
+        private Dictionary<string, object> _transactionBag = new();
         private List<ServiceContext> ServiceContexts { get; set; } = new();
         private Guid ExecutingUserId { get; set; } = SystemRecords.SystemUserId;
         internal ILogger Logger { get; }
@@ -108,19 +108,6 @@ namespace Xams.Core.Services
             });
         }
 
-        public object? PreEntities(Type type, object id)
-        {
-            if (_preEntities.ContainsKey(type))
-            {
-                if (_preEntities[type].ContainsKey(id))
-                {
-                    return _preEntities[type][id];
-                }
-            }
-
-            return null;
-        }
-
         public Guid GetExecutionId()
         {
             return _executionId;
@@ -129,6 +116,11 @@ namespace Xams.Core.Services
         public Guid GetExecutionUserId()
         {
             return ExecutingUserId;
+        }
+
+        public Dictionary<string, object> GetTransactionBag()
+        {
+            return _transactionBag;
         }
 
         public DataRepository GetDataRepository()
@@ -174,6 +166,7 @@ namespace Xams.Core.Services
         /// <returns></returns>
         public async Task<Response<ReadOutput>> Read(Guid userId, ReadInput readInput, PipelineContext? parent = null)
         {
+            var previousUserId = ExecutingUserId;
             try
             {
                 ExecutingUserId = userId;
@@ -201,14 +194,19 @@ namespace Xams.Core.Services
                     DataRepository = _dataRepository,
                     MetadataRepository = _metadataRepository,
                     SecurityRepository = _securityRepository,
-                    TransactionBag = new Dictionary<string, object>()
+                    TransactionBag = _transactionBag,
                 };
                 pipelineContext.CreateServiceContext();
                 ServiceContexts.Add(pipelineContext.ServiceContext);
 
                 var result = await ExecutePipeline(pipelineContext);
 
-                await TryExecuteBulkServiceLogic(BulkStage.Post, userId, pipelineContext.TransactionBag);
+                // Nested reads (parent != null) are part of an ongoing transaction; the owning
+                // operation (action, bulk execute, or job) fires Post bulk logic when it completes
+                if (parent == null)
+                {
+                    await TryExecuteBulkServiceLogic(BulkStage.Post, userId);
+                }
 
                 return new Response<ReadOutput>()
                 {
@@ -230,7 +228,17 @@ namespace Xams.Core.Services
             }
             finally
             {
-                _dataRepository.Dispose();
+                // Only dispose when this Read is the top-level operation; nested reads
+                // (parent != null) leave cleanup to the outer operation
+                if (parent == null)
+                {
+                    _dataRepository.Dispose();
+                }
+                else
+                {
+                    // A nested read as another user must not change who the outer operation's writes are audited as
+                    ExecutingUserId = previousUserId;
+                }
             }
         }
 
@@ -393,21 +401,20 @@ namespace Xams.Core.Services
                 ])!);
                 
                 // If there were create \ update \ delete pipelines executed, then execute bulk service logic
-                Response<object?> bulkServiceLogicResponse = await TryExecuteBulkServiceLogic(BulkStage.Post, userId, pipelineContext.TransactionBag);
+                Response<object?> bulkServiceLogicResponse = await TryExecuteBulkServiceLogic(BulkStage.Post, userId);
 
                 if (response.Succeeded && bulkServiceLogicResponse.Succeeded)
                 {
-                    response.Succeeded = true;
                     return response;
                 }
-                
-                response.Succeeded = false;
 
                 if (response.Succeeded && !bulkServiceLogicResponse.Succeeded)
                 {
                     response.FriendlyMessage = bulkServiceLogicResponse.FriendlyMessage;
                     response.LogMessage = bulkServiceLogicResponse.LogMessage;
                 }
+
+                response.Succeeded = false;
 
                 return response;
             });
@@ -441,11 +448,11 @@ namespace Xams.Core.Services
         /// <param name="userId"></param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        public async Task<Response<object?>> TryExecuteBulkServiceLogic(BulkStage bulkStage, Guid userId, Dictionary<string, object> transactionBag)
+        public async Task<Response<object?>> TryExecuteBulkServiceLogic(BulkStage bulkStage, Guid userId)
         {
             if (ServiceContexts.Count > 0)
             {
-                return await ExecuteBulkServiceLogic(bulkStage, userId, transactionBag);
+                return await ExecuteBulkServiceLogic(bulkStage, userId);
             }
 
             return ServiceResult.Success();
@@ -464,17 +471,22 @@ namespace Xams.Core.Services
                 DataRepository = _dataRepository,
                 MetadataRepository = _metadataRepository,
                 SecurityRepository = _securityRepository,
-                TransactionBag = new Dictionary<string, object>()
+                TransactionBag = _transactionBag,
             };
 
+            var previousUserId = ExecutingUserId;
             try
             {
+                // Writes in the transaction are audited as this user
+                ExecutingUserId = userId;
+
                 // Start the transaction
                 await _dataRepository.BeginTransaction();
 
                 var response = await action.Invoke(pipelineContext);
 
                 // If everything succeeded, commit\end the transaction
+                // Audit records are written by the commit and discarded by the rollback
                 if (response.Succeeded)
                 {
                     await _dataRepository.CommitTransaction();
@@ -499,6 +511,7 @@ namespace Xams.Core.Services
             }
             finally
             {
+                ExecutingUserId = previousUserId;
                 _dataRepository.Dispose();
             }
         }
@@ -556,7 +569,7 @@ namespace Xams.Core.Services
                     DataRepository = _dataRepository,
                     MetadataRepository = _metadataRepository,
                     SecurityRepository = _securityRepository,
-                    TransactionBag = new Dictionary<string, object>()
+                    TransactionBag = _transactionBag,
                 };
                 var response = await hub.Send(new HubSendContext(pipelineContext, message, signalRInstance));
                 return response;
@@ -785,7 +798,7 @@ namespace Xams.Core.Services
                         MetadataRepository = _metadataRepository,
                         SecurityRepository = _securityRepository,
                         Fields = operation.Input.fields,
-                        TransactionBag =  transactionBag,
+                        TransactionBag =  _transactionBag,
                     };
                     ServiceContexts.Add(pipelineContext.CreateServiceContext());
                     pipelineContexts.Add(pipelineContext);
@@ -802,9 +815,10 @@ namespace Xams.Core.Services
                 await _dataRepository.BeginTransaction();
 
                 var preBulkServiceLogicResponse =
-                    await ExecuteBulkServiceLogic(BulkStage.Pre, userId, transactionBag);
+                    await ExecuteBulkServiceLogic(BulkStage.Pre, userId);
                 if (!preBulkServiceLogicResponse.Succeeded)
                 {
+                    await _dataRepository.RollbackTransaction();
                     return preBulkServiceLogicResponse;
                 }
 
@@ -846,9 +860,10 @@ namespace Xams.Core.Services
                 }
 
                 var postBulkServiceLogicResponse =
-                    await ExecuteBulkServiceLogic(BulkStage.Post, userId, transactionBag);
+                    await ExecuteBulkServiceLogic(BulkStage.Post, userId);
                 if (!postBulkServiceLogicResponse.Succeeded)
                 {
+                    await _dataRepository.RollbackTransaction();
                     return postBulkServiceLogicResponse;
                 }
 
@@ -878,6 +893,7 @@ namespace Xams.Core.Services
                     }
                 }
 
+                // Audit records are written by the commit
                 await _dataRepository.CommitTransaction();
 
                 return new Response<object?>()
@@ -943,17 +959,6 @@ namespace Xams.Core.Services
                 ? await DynamicLinq.Find(_dataRepository.CreateNewDbContext(), entityType, entityId)
                 : null;
 
-            if (preEntity != null)
-            {
-                if (!_preEntities.ContainsKey(entityType))
-                {
-                    _preEntities[entityType] = new ConcurrentDictionary<object, object>();
-                }
-                if (!_preEntities[entityType].ContainsKey(entityId))
-                {
-                    _preEntities[entityType][entityId] = preEntity;
-                }
-            }
             var pipelineContext = new PipelineContext()
             {
                 Parent = parent,
@@ -973,27 +978,39 @@ namespace Xams.Core.Services
                 DataRepository = _dataRepository,
                 MetadataRepository = _metadataRepository,
                 SecurityRepository = _securityRepository,
-                TransactionBag = parent != null ? parent.TransactionBag : new Dictionary<string, object>()
+                TransactionBag = _transactionBag,
             };
             ServiceContexts.Add(pipelineContext.CreateServiceContext());
-            var securityResponse = await Pipelines.SecurityPipeline.Execute(pipelineContext);
-            if (!securityResponse.Succeeded)
-            {
-                throw new Exception(securityResponse.FriendlyMessage);
-            }
 
-            var response = await ExecutePipeline(pipelineContext);
-            if (!response.Succeeded)
+            // Writes made by this operation are audited as the requested user, including when service logic
+            // executes as a different user than the outer operation
+            var previousUserId = ExecutingUserId;
+            ExecutingUserId = userId;
+            try
             {
-                // This was likely called from within a Service Logic, so we need to throw an exception if it fails
-                throw new Exception(response.FriendlyMessage);
-            }
+                var securityResponse = await Pipelines.SecurityPipeline.Execute(pipelineContext);
+                if (!securityResponse.Succeeded)
+                {
+                    throw new Exception(securityResponse.FriendlyMessage);
+                }
 
-            return response;
+                var response = await ExecutePipeline(pipelineContext);
+                if (!response.Succeeded)
+                {
+                    // This was likely called from within a Service Logic, so we need to throw an exception if it fails
+                    throw new Exception(response.FriendlyMessage);
+                }
+
+                return response;
+            }
+            finally
+            {
+                ExecutingUserId = previousUserId;
+            }
         }
 
         private async Task<Response<object?>> ExecuteBulkServiceLogic(
-            BulkStage bulkStage, Guid userId, Dictionary<string, object> transactionBag)
+            BulkStage bulkStage, Guid userId)
         {
             // Call Bulk Service Logic
             var preBulkServiceLogics = Cache.Instance.BulkServiceLogics
@@ -1014,7 +1031,7 @@ namespace Xams.Core.Services
                             DataRepository = _dataRepository,
                             MetadataRepository = _metadataRepository,
                             SecurityRepository = _securityRepository,
-                            TransactionBag =  transactionBag,
+                            TransactionBag =  _transactionBag,
                         };
 
                         BulkServiceContext bulkServiceContext =
@@ -1173,16 +1190,6 @@ namespace Xams.Core.Services
                             continue;
                         }
 
-                        var entityType = pipelineContext.PreEntity.GetType();
-                        if (!_preEntities.ContainsKey(entityType))
-                        {
-                            _preEntities[entityType] = new ConcurrentDictionary<object, object>();
-                        }
-                        if (!_preEntities[entityType].ContainsKey(id))
-                        {
-                            _preEntities[entityType][id] = pipelineContext.PreEntity;
-                        }
-                        
                         var response = await Pipelines.SecurityPipeline.Execute(pipelineContext);
                         if (!response.Succeeded)
                         {

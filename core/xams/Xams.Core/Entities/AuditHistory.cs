@@ -25,13 +25,17 @@ public class AuditHistory
     [UIReadOnly]
     public Guid? UserId { get; set; }
     public User? User { get; set; }
+    /// <summary>
+    /// The user's name when the change was made. It is kept when the user is later deleted
+    /// and UserId is cleared.
+    /// </summary>
+    [UIDisplayName("User Name")]
+    [UIReadOnly]
+    [MaxLength(250)]
+    public string? UserName { get; set; }
     [UIReadOnly]
     [UIDateFormat("lll")]
     public DateTime CreatedDate { get; set; }
     [UIReadOnly]
-    [MaxLength(Int32.MaxValue)]
-    public string? Query { get; set; }
-    [UIReadOnly]
-    [MaxLength(Int32.MaxValue)]
-    public string? Results { get; set; }
+    public Guid TransactionId { get; set; }
 }

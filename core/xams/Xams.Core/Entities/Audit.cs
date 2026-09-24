@@ -14,6 +14,9 @@ public class Audit
     public string? Name { get; set; } 
     [UIDisplayName("Create")]
     public bool IsCreate { get; set; }
+    /// <summary>
+    /// Not used. Read auditing is not supported; the column is kept for schema compatibility.
+    /// </summary>
     [UIDisplayName("Read")]
     public bool IsRead { get; set; }
     [UIDisplayName("Update")]

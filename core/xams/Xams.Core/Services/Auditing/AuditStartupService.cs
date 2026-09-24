@@ -1,8 +1,10 @@
-using System.Linq.Dynamic.Core;
+using System.Globalization;
+using Microsoft.EntityFrameworkCore;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
 using Xams.Core.Contexts;
 using Xams.Core.Dtos;
+using Xams.Core.Entities;
 using Xams.Core.Interfaces;
 using Xams.Core.Utils;
 
@@ -12,283 +14,262 @@ namespace Xams.Core.Services.Auditing;
 public class AuditStartupService : IServiceStartup
 {
     public static readonly string AuditRetentionSetting = "AUDIT_HISTORY_RETENTION_DAYS";
+    internal const string AuditRefreshSystemRecord = "AuditLastRefresh";
+
+    // Serializes refreshes so an older configuration cannot replace a newer one
+    private static readonly SemaphoreSlim RefreshLock = new(1, 1);
 
     public async Task<Response<object?>> Execute(StartupContext startupContext)
     {
-        var response = await CreateDeleteAuditRecords(startupContext);
-        if (!response.Succeeded)
-        {
-            return response;
-        }
-
-        response = await CacheAuditRecords(startupContext.DataService.GetDbContext<IXamsDbContext>());
-        if (!response.Succeeded)
-        {
-            return response;
-        }
-
-        await GetAuditSettings(startupContext);
-
-        return ServiceResult.Success();
-    }
-
-    private async Task<Response<object?>> CreateDeleteAuditRecords(StartupContext context)
-    {
+        var db = startupContext.DataService.GetDbContext<IXamsDbContext>();
+        var auditEnabled = db.GetAuditEnabled();
+        db.SetAuditEnabled(false);
         try
         {
-            Console.WriteLine($"Creating Audit Data");
-            var db = context.DataService.GetDbContext<IXamsDbContext>();
-            db.SetAuditEnabled(false);
+            Console.WriteLine("Creating Audit Data");
+            await SyncAuditRecords(db);
 
-            // Query for all the audit and audit field records
-            var auditMetadata = Cache.Instance.GetTableMetadata("Audit");
-            var auditLinq = new DynamicLinq(db, auditMetadata.Type);
-            var auditQuery = auditLinq.Query;
-            var audits = (await auditQuery.ToDynamicListAsync()).ToList<object>();
-
-            var auditFieldMetadata = Cache.Instance.GetTableMetadata("AuditField");
-            var auditFieldLinq = new DynamicLinq(db, auditFieldMetadata.Type);
-            var auditFieldQuery = auditFieldLinq.Query;
-            var auditFields = (await auditFieldQuery.ToDynamicListAsync()).ToList<object>();
-
-            // Normalize the data for faster performance
-            var lookup = auditFields.Select(x => new Lookup()
+            var response = await CacheAuditRecords(db);
+            if (!response.Succeeded)
             {
-                AuditId = x.GetValue<Guid>("AuditId"),
-                TableName = audits.First(y => y.GetValue<Guid>("AuditId") == x.GetValue<Guid>("AuditId"))
-                    .GetValue<string>("Name"),
-                FieldName = x.GetValue<string>("Name"),
-                Entity = x
-            }).ToList();
-
-            // If the table no longer exists - delete audit records
-            List<object> removeAudits = new List<object>();
-            foreach (var audit in audits)
-            {
-                if (!Cache.Instance.TableMetadata.ContainsKey(audit.GetValue<string>("Name")))
-                {
-                    removeAudits.Add(audit);
-                    db.Remove(audit);
-                }
+                return response;
             }
 
-            // Delete child AuditField records from deleted tables
-            foreach (var entity in removeAudits)
-            {
-                // Get all the audit fields for the entity
-                var removeAuditFields = auditFields
-                    .Where(a => a.GetValue<Guid>("AuditId") == entity.GetValue<Guid>("AuditId"));
-                db.RemoveRange(removeAuditFields);
-
-                // Remove the audit record from lookup
-                lookup.RemoveAll(x => x.AuditId == entity.GetValue<Guid>("AuditId"));
-            }
-            
-            // Delete specific fields that have been removed
-            foreach (var item in lookup)
-            {
-                var type = Cache.Instance.GetTableMetadata(item.TableName).Type;
-                var property = type.GetProperty(item.FieldName); 
-                // Exclude navigation properties
-                if (property == null || type.GetProperty($"{item.FieldName}Id") != null)
-                {
-                    db.Remove(item.Entity);
-                }
-            }
-
-            // Audit records to add
-            List<NewAudit> newAudits = new List<NewAudit>();
-            foreach (var kvp in Cache.Instance.TableMetadata)
-            {
-                // If the audit record already exists, skip
-                var audit = audits.FirstOrDefault(x => x.GetValue<string>("Name") == kvp.Key); 
-                if (audit != null)
-                {
-                    continue;
-                }
-
-                var newAudit = new Dictionary<string, dynamic?>();
-                newAudit["Name"] = kvp.Key;
-                newAudit["IsTable"] = true;
-                var entity = EntityUtil.DictionaryToEntity(auditMetadata.Type, newAudit);
-                newAudits.Add(new NewAudit()
-                {
-                    TableName = kvp.Key,
-                    Entity = entity
-                });
-                db.Add(entity);
-            }
-
-            // Save to create audit records and get ids
-            await db.SaveChangesAsync();
-
-            audits = (await auditQuery.ToDynamicListAsync()).ToList<object>();
-            // Create new fields for all new audits
-            foreach (var audit in newAudits)
-            {
-                var entityProperties = Cache.Instance.GetTableMetadata(audit.TableName)
-                    .Type.GetEntityProperties();
-                foreach (var entityProperty in entityProperties)
-                {
-                    if (!entityProperty.IsPrimitive() && 
-                        entityProperties.Any(x => x.Name == $"{entityProperty.Name}Id"))
-                    {
-                        // Skip navigation properties
-                        continue;
-                    }
-                    var auditField = new Dictionary<string, dynamic?>();
-                    auditField["AuditId"] = audit.Entity.GetValue<Guid>("AuditId");
-                    auditField["Name"] = entityProperty.Name;
-                    var entity = EntityUtil.DictionaryToEntity(auditFieldMetadata.Type, auditField);
-                    lookup.Add(new Lookup()
-                    {
-                        AuditId = auditField["AuditId"],
-                        TableName = audit.TableName,
-                        FieldName = entityProperty.Name,
-                        Entity = entity
-                    });
-                    db.Add(entity);
-                }
-            }
-
-            // Create any missing audit fields
-            foreach (var kvp in Cache.Instance.TableMetadata)
-            {
-                foreach (var entityProperty in kvp.Value.Type.GetEntityProperties())
-                {
-                    var auditField = lookup
-                        .FirstOrDefault(x => x.TableName == kvp.Key && x.FieldName == entityProperty.Name);
-                    if (auditField != null)
-                    {
-                        continue;
-                    }
-
-                    var newAuditField = new Dictionary<string, dynamic?>();
-                    newAuditField["AuditId"] = audits.First(x => x.GetValue<string>("Name") == kvp.Key).GetValue<Guid>("AuditId");
-                    newAuditField["Name"] = entityProperty.Name;
-                    var entity = EntityUtil.DictionaryToEntity(auditFieldMetadata.Type, newAuditField);
-                    db.Add(entity);
-                }
-            }
-
-            await db.SaveChangesAsync();
+            await GetAuditSettings(startupContext);
         }
-        catch (Exception e)
+        finally
         {
-            Console.WriteLine(e);
-            throw;
+            db.SetAuditEnabled(auditEnabled);
         }
 
         return ServiceResult.Success();
     }
 
-    public static async Task<Response<object?>> CacheAuditRecords(IXamsDbContext db)
+    /// <summary>
+    /// Brings the Audit and AuditField records in line with the model: merges duplicates (keeping any enabled
+    /// flag), removes records for tables and fields that no longer exist, and adds missing ones.
+    /// </summary>
+    internal static async Task SyncAuditRecords(IXamsDbContext db)
     {
-        // Load last refresh time
-        bool refreshCache = false;
-        var systemType = Cache.Instance.GetTableMetadata("System").Type;
-        var dynamicLinq = new DynamicLinq(db, systemType);
-        var query = dynamicLinq.Query.Where("Name == @0", "AuditLastRefresh");
-        var systemResults = await query.ToDynamicListAsync();
-        if (!systemResults.Any())
+        var audits = await db.AuditsBase.AsNoTracking().OrderBy(x => x.AuditId).ToListAsync();
+        var auditFields = await db.AuditFieldsBase.AsNoTracking().OrderBy(x => x.AuditFieldId).ToListAsync();
+
+        var auditableFields = new Dictionary<string, HashSet<string>>();
+        HashSet<string> AuditableFields(string tableName)
         {
-            var system = new Dictionary<string, dynamic?>()
+            if (!auditableFields.TryGetValue(tableName, out var fields))
             {
-                ["Name"] = "AuditLastRefresh",
-                ["Value"] = DateTime.UtcNow.ToString("O")
-            };
-            var entity = EntityUtil.DictionaryToEntity(systemType, system);
-            db.Add(entity);
-            await db.SaveChangesAsync();
-            Cache.Instance.AuditRefreshTime = DateTime.Parse(entity.GetValue<string>("Value"));
-            refreshCache = true;
-        }
-        else
-        {
-            // Only refresh the Cache if there has been changes to the Audit \ AuditField tables
-            var lastRefreshDate = DateTime.Parse(((object)systemResults.First()).GetValue<string>("Value"));
-            if (lastRefreshDate != Cache.Instance.AuditRefreshTime)
-            {
-                Cache.Instance.AuditRefreshTime = lastRefreshDate;
-                refreshCache = true;
+                fields = GetAuditableFields(db, tableName);
+                auditableFields[tableName] = fields;
             }
+
+            return fields;
         }
 
-        if (!refreshCache)
-        {
-            return ServiceResult.Success();
-        }
+        var removedAudits = new HashSet<Audit>();
+        var changedAudits = new HashSet<Audit>();
+        var removedFields = new HashSet<AuditField>();
+        var changedFields = new HashSet<AuditField>();
 
-        Cache.Instance.TableAuditInfo.Clear();
-        // Load Audit Info
-        var auditType = Cache.Instance.GetTableMetadata("Audit").Type;
-        var auditFieldType = Cache.Instance.GetTableMetadata("AuditField").Type;
-        var audits = (await DynamicLinq.FindAll(db, auditType))
-            .Select(x => (object)x).ToList();
-        var auditFields = (await DynamicLinq.FindAll(db, auditFieldType))
-            .Select(x => (object)x).ToList();
-
+        // One Audit per table: merge duplicates into the first
+        var auditsByTable = new Dictionary<string, Audit>();
         foreach (var audit in audits)
         {
-            var tableName = audit.GetValue<string>("Name");
-            var id = audit.GetId();
-            // Check if the ID is a Guid
-            if (!(id is Guid guidId))
+            if (string.IsNullOrEmpty(audit.Name) || !Cache.Instance.TableMetadata.ContainsKey(audit.Name))
             {
-                // If not a Guid, we need to handle this case
-                // For now, we'll skip this audit record
+                removedAudits.Add(audit);
                 continue;
             }
-            var auditFieldsForAudit = auditFields
-                .Where(x => x.GetValue<Guid>("AuditId") == (Guid)id).ToList();
 
-            var auditInfo = new Cache.AuditInfo()
+            if (!auditsByTable.TryGetValue(audit.Name, out var kept))
             {
-                IsCreateAuditEnabled = audit.GetValue<bool>("IsCreate"),
-                IsReadAuditEnabled = audit.GetValue<bool>("IsRead"),
-                IsUpdateAuditEnabled = audit.GetValue<bool>("IsUpdate"),
-                IsDeleteAuditEnabled = audit.GetValue<bool>("IsDelete")
-            };
-
-            foreach (var auditField in auditFieldsForAudit)
-            {
-                string? fieldName = auditField.GetValue<string?>("Name");
-                if (string.IsNullOrEmpty(fieldName))
-                {
-                    continue;
-                }
-
-                auditInfo.FieldAuditInfos.Add(fieldName, new Cache.FieldAuditInfo()
-                {
-                    IsCreateAuditEnabled = auditField.GetValue<bool>("IsCreate"),
-                    IsUpdateAuditEnabled = auditField.GetValue<bool>("IsUpdate"),
-                    IsDeleteAuditEnabled = auditField.GetValue<bool>("IsDelete")
-                });
+                auditsByTable[audit.Name] = audit;
+                continue;
             }
 
-            Cache.Instance.TableAuditInfo.TryAdd(tableName, auditInfo);
+            kept.IsCreate |= audit.IsCreate;
+            kept.IsUpdate |= audit.IsUpdate;
+            kept.IsDelete |= audit.IsDelete;
+            changedAudits.Add(kept);
+            removedAudits.Add(audit);
+            foreach (var auditField in auditFields.Where(x => x.AuditId == audit.AuditId))
+            {
+                auditField.AuditId = kept.AuditId;
+                changedFields.Add(auditField);
+            }
         }
 
-        return ServiceResult.Success();
+        // One AuditField per auditable property: merge duplicates, remove the rest
+        var tableByAuditId = auditsByTable.ToDictionary(x => x.Value.AuditId, x => x.Key);
+        var fieldsByKey = new Dictionary<(Guid, string), AuditField>();
+        foreach (var auditField in auditFields)
+        {
+            if (!tableByAuditId.TryGetValue(auditField.AuditId, out var tableName) ||
+                string.IsNullOrEmpty(auditField.Name) ||
+                !AuditableFields(tableName).Contains(auditField.Name))
+            {
+                removedFields.Add(auditField);
+                continue;
+            }
+
+            if (!fieldsByKey.TryGetValue((auditField.AuditId, auditField.Name), out var kept))
+            {
+                fieldsByKey[(auditField.AuditId, auditField.Name)] = auditField;
+                continue;
+            }
+
+            kept.IsCreate |= auditField.IsCreate;
+            kept.IsUpdate |= auditField.IsUpdate;
+            kept.IsDelete |= auditField.IsDelete;
+            changedFields.Add(kept);
+            removedFields.Add(auditField);
+        }
+
+        foreach (var auditField in removedFields)
+        {
+            db.Remove(auditField);
+        }
+
+        foreach (var auditField in changedFields.Except(removedFields))
+        {
+            db.Update(auditField);
+        }
+
+        await db.SaveChangesAsync();
+
+        foreach (var audit in removedAudits)
+        {
+            db.Remove(audit);
+        }
+
+        foreach (var audit in changedAudits.Except(removedAudits))
+        {
+            db.Update(audit);
+        }
+
+        // Add records for new tables and fields
+        foreach (var tableName in Cache.Instance.TableMetadata.Keys)
+        {
+            if (!auditsByTable.TryGetValue(tableName, out var audit))
+            {
+                audit = new Audit { AuditId = Guid.NewGuid(), Name = tableName, IsTable = true };
+                auditsByTable[tableName] = audit;
+                db.Add(audit);
+            }
+
+            foreach (var fieldName in AuditableFields(tableName))
+            {
+                if (!fieldsByKey.ContainsKey((audit.AuditId, fieldName)))
+                {
+                    db.Add(new AuditField { AuditFieldId = Guid.NewGuid(), AuditId = audit.AuditId, Name = fieldName });
+                }
+            }
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// The mapped scalar properties of a table. Navigation properties have no audit values.
+    /// </summary>
+    private static HashSet<string> GetAuditableFields(IXamsDbContext db, string tableName)
+    {
+        var entityType = db.Model.FindEntityType(Cache.Instance.GetTableMetadata(tableName).Type);
+        return entityType?.GetProperties()
+            .Where(x => x.PropertyInfo != null)
+            .Select(x => x.Name)
+            .ToHashSet() ?? [];
+    }
+
+    /// <summary>
+    /// Reloads the audit configuration if the AuditLastRefresh marker changed since the last load. The new
+    /// configuration replaces the cached one in a single step.
+    /// </summary>
+    public static async Task<Response<object?>> CacheAuditRecords(IXamsDbContext db)
+    {
+        await RefreshLock.WaitAsync();
+        try
+        {
+            // Read the marker before the configuration, so a change committed during the load is picked up
+            // by the next refresh
+            var refreshTime = await GetRefreshTime(db);
+            if (refreshTime == Cache.Instance.AuditRefreshTime)
+            {
+                return ServiceResult.Success();
+            }
+
+            Cache.Instance.SetTableAuditInfo(await LoadAuditInfo(db));
+            Cache.Instance.AuditRefreshTime = refreshTime;
+            return ServiceResult.Success();
+        }
+        finally
+        {
+            RefreshLock.Release();
+        }
+    }
+
+    private static async Task<DateTime> GetRefreshTime(IXamsDbContext db)
+    {
+        var systemRecord = await db.SystemsBase.AsNoTracking()
+            .Where(x => x.Name == AuditRefreshSystemRecord)
+            .OrderBy(x => x.SystemId)
+            .FirstOrDefaultAsync();
+        if (systemRecord == null)
+        {
+            var value = DateTime.UtcNow.ToString("O");
+            await Queries.UpdateSystemRecord(db, AuditRefreshSystemRecord, value);
+            return DateTime.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+        }
+
+        // An unreadable marker still loads once; any later change writes a readable one
+        return DateTime.TryParse(systemRecord.Value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind,
+            out var refreshTime)
+            ? refreshTime
+            : DateTime.MaxValue;
+    }
+
+    /// <summary>
+    /// Builds the audit configuration by table. Duplicate Audit or AuditField records are merged and an enabled
+    /// flag on any of them wins.
+    /// </summary>
+    internal static async Task<IReadOnlyDictionary<string, Cache.AuditInfo>> LoadAuditInfo(IXamsDbContext db)
+    {
+        var audits = await db.AuditsBase.AsNoTracking().ToListAsync();
+        var auditFields = (await db.AuditFieldsBase.AsNoTracking().ToListAsync()).ToLookup(x => x.AuditId);
+
+        var tableAuditInfo = new Dictionary<string, Cache.AuditInfo>();
+        foreach (var audit in audits.Where(x => !string.IsNullOrEmpty(x.Name)))
+        {
+            if (!tableAuditInfo.TryGetValue(audit.Name!, out var auditInfo))
+            {
+                auditInfo = new Cache.AuditInfo();
+                tableAuditInfo[audit.Name!] = auditInfo;
+            }
+
+            auditInfo.IsCreateAuditEnabled |= audit.IsCreate;
+            auditInfo.IsUpdateAuditEnabled |= audit.IsUpdate;
+            auditInfo.IsDeleteAuditEnabled |= audit.IsDelete;
+
+            foreach (var auditField in auditFields[audit.AuditId].Where(x => !string.IsNullOrEmpty(x.Name)))
+            {
+                if (!auditInfo.FieldAuditInfos.TryGetValue(auditField.Name!, out var fieldAuditInfo))
+                {
+                    fieldAuditInfo = new Cache.FieldAuditInfo();
+                    auditInfo.FieldAuditInfos[auditField.Name!] = fieldAuditInfo;
+                }
+
+                fieldAuditInfo.IsCreateAuditEnabled |= auditField.IsCreate;
+                fieldAuditInfo.IsUpdateAuditEnabled |= auditField.IsUpdate;
+                fieldAuditInfo.IsDeleteAuditEnabled |= auditField.IsDelete;
+            }
+        }
+
+        return tableAuditInfo;
     }
 
     public async Task GetAuditSettings(StartupContext context)
     {
         var db = context.DataService.GetDbContext<IXamsDbContext>();
         await Queries.GetCreateSetting(db, AuditRetentionSetting, "30");
-    }
-
-    public class NewAudit
-    {
-        public required string TableName { get; set; }
-        public required object Entity { get; set; }
-    }
-
-    public class Lookup
-    {
-        public Guid AuditId { get; set; }
-        public required string TableName { get; set; }
-        public required string FieldName { get; set; }
-        public required object Entity { get; set; }
     }
 }

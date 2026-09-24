@@ -3,12 +3,14 @@ using System.Linq.Dynamic.Core;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
 using Xams.Core.Dtos;
 using Xams.Core.Dtos.Data;
 using Xams.Core.Interfaces;
 using Xams.Core.Services;
+using Xams.Core.Services.Auditing;
 using Xams.Core.Utils;
 
 namespace Xams.Core.Repositories
@@ -21,6 +23,7 @@ namespace Xams.Core.Repositories
         private readonly NullabilityInfoContext _nullabilityInfoContext;
         private readonly List<IXamsDbContext> _dbContexts = new();
         private readonly IDataService _dataService;
+        private readonly List<Func<Task>> _afterCommit = new();
 
         public DataRepository(Type dataContextType, IDataService dataService)
         {
@@ -171,7 +174,8 @@ namespace Xams.Core.Repositories
                 string[] permissions = readOptions.Permissions;
                 if (readOptions.BypassSecurity)
                 {
-                    permissions = [$"TABLE_{readInput.tableName}_READ_SYSTEM"];
+                    permissions = QueryUtil.GetTables(readInput).Distinct()
+                        .Select(table => $"TABLE_{table}_READ_SYSTEM").ToArray();
                 }
 
                 IQueryable query = new QueryFactory(dataContext, new QueryFactory.QueryOptions()
@@ -420,8 +424,7 @@ namespace Xams.Core.Repositories
 
             PropertyInfo[] properties = results.First().GetType().GetProperties();
             List<dynamic> newResults = new();
-            List<string?> aliases = readInput?.joins?.Select(x => x.alias).ToList() ?? new List<string?>();
-            var joins = readInput?.joins?.ToDictionary(x => x.alias ?? "", x => x) ?? new Dictionary<string, Join>();
+            List<string> aliases = readInput?.joins?.Select(x => x.alias ?? x.toTable).ToList() ?? new List<string>();
             foreach (var result in results)
             {
                 dynamic expando = new ExpandoObject();
@@ -1068,24 +1071,96 @@ namespace Xams.Core.Repositories
 
         public async Task BeginTransaction()
         {
-            _transaction ??= await _dataContext?.Database.BeginTransactionAsync()!;
+            if (_transaction != null)
+            {
+                return;
+            }
+
+            _transaction = await _dataContext!.Database.BeginTransactionAsync();
+            // Audit records for this transaction are held until the commit
+            _dataContext.GetAuditBuffer().BeginDeferred();
         }
 
         public async Task CommitTransaction()
         {
-            // Only allow commit if SaveChanges was called and there's something to commit
-            if (_transaction != null && GetDbContext<IXamsDbContext>().SaveChangesCalledWithPendingChanges())
+            if (_transaction == null)
             {
-                await _transaction.CommitAsync();
+                return;
             }
+
+            var transaction = _transaction;
+            var auditBuffer = _dataContext!.GetAuditBuffer();
+            List<AuditRecord> auditRecords;
+            try
+            {
+                // The transaction's records take their entities' final names, and the older history is renamed
+                // to match
+                var records = auditBuffer.TakeRecords();
+                var renames = auditBuffer.TakeRenames();
+                AuditHistoryNames.Rename(records, renames);
+                await AuditHistoryNames.ApplyAsync(_dataContext, renames);
+                auditRecords = await AuditLogic.WriteAsync(_dataContext, records);
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                // Disposing the uncommitted transaction below rolls it back
+                _afterCommit.Clear();
+                throw;
+            }
+            finally
+            {
+                auditBuffer.Reset();
+                await transaction.DisposeAsync();
+                _transaction = null;
+            }
+
+            await AuditLogic.PublishAsync(_dataContext, auditRecords);
+            await RunAfterCommit();
         }
 
         public async Task RollbackTransaction()
         {
-            // Only allow rollback if SaveChanges was called and there's something to roll back
-            if (_transaction != null && GetDbContext<IXamsDbContext>().SaveChangesCalledWithPendingChanges())
+            _dataContext?.GetAuditBuffer().Reset();
+            _afterCommit.Clear();
+            if (_transaction != null)
             {
                 await _transaction.RollbackAsync();
+                await _transaction.DisposeAsync();
+                _transaction = null;
+            }
+        }
+
+        /// <summary>
+        /// Runs the action after the current transaction commits, or now if no transaction is open.
+        /// The action is dropped if the transaction rolls back.
+        /// </summary>
+        internal async Task AfterCommit(Func<Task> action)
+        {
+            if (_transaction == null)
+            {
+                await action();
+                return;
+            }
+
+            _afterCommit.Add(action);
+        }
+
+        private async Task RunAfterCommit()
+        {
+            var actions = _afterCommit.ToList();
+            _afterCommit.Clear();
+            foreach (var action in actions)
+            {
+                try
+                {
+                    await action();
+                }
+                catch (Exception e)
+                {
+                    // The transaction is already committed; report the failure without failing the operation
+                    _dataService.GetLogger().LogError(e, "After commit action failed: {Message}", e.Message);
+                }
             }
         }
     }

@@ -250,7 +250,6 @@ public class Job
             // Execute job
             var jobDataService = scope.ServiceProvider.GetRequiredService<IDataService>();
             
-            var transactionBag = new Dictionary<string, object>();
             var pipelineContext = new PipelineContext()
             {
                 UserId = SystemRecords.SystemUserId,
@@ -261,7 +260,7 @@ public class Job
                 DataRepository = jobDataService.GetDataRepository(),
                 MetadataRepository = jobDataService.GetMetadataRepository(),
                 SecurityRepository = jobDataService.GetSecurityRepository(),
-                TransactionBag =  transactionBag,
+                TransactionBag =  jobDataService.GetTransactionBag(),
             };
             
             Response<object?> jobResponse = await ((Task<Response<object?>>)methodInfo.Invoke(serviceJobInstance,
@@ -271,7 +270,7 @@ public class Job
                                 
             // If there were any create, update or delete operations on the job,
             // then call bulk service to execute the operations
-            await jobDataService.TryExecuteBulkServiceLogic(BulkStage.Post, SystemRecords.SystemUserId, pipelineContext.TransactionBag);
+            await jobDataService.TryExecuteBulkServiceLogic(BulkStage.Post, SystemRecords.SystemUserId);
 
             // Stop job ping
             await jobPing.End();

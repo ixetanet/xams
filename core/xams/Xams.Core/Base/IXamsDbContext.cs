@@ -2,8 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Xams.Core.Contexts;
 using Xams.Core.Entities;
 using Xams.Core.Interfaces;
+using Xams.Core.Services.Auditing;
 
 namespace Xams.Core.Base;
 
@@ -42,6 +44,13 @@ public interface IXamsDbContext : IDisposable
     int SaveChanges();
     int SaveChanges(bool acceptAllChangesOnSuccess);
 
+    /// <summary>
+    /// Called with audit records once the transaction that wrote them has committed; never for changes that roll
+    /// back. For a transaction opened directly on the DbContext it runs during the commit, so it must not save
+    /// through the same DbContext, and it requires an OnConfiguring override to call base.OnConfiguring. For an
+    /// ambient TransactionScope it runs when the scope completes, after the DbContext may have been disposed.
+    /// </summary>
+    Func<AuditContext, Task>? OnCreateAudit { get; set; }
     /// <summary>
     /// Returns the current database provider.
     /// </summary>
@@ -90,7 +99,17 @@ public interface IXamsDbContext : IDisposable
     internal bool IsRoleCustom();
     internal bool IsSettingCustom();
     internal void SetDataService(IDataService dataService);
-    internal IDataService GetDataService();
+    internal IDataService? GetDataService();
     internal void SetAuditEnabled(bool enabled);
     internal bool GetAuditEnabled();
+    internal AuditBuffer GetAuditBuffer();
+    /// <summary>
+    /// Whether the audit transaction interceptor is registered, so records written in a transaction the caller
+    /// opened can be published when it commits.
+    /// </summary>
+    internal bool PublishesAuditOnCommit { get; }
+    /// <summary>
+    /// Records that SaveChanges was called with pending changes (see SaveChangesCalledWithPendingChanges).
+    /// </summary>
+    internal void NotePendingChanges();
 }

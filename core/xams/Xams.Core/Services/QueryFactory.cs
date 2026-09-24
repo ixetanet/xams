@@ -84,7 +84,7 @@ public class QueryFactory
                     fields = join.fields,
                 };
                 var joinQuery = Base(joinReadInput, join.alias);
-                if (join.type == "left")
+                if (string.Equals(join.type, "left", StringComparison.OrdinalIgnoreCase))
                 {
                     query.LeftJoin($"{join.fromTable}.{join.fromField}", $"{join.alias}.{join.toField}", joinQuery);
                 }
@@ -116,7 +116,13 @@ public class QueryFactory
             throw new Exception("Permissions are required");
         }
         
-        var highestPermission = Permissions.GetHighestPermission(_queryOptions.Permissions, readInput.tableName);
+        var readPermissions = _queryOptions.Permissions
+            .Where(x => x.StartsWith($"TABLE_{readInput.tableName}_READ_", StringComparison.Ordinal)).ToArray();
+        var highestPermission = Permissions.GetHighestPermission(readPermissions, readInput.tableName);
+        if (highestPermission == null)
+        {
+            throw new Exception($"Read permission is required for table {readInput.tableName}.");
+        }
 
         // Only select the fields that are needed for select and filter
         Query query;
@@ -583,23 +589,42 @@ public class QueryFactory
 
             foreach (var filter in join.filters)
             {
-                filter.field = $"{join.alias}.{filter.field}";
+                AliasFilter(filter, join.alias!);
+            }
+        }
+
+        static void AliasFilter(Filter filter, string alias)
+        {
+            if (!string.IsNullOrEmpty(filter.field) && !filter.field.Contains('.'))
+            {
+                filter.field = $"{alias}.{filter.field}";
+            }
+
+            if (filter.filters != null)
+            {
+                foreach (var child in filter.filters)
+                {
+                    AliasFilter(child, alias);
+                }
             }
         }
     }
 
     private void AddFilters(Query query, ReadInput readInput, string? logicalOperator = null)
     {
-        if (readInput.filters == null || readInput.filters.Length == 0)
+        // Add join filters
+        AliasJoinFilters(readInput.joins);
+        readInput.filters = (readInput.filters ?? Array.Empty<Filter>()).Concat(readInput.joins?
+            .Where(x => x.filters != null)
+            .SelectMany(x => x.filters ?? Array.Empty<Filter>()) ?? Array.Empty<Filter>()).ToArray();
+
+        if (readInput.filters.Length == 0)
         {
             return;
         }
 
-        // Add join filters
-        AliasJoinFilters(readInput.joins);
-        readInput.filters = readInput.filters.Concat(readInput.joins?
-            .Where(x => x.filters != null)
-            .SelectMany(x => x.filters ?? Array.Empty<Filter>()) ?? Array.Empty<Filter>()).ToArray();
+        // Joined filters need the same field and visibility validation as root filters.
+        ValidateFilters(readInput, readInput.filters);
 
         Type targetType = Cache.Instance.GetTableMetadata(query.TableName).Type;
         var (filterData, _) =
@@ -707,6 +732,16 @@ public class QueryFactory
             if (fieldType == null)
             {
                 throw new Exception($"{targetType.Name} does not contain a field named {filter.field}");
+            }
+
+            if (filter.value == null && (isNullable || fieldType == typeof(string)) &&
+                filter.@operator is "==" or "!=")
+            {
+                conditions.Add($"{table}{field} {filter.@operator} null");
+                // Reserve this filter's index, as with nullable Guid filters below.
+                values.Add("");
+                index++;
+                continue;
             }
 
             if (fieldType == typeof(Guid))
@@ -1061,57 +1096,57 @@ public class QueryFactory
         {
             if (type == typeof(int))
             {
-                isValidNumber = int.TryParse(filter.value, out int val);
+                isValidNumber = int.TryParse(filter.value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int val);
                 parsedValue = isValidNumber ? val : 0;
             }
             else if (type == typeof(long) || type == typeof(Int64))
             {
-                isValidNumber = long.TryParse(filter.value, out long val);
+                isValidNumber = long.TryParse(filter.value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long val);
                 parsedValue = isValidNumber ? val : 0L;
             }
             else if (type == typeof(float))
             {
-                isValidNumber = float.TryParse(filter.value, out float val);
+                isValidNumber = float.TryParse(filter.value, NumberStyles.Float, CultureInfo.InvariantCulture, out float val);
                 parsedValue = isValidNumber ? val : 0f;
             }
             else if (type == typeof(double))
             {
-                isValidNumber = double.TryParse(filter.value, out double val);
+                isValidNumber = double.TryParse(filter.value, NumberStyles.Float, CultureInfo.InvariantCulture, out double val);
                 parsedValue = isValidNumber ? val : 0d;
             }
             else if (type == typeof(decimal))
             {
-                isValidNumber = decimal.TryParse(filter.value, out decimal val);
+                isValidNumber = decimal.TryParse(filter.value, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal val);
                 parsedValue = isValidNumber ? val : 0m;
             }
             else if (type == typeof(short) || type == typeof(Int16))
             {
-                isValidNumber = short.TryParse(filter.value, out short val);
+                isValidNumber = short.TryParse(filter.value, NumberStyles.Integer, CultureInfo.InvariantCulture, out short val);
                 parsedValue = isValidNumber ? val : 0;
             }
             else if (type == typeof(byte))
             {
-                isValidNumber = byte.TryParse(filter.value, out byte val);
+                isValidNumber = byte.TryParse(filter.value, NumberStyles.Integer, CultureInfo.InvariantCulture, out byte val);
                 parsedValue = isValidNumber ? val : 0;
             }
             else if (type == typeof(uint))
             {
-                isValidNumber = uint.TryParse(filter.value, out uint val);
+                isValidNumber = uint.TryParse(filter.value, NumberStyles.Integer, CultureInfo.InvariantCulture, out uint val);
                 parsedValue = isValidNumber ? val : 0U;
             }
             else if (type == typeof(ulong) || type == typeof(UInt64))
             {
-                isValidNumber = ulong.TryParse(filter.value, out ulong val);
+                isValidNumber = ulong.TryParse(filter.value, NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong val);
                 parsedValue = isValidNumber ? val : 0UL;
             }
             else if (type == typeof(ushort) || type == typeof(UInt16))
             {
-                isValidNumber = ushort.TryParse(filter.value, out ushort val);
+                isValidNumber = ushort.TryParse(filter.value, NumberStyles.Integer, CultureInfo.InvariantCulture, out ushort val);
                 parsedValue = isValidNumber ? val : 0;
             }
             else if (type == typeof(sbyte))
             {
-                isValidNumber = sbyte.TryParse(filter.value, out sbyte val);
+                isValidNumber = sbyte.TryParse(filter.value, NumberStyles.Integer, CultureInfo.InvariantCulture, out sbyte val);
                 parsedValue = isValidNumber ? val : 0;
             }
             else
@@ -1119,7 +1154,7 @@ public class QueryFactory
                 // Fallback for any other numeric type
                 try
                 {
-                    parsedValue = Convert.ChangeType(filter.value, type);
+                    parsedValue = Convert.ChangeType(filter.value, type, CultureInfo.InvariantCulture);
                     isValidNumber = true;
                 }
                 catch
@@ -1223,7 +1258,11 @@ public class QueryFactory
 
     private static bool Validate(ReadInput readInput)
     {
-        
+        if (readInput.fields == null)
+        {
+            throw new Exception($"No fields selected on {readInput.tableName}");
+        }
+
         if (readInput.fields.Length > 0 && readInput.fields[0] != "*")
         {
             foreach (var field in readInput.fields)
@@ -1443,6 +1482,11 @@ public class QueryFactory
 
         foreach (var filter in filters)
         {
+            if (filter.filters != null)
+            {
+                ValidateFilters(readInput, filter.filters);
+            }
+
             // Make sure this is either a logical grouping or a filter
             if (!string.IsNullOrEmpty(filter.logicalOperator))
             {
@@ -1516,10 +1560,6 @@ public class QueryFactory
                 }
             }
 
-            if (filter.filters != null)
-            {
-                ValidateFilters(readInput, filter.filters);
-            }
         }
     }
 

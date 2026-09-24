@@ -18,6 +18,7 @@ namespace Xams.Core.Interfaces
         public DataRepository GetDataRepository();
         public MetadataRepository GetMetadataRepository();
         public SecurityRepository GetSecurityRepository();
+        public Dictionary<string, object> GetTransactionBag();
         
         Task<Response<object?>> WhoAmI(Guid userId);
         Task<Response<ReadOutput>> Read(Guid userId, ReadInput input, PipelineContext? parent = null);
@@ -46,7 +47,7 @@ namespace Xams.Core.Interfaces
         Task<Response<object?>> Metadata(MetadataInput metadataInput, Guid userId);
         Task<Response<object?>> Permissions(PermissionsInput permissionsInput, Guid userId);
         public T GetDbContext<T>() where T : IXamsDbContext;
-        internal Task<Response<object?>> TryExecuteBulkServiceLogic(BulkStage bulkStage, Guid userId, Dictionary<string, object> transactionBag);
+        internal Task<Response<object?>> TryExecuteBulkServiceLogic(BulkStage bulkStage, Guid userId);
 
         internal Task<Response<object?>> BatchPreEntity(List<PipelineContext> pipelineContexts,
             bool checkSecurity);
@@ -59,7 +60,6 @@ namespace Xams.Core.Interfaces
         internal bool TrackingDelete(string entity, object id);
         
         internal ILogger GetLogger();
-        internal object? PreEntities(Type type, object id);
         internal Task<Response<object?>> HubSend<T>(object message) where T : class, IServiceHub;
 
     }

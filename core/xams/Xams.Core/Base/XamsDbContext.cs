@@ -2,6 +2,7 @@ using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
+using Xams.Core.Contexts;
 using Xams.Core.Entities;
 using Xams.Core.Interfaces;
 using Xams.Core.Services.Auditing;
@@ -82,9 +83,12 @@ namespace Xams.Core.Base
         public DbSet<Log> Logs { get; set; }
 
         internal bool SaveChangesCalledWithPendingChanges { get; private set; }
-        
-        internal IDataService _dataService { get; set; } = null!;
-        
+
+        internal IDataService? _dataService { get; set; }
+
+        private readonly AuditBuffer _auditBuffer = new();
+
+        public Func<AuditContext, Task>? OnCreateAudit { get; set; }
         public XamsDbContext()
         {
         }
@@ -92,6 +96,21 @@ namespace Xams.Core.Base
         public XamsDbContext(DbContextOptions options) : base(options)
         {
         }
+
+        /// <summary>
+        /// Registers the audit transaction interceptor. Contexts that override OnConfiguring must call
+        /// base.OnConfiguring, or OnCreateAudit cannot run for transactions they open themselves.
+        /// </summary>
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            base.OnConfiguring(optionsBuilder);
+            optionsBuilder.AddInterceptors(AuditTransactionInterceptor.Instance);
+            _publishesAuditOnCommit = true;
+        }
+
+        private bool _publishesAuditOnCommit;
+
+        bool IXamsDbContext.PublishesAuditOnCommit => _publishesAuditOnCommit;
 
         public enum EntityType
         {
@@ -171,6 +190,13 @@ namespace Xams.Core.Base
                       .HasForeignKey(l => l.UserId)
                       .OnDelete(DeleteBehavior.SetNull);
             });
+
+            modelBuilder.Entity<AuditHistory>(entity =>
+            {
+                // Record renames update history by table and entity; retention purges by date
+                entity.HasIndex(x => new { x.TableName, x.EntityId });
+                entity.HasIndex(x => x.CreatedDate);
+            });
         }
 
         bool IXamsDbContext.SaveChangesCalledWithPendingChanges()
@@ -180,42 +206,41 @@ namespace Xams.Core.Base
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            if (!SaveChangesCalledWithPendingChanges)
-            {
-                SaveChangesCalledWithPendingChanges = ChangeTracker.Entries().Any(e =>
-                    e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
-            }
-
-            var result = await base.SaveChangesAsync(cancellationToken);
-            
-            if (SaveChangesCalledWithPendingChanges)
-            {
-                await AuditLogic.Audit(this, cancellationToken);
-            }
-            
+            var result = await SaveChangesAsync(true, cancellationToken);
             ChangeTracker.Clear();
             return result;
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
+            CancellationToken cancellationToken = default)
+        {
+            return AuditLogic.SaveChangesAsync(this, acceptAllChangesOnSuccess,
+                accept => base.SaveChangesAsync(accept, cancellationToken), cancellationToken);
         }
 
         public override int SaveChanges()
         {
-            if (!SaveChangesCalledWithPendingChanges)
-            {
-                SaveChangesCalledWithPendingChanges = ChangeTracker.Entries().Any(e =>
-                    e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
-            }
-            
-            var result = base.SaveChanges();
-            
-            if (SaveChangesCalledWithPendingChanges)
-            {
-                AuditLogic.Audit(this, CancellationToken.None).GetAwaiter().GetResult();
-            }
-            
+            var result = SaveChanges(true);
             ChangeTracker.Clear();
             return result;
         }
-        
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            return AuditLogic.SaveChanges(this, acceptAllChangesOnSuccess, accept => base.SaveChanges(accept));
+        }
+
+        // Noted by the audit's single pass over the change tracker, instead of a pass of its own
+        void IXamsDbContext.NotePendingChanges()
+        {
+            SaveChangesCalledWithPendingChanges = true;
+        }
+
+        AuditBuffer IXamsDbContext.GetAuditBuffer()
+        {
+            return _auditBuffer;
+        }
+
 
         /// <summary>
         /// Returns the current database provider.
@@ -330,7 +355,11 @@ namespace Xams.Core.Base
             _dataService = dataService;
         }
         
-        public IDataService GetDataService()
+        /// <summary>
+        /// Returns the DataService that created this DbContext, or null when it was created outside Xams
+        /// (for example resolved from dependency injection or constructed directly).
+        /// </summary>
+        public IDataService? GetDataService()
         {
             return _dataService;
         }

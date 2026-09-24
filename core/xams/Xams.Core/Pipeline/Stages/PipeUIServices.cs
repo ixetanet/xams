@@ -279,14 +279,14 @@ public class PipeUIServices : BasePipelineStage
                 {
                     var currentValue = property.GetValue(context.Entity);
 
-                    if (currentValue == null)
-                    {
-                        continue;
-                    }
-
                     // For Create operations, always block setting readonly fields
                     if (context.DataOperation == DataOperation.Create)
                     {
+                        if (currentValue == null)
+                        {
+                            continue;
+                        }
+
                         if (field.name == nameof(BaseEntity.OwningUserId) && (Guid?)currentValue == context.UserId)
                         {
                             continue;

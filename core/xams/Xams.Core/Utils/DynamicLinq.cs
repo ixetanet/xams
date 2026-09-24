@@ -49,8 +49,8 @@ namespace Xams.Core.Utils
             {
                 var batch = idList.Take(batchSize).ToArray();
                 idList = idList.Skip(batchSize).ToList();
-                query = query.Contains(batch, dynamicLinq.PrimaryKey);
-                results.AddRange(await query.ToDynamicListAsync());
+                var batchQuery = query.Contains(batch, dynamicLinq.PrimaryKey);
+                results.AddRange(await batchQuery.ToDynamicListAsync());
             }
             return results;
         }

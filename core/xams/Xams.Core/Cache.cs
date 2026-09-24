@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Xams.Core.Attributes;
 using Xams.Core.Base;
 using Xams.Core.Dtos.Data;
@@ -29,10 +30,40 @@ namespace Xams.Core
         public readonly List<ServicePermissionInfo> ServicePermissionInfos = new();
         public readonly Dictionary<string, ServiceJobInfo> ServiceJobs = new();
         public readonly Dictionary<string, ServiceHubInfo> ServiceHubs = new();
-        public readonly ConcurrentDictionary<string, AuditInfo> TableAuditInfo = new();
         public readonly Dictionary<string, MetadataInfo> TableMetadata = new();
         public readonly Dictionary<Type, MetadataInfo> TableTypeMetadata = new();
         public DateTime AuditRefreshTime { get; set; } = DateTime.MinValue;
+
+        private AuditConfiguration _auditConfiguration = new(new Dictionary<string, AuditInfo>(), false);
+
+        /// <summary>
+        /// Audit configuration by table name. This is an immutable snapshot that is replaced as a whole
+        /// when the configuration is reloaded, so readers never observe a partially built cache.
+        /// </summary>
+        public IReadOnlyDictionary<string, AuditInfo> TableAuditInfo => AuditConfigurationSnapshot.Tables;
+
+        /// <summary>
+        /// The audit configuration and whether any table audits anything, replaced together.
+        /// </summary>
+        internal AuditConfiguration AuditConfigurationSnapshot => Volatile.Read(ref _auditConfiguration);
+
+        internal sealed record AuditConfiguration(IReadOnlyDictionary<string, AuditInfo> Tables, bool AnyEnabled);
+
+        /// <summary>
+        /// Returns the audit configuration for a table, or null if the table has no audit configuration.
+        /// </summary>
+        public AuditInfo? GetAuditInfo(string tableName)
+        {
+            return TableAuditInfo.TryGetValue(tableName, out var auditInfo) ? auditInfo : null;
+        }
+
+        internal void SetTableAuditInfo(IReadOnlyDictionary<string, AuditInfo> tableAuditInfo)
+        {
+            // Startup sync gives every table an Audit record, so "any record" does not mean anything is audited
+            var anyEnabled = tableAuditInfo.Values.Any(x =>
+                x.IsCreateAuditEnabled || x.IsUpdateAuditEnabled || x.IsDeleteAuditEnabled);
+            Volatile.Write(ref _auditConfiguration, new AuditConfiguration(tableAuditInfo, anyEnabled));
+        }
 
         internal static async Task Initialize(IDataService dataService)
         {
@@ -413,11 +444,15 @@ namespace Xams.Core
             // Ensure all referenced assemblies are loaded first
             cache.LoadAllReferencedAssemblies();
             var assemblies = AssemblyLoadContext.Default.Assemblies.ToList();
+            // Each assembly's types, read once for all the discovery below
+            var logger = dataService.GetLogger();
+            var assemblyTypes = assemblies.ToDictionary(x => x,
+                x => LoadableTypes(x, message => logger.LogWarning("{Message}", message)));
 
             foreach (var assembly in assemblies)
             {
                 // Cache Service Logic
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in assemblyTypes[assembly])
                 {
                     ServiceLogicAttribute? serviceLogicAttribute = type.GetCustomAttribute<ServiceLogicAttribute>();
                     if (serviceLogicAttribute == null)
@@ -505,7 +540,7 @@ namespace Xams.Core
             foreach (var assembly in assemblies)
             {
                 // Cache Bulk Services
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in assemblyTypes[assembly])
                 {
                     BulkServiceAttribute? serviceBulkAttribute = type.GetCustomAttribute<BulkServiceAttribute>();
                     if (serviceBulkAttribute == null)
@@ -530,7 +565,7 @@ namespace Xams.Core
             // Cache Actions
             foreach (var assembly in assemblies)
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in assemblyTypes[assembly])
                 {
                     ServiceActionAttribute? serviceActionAttribute = type.GetCustomAttribute<ServiceActionAttribute>();
                     if (serviceActionAttribute == null)
@@ -557,7 +592,7 @@ namespace Xams.Core
             // Cache Startup Services
             foreach (var assembly in assemblies)
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in assemblyTypes[assembly])
                 {
                     ServiceStartupAttribute? serviceStartupAttribute =
                         type.GetCustomAttribute<ServiceStartupAttribute>();
@@ -582,7 +617,7 @@ namespace Xams.Core
             // Cache Security Services
             foreach (var assembly in assemblies)
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in assemblyTypes[assembly])
                 {
                     ServiceSecurityAttribute? serviceSecurityAttribute =
                         type.GetCustomAttribute<ServiceSecurityAttribute>();
@@ -608,7 +643,7 @@ namespace Xams.Core
             // Cache Permission Services
             foreach (var assembly in assemblies)
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in assemblyTypes[assembly])
                 {
                     ServicePermissionAttribute? servicePermissionAttribute =
                         type.GetCustomAttribute<ServicePermissionAttribute>();
@@ -629,7 +664,7 @@ namespace Xams.Core
             // Cache Jobs
             foreach (var assembly in assemblies)
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in assemblyTypes[assembly])
                 {
                     ServiceJobAttribute? serviceJobAttribute = type.GetCustomAttribute<ServiceJobAttribute>();
                     if (serviceJobAttribute == null)
@@ -669,7 +704,7 @@ namespace Xams.Core
             // Cache Hubs
             foreach (var assembly in assemblies)
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in assemblyTypes[assembly])
                 {
                     ServiceHubAttribute? serviceHubAttribute = type.GetCustomAttribute<ServiceHubAttribute>();
                     if (serviceHubAttribute == null)
@@ -923,6 +958,37 @@ namespace Xams.Core
         /// Pre-Load referenced assemblies so all service logic, jobs, actions, etc. are loaded at time of caching
         /// </summary>
         /// <exception cref="Exception"></exception>
+        /// <summary>
+        /// The assembly's types, without those that cannot be loaded on this platform, so one unloadable type in a
+        /// referenced library does not stop the application from starting.
+        /// </summary>
+        /// <summary>
+        /// The assembly's types. A library whose types cannot all be loaded on this platform is still scanned, with
+        /// a warning naming the assembly and the cause. An assembly that references Xams.Core can hold hooks,
+        /// actions and jobs, so a failure there still stops initialization rather than silently dropping them.
+        /// </summary>
+        internal static IReadOnlyList<Type> LoadableTypes(Assembly assembly, Action<string> warn)
+        {
+            try
+            {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException e) when (!ReferencesXams(assembly))
+            {
+                var causes = e.LoaderExceptions.OfType<Exception>().Select(x => x.Message).Distinct().Take(3);
+                warn($"Skipped {e.Types.Count(x => x == null)} type(s) of {assembly.GetName().Name} that could " +
+                     $"not be loaded: {string.Join(" ", causes)}");
+                return e.Types.OfType<Type>().ToList();
+            }
+        }
+
+        internal static bool ReferencesXams(Assembly assembly)
+        {
+            var xams = typeof(Cache).Assembly;
+            return assembly == xams ||
+                   assembly.GetReferencedAssemblies().Any(x => x.Name == xams.GetName().Name);
+        }
+
         private void LoadAllReferencedAssemblies()
         {
             var loaded = new HashSet<string>(AppDomain.CurrentDomain.GetAssemblies()
@@ -1053,7 +1119,6 @@ namespace Xams.Core
         public class AuditInfo
         {
             public bool IsCreateAuditEnabled { get; internal set; }
-            public bool IsReadAuditEnabled { get; internal set; }
             public bool IsUpdateAuditEnabled { get; internal set; }
             public bool IsDeleteAuditEnabled { get; internal set; }
             public Dictionary<string, FieldAuditInfo> FieldAuditInfos { get; } = new();

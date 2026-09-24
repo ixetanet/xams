@@ -28,7 +28,7 @@ public class BaseServiceContext(PipelineContext pipelineContext)
     public Dictionary<string, JsonElement> Parameters => PipelineContext.InputParameters;
     public ILogger Logger => PipelineContext.DataService.GetLogger();
     public SecurityBuilder SecurityBuilder => new SecurityBuilder(GetDbContext<IXamsDbContext>());
-    public Dictionary<string, object> TransactionBag => PipelineContext.TransactionBag;
+    public Dictionary<string, object> TransactionBag => DataService.GetTransactionBag();
 
     /// <summary>
     /// Create entity record and execute service logic.

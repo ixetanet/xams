@@ -70,7 +70,7 @@ public class TABLE_ExportData : IServiceAction
         using (var workbook = new XLWorkbook())
         {
             // Get Data
-            Response<ReadOutput> readResponse = await context.DataService.Read(context.ExecutingUserId, readInput);
+            Response<ReadOutput> readResponse = await context.DataService.Read(context.ExecutingUserId, readInput, context.PipelineContext);
             if (!readResponse.Succeeded)
             {
                 return ServiceResult.Error(readResponse.FriendlyMessage ?? "Error reading data");

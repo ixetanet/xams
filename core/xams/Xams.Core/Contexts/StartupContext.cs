@@ -25,7 +25,7 @@ public class StartupContext : BaseServiceContext
             DataRepository = dataService.GetDataRepository(),
             MetadataRepository = dataService.GetMetadataRepository(),
             SecurityRepository = dataService.GetSecurityRepository(),
-            TransactionBag = new Dictionary<string, object>(),
+            TransactionBag = dataService.GetTransactionBag(),
         };
 
         return pipelineContext;

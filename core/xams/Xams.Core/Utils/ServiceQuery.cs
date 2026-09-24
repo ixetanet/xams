@@ -260,70 +260,89 @@ public class ServiceFilter
     private readonly List<ServiceFilter> _filters = new();
     private readonly List<Filter> _conditions = new();
     private Filter? _lastCondition;
+    private ServiceFilter? _lastFilter;
 
     public ServiceFilter And(ServiceFilter filter)
     {
-        _filters.Add(filter);
+        AndTarget().AddFilter(filter);
         return this;
     }
 
     public ServiceFilter And(string field, string @operator, object? value)
     {
-        if (_logicalOperator == "OR")
-        {
-            // AND binds tighter than OR; group the new condition with the previous one
-            ServiceFilter filter;
-            Filter? rootLastCondition = _conditions.Count > 0 ? _conditions[^1] : null;
-            if (_lastCondition != null && _lastCondition == rootLastCondition)
-            {
-                filter = new ServiceFilter();
-                _conditions.RemoveAt(_conditions.Count - 1);
-                filter._conditions.Add(rootLastCondition!);
-                _filters.Add(filter);
-            }
-            else
-            {
-                filter = _filters[^1];
-            }
+        AndTarget().AddCondition(field, @operator, value);
+        return this;
+    }
 
-            _lastCondition = CreateCondition(field, @operator, value);
-            filter._conditions.Add(_lastCondition);
+    private ServiceFilter AndTarget()
+    {
+        if (_logicalOperator == "AND")
+        {
             return this;
         }
 
-        AddCondition(field, @operator, value);
-        return this;
+        // AND binds to the last OR operand. Preserve an explicitly supplied
+        // expression as a whole, including any OR conditions inside it.
+        var conjunction = new ServiceFilter();
+        if (_lastCondition != null)
+        {
+            _conditions.Remove(_lastCondition);
+            conjunction._conditions.Add(_lastCondition);
+        }
+        else if (_lastFilter != null)
+        {
+            _filters.Remove(_lastFilter);
+            conjunction._filters.Add(_lastFilter);
+        }
+
+        AddFilter(conjunction);
+        return conjunction;
+    }
+
+    private void AddFilter(ServiceFilter filter)
+    {
+        _filters.Add(filter);
+        _lastFilter = filter;
+        _lastCondition = null;
     }
 
     public ServiceFilter Or(ServiceFilter filter)
     {
-        _filters.Add(filter);
+        BeginOr();
+        AddFilter(filter);
         return this;
     }
 
     public ServiceFilter Or(string field, string @operator, object? value)
     {
+        BeginOr();
+        AddCondition(field, @operator, value);
+        return this;
+    }
+
+    private void BeginOr()
+    {
         // On the first Or, move the existing AND conditions into their own group
         if (_logicalOperator == "AND")
         {
             _logicalOperator = "OR";
-            if (_conditions.Count > 0)
+            if (_conditions.Count > 0 || _filters.Count > 0)
             {
                 var filter = new ServiceFilter();
                 filter._conditions.AddRange(_conditions);
-                _filters.Add(filter);
+                filter._filters.AddRange(_filters);
                 _conditions.Clear();
+                _filters.Clear();
+                _filters.Add(filter);
             }
         }
-
-        AddCondition(field, @operator, value);
-        return this;
     }
 
     internal void AddCondition(string field, string @operator, object? value)
     {
         _lastCondition = CreateCondition(field, @operator, value);
         _conditions.Add(_lastCondition);
+        _lastFilter = null;
     }
 
     internal Filter ToFilter()
