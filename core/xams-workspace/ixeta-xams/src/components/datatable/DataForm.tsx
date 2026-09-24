@@ -48,7 +48,7 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
         }
 
         if (ctx.props.formOnPostSave != null) {
-          ctx.props.formOnPostSave(operation, formBuilder.data);
+          ctx.props.formOnPostSave(operation, formBuilder.data, id);
         }
 
         if (
@@ -130,7 +130,7 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
         (field) =>
           ctx.state.metadata?.primaryKey !== field.name &&
           (ctx.props.formFields === undefined ||
-            ctx.props.formFields.includes(field.name))
+            ctx.props.formFields.includes(field.name)),
       );
       if (fields.length <= 3) {
         let size = (fields.length / 3) * 72;
@@ -160,7 +160,7 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
         .filter(
           (field) =>
             ctx.props.formFields === undefined ||
-            ctx.props.formFields.includes(field.name)
+            ctx.props.formFields.includes(field.name),
         );
       if (fields.length <= 3) {
         return 12 / fields.length;
@@ -254,7 +254,7 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
               (ctx.props.formFields !== undefined
                 ? ctx.props.formFields
                 : ctx.state.metadata.fields.filter(
-                    (f) => f.name !== ctx.state.metadata?.primaryKey
+                    (f) => f.name !== ctx.state.metadata?.primaryKey,
                   )
               ).map((field, i) => {
                 if (i % 3 === 0) {
@@ -265,14 +265,15 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
                           ? ctx.props.formFields
                           : ctx.state.metadata?.fields
                               .filter(
-                                (f) => f.name !== ctx.state.metadata?.primaryKey
+                                (f) =>
+                                  f.name !== ctx.state.metadata?.primaryKey,
                               )
                               .map((field) => field.name)
                         )
                           ?.slice(i, i + 3)
                           .map((fieldName, j) => {
                             const field = ctx.state.metadata?.fields.find(
-                              (field) => field.name === fieldName
+                              (field) => field.name === fieldName,
                             );
                             if (field === undefined) {
                               if (
@@ -280,7 +281,7 @@ const DataForm = forwardRef((props: DataFormProps, ref: Ref<DataFormRef>) => {
                                 typeof fieldName !== "object"
                               ) {
                                 console.warn(
-                                  `Couldn't find field named ${fieldName}.`
+                                  `Couldn't find field named ${fieldName}.`,
                                 );
                               }
 

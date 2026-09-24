@@ -57,12 +57,14 @@ const AdminDashAudit = () => {
                             "Name",
                             "CreatedDate",
                             "EntityId",
+                            "TransactionId",
                           ]}
                           columnWidths={[
                             "125px",
                             "100%",
                             "100%",
                             "100%",
+                            "200px",
                             "100%",
                             "100%",
                           ]}
@@ -153,20 +155,8 @@ const AdminDashAudit = () => {
                               order: "asc",
                             },
                           ]}
-                          fields={[
-                            "Name",
-                            "IsCreate",
-                            "IsRead",
-                            "IsUpdate",
-                            "IsDelete",
-                          ]}
-                          columnWidths={[
-                            "350px",
-                            "100%",
-                            "100%",
-                            "100%",
-                            "100%",
-                          ]}
+                          fields={["Name", "IsCreate", "IsUpdate", "IsDelete"]}
+                          columnWidths={["350px", "100%", "100%", "100%"]}
                           canCreate={false}
                           canDelete={false}
                           formMaxWidth={55}

@@ -103,16 +103,20 @@ export type DataTableProps = {
   formOnClose?: () => void; // Callback when the form is closed
   formOnOpen?: (operation: "CREATE" | "UPDATE", record: any) => void; // Callback when the form is opened
   formOnPreSave?: (submissionData: any, parameters?: any) => void;
-  formOnPostSave?: (operation: "CREATE" | "UPDATE", record: any) => void;
+  formOnPostSave?: (
+    operation: "CREATE" | "UPDATE",
+    record: any,
+    id: string,
+  ) => void;
   refreshInterval?: number; // How often to refresh the data in milliseconds
   customForm?: (
     formbuilder: useFormBuilderType,
-    disclosure: FormDisclosure
+    disclosure: FormDisclosure,
   ) => React.ReactNode | React.ReactElement;
   appendCustomForm?: (formbuilder: useFormBuilderType) => React.ReactNode;
   formAppendButton?: (formbuilder: useFormBuilderType) => React.ReactNode;
   customCreateButton?: (
-    openForm: () => void
+    openForm: () => void,
   ) => React.ReactNode | React.ReactElement;
   customRow?: (record: any) => React.ReactNode;
   onInitialLoad?: (results: any[]) => void;
@@ -167,7 +171,7 @@ export interface DataTableShape {
   closeForm: () => void;
   refresh: () => Promise<void>;
   getData: (
-    options?: GetDataOptions | null
+    options?: GetDataOptions | null,
   ) => Promise<ApiResponse<ReadResponse<any>>>;
   getFields: () => DataTableFieldInfo[];
   sort: (field: string) => void;

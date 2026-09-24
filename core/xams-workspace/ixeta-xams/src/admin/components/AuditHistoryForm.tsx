@@ -17,12 +17,12 @@ const AuditHistoryForm = (props: AuditHistoryFormProps) => {
     const queryString = JSON.stringify(
       JSON.parse(props.formBuilder.snapshot?.Query),
       null,
-      4
+      4,
     );
     const resultsString = JSON.stringify(
       JSON.parse(props.formBuilder.snapshot?.Results),
       null,
-      4
+      4,
     );
     props.formBuilder.setField("Query", queryString);
     props.formBuilder.setField("Results", resultsString);
@@ -60,6 +60,9 @@ const AuditHistoryForm = (props: AuditHistoryFormProps) => {
             </Grid.Col>
             <Grid.Col span={4}>
               <Field name="EntityId" />
+            </Grid.Col>
+            <Grid.Col span={4}>
+              <Field name="TransactionId" />
             </Grid.Col>
           </>
         )}

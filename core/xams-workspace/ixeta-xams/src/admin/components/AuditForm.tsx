@@ -42,7 +42,7 @@ const AuditForm = (props: AuditFieldDataTableProps) => {
             ...d,
           },
         };
-      })
+      }),
     );
     if (resp.succeeded === true) {
       return true;
@@ -75,11 +75,9 @@ const AuditForm = (props: AuditFieldDataTableProps) => {
           <Grid.Col span={4}>
             <Field name="Name" />
           </Grid.Col>
+          <Grid.Col span={2}>{/* <Field name="IsRead" /> */}</Grid.Col>
           <Grid.Col span={2}>
             <Field name="IsCreate" />
-          </Grid.Col>
-          <Grid.Col span={2}>
-            <Field name="IsRead" />
           </Grid.Col>
           <Grid.Col span={2}>
             <Field name="IsUpdate" />
@@ -139,8 +137,8 @@ const AuditForm = (props: AuditFieldDataTableProps) => {
                         : setIsCreateAll(false);
                       updateAuditField(
                         updatedRecords.find(
-                          (r) => r.AuditFieldId === data.AuditFieldId
-                        ) as AuditField
+                          (r) => r.AuditFieldId === data.AuditFieldId,
+                        ) as AuditField,
                       );
                       return updatedRecords;
                     });
@@ -190,8 +188,8 @@ const AuditForm = (props: AuditFieldDataTableProps) => {
                         : setIsUpdateAll(false);
                       updateAuditField(
                         updatedRecords.find(
-                          (r) => r.AuditFieldId === data.AuditFieldId
-                        ) as AuditField
+                          (r) => r.AuditFieldId === data.AuditFieldId,
+                        ) as AuditField,
                       );
                       return updatedRecords;
                     });
@@ -241,8 +239,8 @@ const AuditForm = (props: AuditFieldDataTableProps) => {
                         : setIsDeleteAll(false);
                       updateAuditField(
                         updatedRecords.find(
-                          (r) => r.AuditFieldId === data.AuditFieldId
-                        ) as AuditField
+                          (r) => r.AuditFieldId === data.AuditFieldId,
+                        ) as AuditField,
                       );
                       return updatedRecords;
                     });

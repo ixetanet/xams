@@ -20,18 +20,18 @@ const SearchBox = () => {
     return ctx
       .getFields()
       .filter(
-        (f) => typeof f.displayName === "string" && f.metadataField != null
+        (f) => typeof f.displayName === "string" && f.metadataField != null,
       )
       .map((f, i) => {
         const fieldName = f.metadataField?.lookupName ?? f.metadataField?.name;
         const withAlias = `${f.alias}${f.alias !== "" ? `.` : ``}${fieldName}`;
         const label = ctx.props.headerLabels
-          ? ctx.props.headerLabels[withAlias] ??
-            (f.metadataField?.displayName as string)
+          ? (ctx.props.headerLabels[withAlias] ??
+            (f.metadataField?.displayName as string))
           : (f.metadataField?.displayName as string);
         return {
-          value: label,
-          label: f.metadataField?.displayName as string,
+          value: withAlias,
+          label: label,
         };
       });
   };
@@ -39,7 +39,7 @@ const SearchBox = () => {
   const onSearchChange = async () => {
     // if search field a DateTime field
     const fieldType = ctx.state.metadata?.fields.find(
-      (f) => f.name === state.searchField
+      (f) => f.name === state.searchField,
     )?.type;
     let searchAppend = "";
     if (fieldType === "DateTime" && debouncedSearchValue?.trim() !== "") {
