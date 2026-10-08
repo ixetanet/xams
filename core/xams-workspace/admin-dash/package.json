@@ -31,7 +31,7 @@
     "@tiptap/starter-kit": "^2.1.12",
     "cookies-next": "^4.0.0",
     "dayjs": "^1.11.10",
-    "next": "15.5",
+    "next": "16.1.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-qr-code": "^2.0.18"
