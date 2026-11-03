@@ -194,6 +194,101 @@ namespace Xams.Core.Utils
             };
         }
 
+        /// <summary>
+        /// Converts one API wire value to a property's type, exactly as ConvertToEntity does for each field.
+        /// Skip means the API leaves the property unset (an empty or unparseable Guid). A DateTime that doesn't
+        /// parse throws FormatException; any other failed conversion throws ValueConversionException.
+        /// </summary>
+        internal static ValueConversion ConvertValue(PropertyInfo property, string value, out object? convertedValue)
+        {
+            convertedValue = null;
+            Type targetType = property.PropertyType;
+            Type? underlyingType = Nullable.GetUnderlyingType(targetType);
+
+            // If nullable and value is null, set to null
+            if ((value == "" || value == null) && underlyingType != null)
+            {
+                return ValueConversion.Set;
+            }
+
+            if (underlyingType != null)
+            {
+                targetType = underlyingType;
+            }
+
+            if (targetType == typeof(DateTime))
+            {
+                convertedValue = DateTime.Parse(value!, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+                return ValueConversion.Set;
+            }
+
+            if (targetType == typeof(Guid))
+            {
+                // Try to parse the GUID. If it fails or is empty, skip for non-nullable
+                if (string.IsNullOrWhiteSpace(value) || !Guid.TryParse(value, out Guid parsedGuid))
+                {
+                    // Skip setting this property - leave as default (Guid.Empty)
+                    // This is particularly important for primary keys in create operations
+                    return ValueConversion.Skip;
+                }
+
+                convertedValue = parsedGuid;
+                return ValueConversion.Set;
+            }
+
+            try
+            {
+                if (!(underlyingType != null && value == "" && SimpleTypes.Contains(underlyingType)))
+                {
+                    if (targetType == typeof(float) && value is "-Infinity" or "Infinity" or "NaN")
+                    {
+                        if (value is "-Infinity")
+                        {
+                            convertedValue = float.NegativeInfinity;
+                        }
+                        else if (value is "Infinity")
+                        {
+                            convertedValue = float.PositiveInfinity;
+                        }
+                        else if (value is "NaN")
+                        {
+                            convertedValue = float.NaN;
+                        }
+                    }
+                    else if (targetType == typeof(double) && value is "-Infinity" or "Infinity" or "NaN")
+                    {
+                        if (value is "-Infinity")
+                        {
+                            convertedValue = double.NegativeInfinity;
+                        }
+                        else if (value is "Infinity")
+                        {
+                            convertedValue = double.PositiveInfinity;
+                        }
+                        else if (value is "NaN")
+                        {
+                            convertedValue = double.NaN;
+                        }
+                    }
+                    else
+                    {
+                        convertedValue = Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
+                        if (targetType == typeof(string) && convertedValue != null)
+                        {
+                            convertedValue = ((string)convertedValue).Trim();
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                throw new ValueConversionException($"Error converting {property.Name}:{value} to {targetType.Name}.");
+            }
+
+            return ValueConversion.Set;
+        }
+
         public static MapEntityResult ConvertToEntity(Type type, Dictionary<string, dynamic> fields)
         {
             try
@@ -228,8 +323,6 @@ namespace Xams.Core.Utils
                         continue;
                     }
 
-                    object? convertedValue = null;
-
                     string value = string.Empty;
                     if (field.Value is JsonElement)
                     {
@@ -244,91 +337,21 @@ namespace Xams.Core.Utils
                         continue;
                     }
 
-                    Type targetType = property.PropertyType;
-                    Type? underlyingType = Nullable.GetUnderlyingType(targetType);
-
-                    // If nullable and value is null, set to null
-                    if ((value == "" || value == null) && underlyingType != null)
+                    object? convertedValue;
+                    try
                     {
-                        property.SetValue(entity, convertedValue);
-                        continue;
-                    }
-
-                    if (underlyingType != null)
-                    {
-                        targetType = underlyingType;
-                    }
-
-                    if (targetType == typeof(DateTime))
-                    {
-                        convertedValue = DateTime.Parse(value, CultureInfo.InvariantCulture,
-                            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
-                    }
-                    else if (targetType == typeof(Guid))
-                    {
-                        // Try to parse the GUID. If it fails or is empty, skip for non-nullable
-                        if (string.IsNullOrWhiteSpace(value) || !Guid.TryParse(value, out Guid parsedGuid))
+                        if (ConvertValue(property, value, out convertedValue) == ValueConversion.Skip)
                         {
-                            // Skip setting this property - leave as default (Guid.Empty)
-                            // This is particularly important for primary keys in create operations
                             continue;
                         }
-                        convertedValue = parsedGuid;
                     }
-                    else
+                    catch (ValueConversionException e)
                     {
-                        try
+                        return new MapEntityResult()
                         {
-                            if (!(underlyingType != null && value == "" && SimpleTypes.Contains(underlyingType)))
-                            {
-                                if (targetType == typeof(float) && value is "-Infinity" or "Infinity" or "NaN")
-                                {
-                                    if (value is "-Infinity")
-                                    {
-                                        convertedValue = float.NegativeInfinity;
-                                    }
-                                    else if (value is "Infinity")
-                                    {
-                                        convertedValue = float.PositiveInfinity;
-                                    }
-                                    else if (value is "NaN")
-                                    {
-                                        convertedValue = float.NaN;
-                                    }
-                                }
-                                else if (targetType == typeof(double) && value is "-Infinity" or "Infinity" or "NaN")
-                                {
-                                    if (value is "-Infinity")
-                                    {
-                                        convertedValue = double.NegativeInfinity;
-                                    }
-                                    else if (value is "Infinity")
-                                    {
-                                        convertedValue = double.PositiveInfinity;
-                                    }
-                                    else if (value is "NaN")
-                                    {
-                                        convertedValue = double.NaN;
-                                    }
-                                }
-                                else
-                                {
-                                    convertedValue = Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
-                                    if (targetType == typeof(string) && convertedValue != null)
-                                    {
-                                        convertedValue = ((string)convertedValue).Trim();
-                                    }
-                                }
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            return new MapEntityResult()
-                            {
-                                Error = true,
-                                Message = $"Error converting {field.Key}:{value} to {targetType.Name}."
-                            };
-                        }
+                            Error = true,
+                            Message = e.Message
+                        };
                     }
 
                     property.SetValue(entity, convertedValue);
@@ -548,4 +571,12 @@ namespace Xams.Core.Utils
             public object? Entity { get; init; }
         }
     }
+
+    internal enum ValueConversion
+    {
+        Set,
+        Skip
+    }
+
+    internal sealed class ValueConversionException(string message) : Exception(message);
 }
