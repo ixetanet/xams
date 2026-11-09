@@ -15,6 +15,8 @@ namespace Xams.Core.Utils;
 /// <para>Give each section the same query the data was read with. Rows the query selects but the submitted data
 /// leaves out are deleted; a missing or null section or join array leaves its rows alone, while an empty array
 /// deletes them.</para>
+/// <para>For a table whose values the client can't be trusted with, <see cref="Table{T}"/> limits the fields the
+/// client may write and fills the rest in on create.</para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -29,6 +31,7 @@ public sealed class AggregateUpdater
 {
     private readonly BaseServiceContext _context;
     private readonly List<AggregateSection> _sections = new();
+    private readonly Dictionary<Type, AggregateTableRule> _tableRules = new();
     private DateTime? _loadedAt;
     private bool _ignoreConflicts;
     private AggregateChangeSet? _changes;
@@ -58,6 +61,35 @@ public sealed class AggregateUpdater
     /// <param name="options">Per-section options, such as making a reference join writable.</param>
     public AggregateUpdater Record(ServiceQuery query, JsonElement? record,
         Action<AggregateSectionOptions>? options = null) => AddSection(query, record, options, true);
+
+    /// <summary>
+    /// Sets rules for one table wherever the save writes it: as a section's root, under any join alias, and in every
+    /// section. Use it for a table whose values the client can't be trusted with: list the fields the client may
+    /// write, and fill the others in with an <see cref="AggregateTableRules{T}.OnCreate"/> hook. Calling it again
+    /// for the same table adds to its rules.
+    /// </summary>
+    /// <typeparam name="T">The table's entity type, as its DbSet declares it. A base class isn't accepted.</typeparam>
+    /// <example>
+    /// <code>
+    /// .Table&lt;OrderLine&gt;(t => t
+    ///     .Editable(x => x.Quantity, x => x.Notes)   // the only fields the client may change
+    ///     .CreateOnly(x => x.ProductId)              // set by the client on create, kept after that
+    ///     .OnCreate(async (lines, ctx) => { /* query the prices and set line.UnitPrice */ }))
+    /// </code>
+    /// </example>
+    public AggregateUpdater Table<T>(Action<AggregateTableRules<T>> rules) where T : class
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        EnsureNotDiffed();
+        if (!_tableRules.TryGetValue(typeof(T), out var rule))
+        {
+            rule = new AggregateTableRule(typeof(T));
+            _tableRules[typeof(T)] = rule;
+        }
+
+        rules(new AggregateTableRules<T>(rule));
+        return this;
+    }
 
     /// <summary>
     /// When the data was loaded. Deleting a row that someone else created or changed after this time is a
@@ -94,9 +126,10 @@ public sealed class AggregateUpdater
 
         var db = _context.GetDbContext<IXamsDbContext>();
         var errors = new List<AggregateError>();
+        var rules = AggregateTree.ResolveRules(_tableRules.Values, db.Model, errors);
         foreach (var section in _sections)
         {
-            AggregateTree.Build(section, db.Model, errors);
+            AggregateTree.Build(section, db.Model, rules, errors);
         }
 
         if (errors.Count > 0)
@@ -105,7 +138,7 @@ public sealed class AggregateUpdater
         }
 
         _now = DateTime.UtcNow;
-        _changes = await new AggregateDiff(_context, _now, _loadedAt, _ignoreConflicts).RunAsync(_sections);
+        _changes = await new AggregateDiff(_context, _now, _loadedAt, _ignoreConflicts, rules).RunAsync(_sections);
         return _changes;
     }
 
@@ -183,7 +216,9 @@ public sealed class AggregateSectionOptions
     }
 
     /// <summary>
-    /// Fields the save never writes, as "Field" for the root table or "alias.Field" for a join.
+    /// Fields the save never writes, as "Field" for the root table or "alias.Field" for a join. To protect a
+    /// table's fields wherever it appears, list the fields the client may write with
+    /// <see cref="AggregateUpdater.Table{T}"/> instead.
     /// </summary>
     public AggregateSectionOptions ReadOnlyFields(params string[] fields)
     {

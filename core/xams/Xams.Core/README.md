@@ -415,7 +415,7 @@ Many-to-many works too: root → junction is a child join, and junction → targ
 **Fields:**
 - Only fields the query selected (`*` means every field without `[UIHide]`) and the client sent are compared, and only changed ones are written.
 - The updater fills in `CreatedDate`, `CreatedById`, `UpdatedDate`, `UpdatedById`, `OwningUserId` and `IsActive` the way the API does.
-- Keys, computed columns and fields listed in `ReadOnlyFields` are never written.
+- Keys, computed columns and fields listed in `ReadOnlyFields` are never written, and neither are fields a `Table<T>` rule doesn't let the client write (see below).
 - Values are compared after the same conversion the API applies, so Guid casing, extra decimal places, `null` vs `""` and sub-millisecond date differences don't count as changes.
 
 **Missing vs. empty:**
@@ -429,10 +429,73 @@ Many-to-many works too: root → junction is a child join, and junction → targ
 - **`LoadedAt(time)`.** Deleting a row that was created or changed after that time is a conflict instead of a delete.
 - **`IgnoreConflicts()`** turns both checks off.
 
+### Fields the client can't be trusted with
+
+Some tables let the user edit only a few fields, and take the rest from elsewhere in the database when a record is created. `Table<T>(...)` sets those rules for a table wherever the save writes it: as a section's root, under any join, and in every section.
+
+```csharp
+var db = context.GetDbContext<DataContext>();
+var updater = new AggregateUpdater(context)
+    .Record(OrderQueries.Order(input.OrderId), input.Order)   // the order, with its lines nested under "lines"
+    .Table<Order>(t => t
+        .Editable(x => x.Notes)                      // the only order field the client may change
+        .CreateOnly(x => x.CustomerId)               // the client picks it on a new order; kept after that
+        .OnCreate(async (orders, ctx) =>             // runs before the OrderLine hook, because lines point at orders
+        {
+            var ids = orders.Select(x => x.CustomerId).Distinct().ToList();
+            var customers = await db.Customers.AsNoTracking()
+                .Where(x => ids.Contains(x.CustomerId))
+                .ToDictionaryAsync(x => x.CustomerId);
+            foreach (var order in orders)
+            {
+                if (!customers.TryGetValue(order.CustomerId, out var customer) || customer.OnHold)
+                {
+                    ctx.Reject(order, "The customer can't place orders.");   // about the whole record
+                    continue;
+                }
+
+                order.PriceListId = customer.PriceListId;   // not Editable, so only the server sets it
+            }
+        }))
+    .Table<OrderLine>(t => t
+        .Editable(x => x.Quantity, x => x.Notes)     // adding x => x.OrderId would let lines move between orders
+        .CreateOnly(x => x.ProductId)
+        .OnCreate(async (lines, ctx) =>              // every new line, from every section and join, in one call
+        {
+            // A new order isn't in the database yet, but its hook above has already filled it
+            var order = ctx.Created<Order>().SingleOrDefault()
+                        ?? await db.Orders.AsNoTracking().SingleAsync(x => x.OrderId == input.OrderId);
+            var ids = lines.Select(x => x.ProductId).Distinct().ToList();
+            var prices = await db.PriceListItems.AsNoTracking()
+                .Where(x => x.PriceListId == order.PriceListId && ids.Contains(x.ProductId))
+                .ToDictionaryAsync(x => x.ProductId);
+            foreach (var line in lines)
+            {
+                if (!prices.TryGetValue(line.ProductId, out var price))
+                {
+                    ctx.Reject(line, nameof(OrderLine.ProductId), "The product isn't on the price list.");
+                    continue;
+                }
+
+                line.UnitPrice = price.Amount;   // whatever UnitPrice the client sent was ignored
+            }
+        }));
+```
+
+- **Only listed fields come from the client.** Once a table has `Editable` or `CreateOnly` fields, every other field the client sends for it is ignored, including columns added later. On update only `Editable` fields are written. Ignored values aren't errors. A child's link to its parent counts as a field too: moving a child into another parent's array is an `Invalid` error unless the link field is `Editable`.
+- **A hook alone locks nothing.** Without `Editable` or `CreateOnly`, the client can still write every field the query selects, including the ones your hook fills. A section's `ReadOnlyFields` still apply on top of the rules.
+- **New records arrive without untrusted values.** Each record passed to `OnCreate` has its key, its link to its parent, the query's `==` filter values, the client's `Editable` and `CreateOnly` values, and the usual create defaults. Every other field has its constructor default.
+- **One call per table.** The hook runs inside `DiffAsync`, before anything is written, and only when records are created. Tables are filled principal first, following foreign keys through tables with or without hooks, and `ctx.Created<TOther>()` finds a new parent or ancestor that isn't in the database yet. Calling `Table<T>` again adds to the same rules; several hooks on one table run in the order added, each with all the new records.
+- **Reject instead of throwing.** `ctx.Reject(record, message)` or `ctx.Reject(record, field, message)` adds an `Invalid` error whose message starts with the table and record ID. The other hooks still run, then the save fails with every rejection at once. An exception a hook throws comes out of `DiffAsync` or `SaveAsync` unchanged, and nothing is saved.
+- **Still checked.** Once every hook has run, a new record whose key or link to its parent changed is a `Setup` error, whichever hook changed it. The filled records are then checked like submitted values: against the query's `==` filters (`OutOfScope`) and writable references (`Invalid`).
+- **Mistakes in the rules fail early.** `T` must be the table's own entity type, not a base class. Listing a field the save never writes (a key, a system field such as `CreatedDate`, a computed column), or the same field as both `Editable` and `CreateOnly`, is a `Setup` error. A lambda that isn't a plain property, such as `x => x.Name.Length`, throws an `ArgumentException` right away.
+- **Deletes aren't affected**, and your own code can still change anything through the change set.
+
 ### Business rules
 
 The save skips the pipeline, so rules in your `[ServiceLogic]` classes don't run for its writes. Put them in the Save action instead:
 - **Validate** the input before building the updater.
+- **Protect** a table's fields and fill in new records with `Table<T>` (see above).
 - **Inspect and adjust** the result of `DiffAsync()`:
   - `changes.Creates`, `changes.Updates` and `changes.Deletes` list everything the save will write.
   - Change a `changes.Created<T>()` instance to change what's inserted.
@@ -446,9 +509,9 @@ Problems are reported before anything is written, as an `AggregateUpdateExceptio
 
 | Kind | Examples |
 | --- | --- |
-| `Setup` | A query that doesn't select the key of the root or of a join it saves; a saved join without `Denormalize()`; a saved join with no matching EF foreign key; `Distinct`; a `Top` smaller than the rows the query selects |
+| `Setup` | A query that doesn't select the key of the root or of a join it saves; a saved join without `Denormalize()`; a saved join with no matching EF foreign key; `Distinct`; a `Top` smaller than the rows the query selects; a `Table<T>` rule that can't apply; an `OnCreate` hook that changes a key or a link to a parent |
 | `OutOfScope` | An ID that exists but isn't in the query's rows; changing a field the query filters on |
-| `Invalid` | The same record twice; a value that can't be converted; a reference that disagrees with its foreign key |
+| `Invalid` | The same record twice; a value that can't be converted; a reference that disagrees with its foreign key; a record an `OnCreate` hook rejected; a move to another parent that a `Table<T>` rule forbids |
 | `Conflict` | See [Conflicts](#conflicts); also the same shared record edited differently in two places |
 | `Database` | The database rejected the save |
 

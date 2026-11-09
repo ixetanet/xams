@@ -41,8 +41,10 @@ internal sealed class AggregateNode
     // EF-mapped scalar properties that have a CLR property
     public Dictionary<string, PropertyInfo> ScalarProperties { get; set; } = new();
 
-    // Fields the update may write: selected, saveable, not keys or system fields
-    public HashSet<string> WritableFields { get; set; } = new();
+    // Fields taken from the submitted data: selected, saveable, not keys, system fields or ReadOnlyFields, and
+    // allowed by the table's rules for a create or an update
+    public HashSet<string> CreateFields { get; set; } = new();
+    public HashSet<string> UpdateFields { get; set; } = new();
 
     // Properties a business rule may set on an update through AggregateUpdate.Set
     public Dictionary<string, PropertyInfo> SettableProperties { get; set; } = new();
@@ -96,7 +98,52 @@ internal sealed class AggregateSection
 /// </summary>
 internal static class AggregateTree
 {
-    internal static void Build(AggregateSection section, IModel model, List<AggregateError> errors)
+    /// <summary>
+    /// Checks each Table&lt;T&gt; rule names a Xams table and only fields the save takes from the client, and
+    /// returns the rules by the table's entity type.
+    /// </summary>
+    internal static Dictionary<Type, AggregateTableRule> ResolveRules(IEnumerable<AggregateTableRule> rules,
+        IModel model, List<AggregateError> errors)
+    {
+        var resolved = new Dictionary<Type, AggregateTableRule>();
+        foreach (var rule in rules)
+        {
+            // The cache also maps each entity's base class to its table, so a base class (even object) would find
+            // some table. Only the table's own entity type is unambiguous.
+            var name = rule.EntityType.Name;
+            if (!Cache.Instance.TableTypeMetadata.TryGetValue(rule.EntityType, out var metadata) ||
+                metadata.Type != rule.EntityType || model.FindEntityType(rule.EntityType) is not { } entityType)
+            {
+                errors.Add(Setup(name, $"Table<{name}>: {name} isn't the entity type of a Xams table in the DbContext model."));
+                continue;
+            }
+
+            var table = metadata.TableName;
+            var discriminator = entityType.FindDiscriminatorProperty()?.Name;
+            foreach (var field in rule.Editable.Concat(rule.CreateOnly).Distinct())
+            {
+                if (entityType.FindProperty(field) is not { } property || !IsSettable(property, discriminator))
+                {
+                    errors.Add(new AggregateError(AggregateErrorKind.Setup, table, null, field,
+                        $"{table}: {field} can't be Editable or CreateOnly, because the save never takes it from the " +
+                        "client. It sets keys and system fields itself, and doesn't write unmapped or store-generated columns."));
+                }
+            }
+
+            foreach (var field in rule.Editable.Where(rule.CreateOnly.Contains))
+            {
+                errors.Add(new AggregateError(AggregateErrorKind.Setup, table, null, field,
+                    $"{table}: {field} is both Editable and CreateOnly. Editable already lets the client set it on create."));
+            }
+
+            resolved[rule.EntityType] = rule;
+        }
+
+        return resolved;
+    }
+
+    internal static void Build(AggregateSection section, IModel model,
+        IReadOnlyDictionary<Type, AggregateTableRule> rules, List<AggregateError> errors)
     {
         // A DiffAsync that failed can be retried, so start again from the query
         section.Nodes.Clear();
@@ -224,7 +271,7 @@ internal static class AggregateTree
         foreach (var node in section.Nodes)
         {
             var fields = node.Kind == AggregateNodeKind.Root ? readInput.fields : node.Join!.fields;
-            SetFields(node, fields ?? [], section.Options, model);
+            SetFields(node, fields ?? [], section.Options, rules.GetValueOrDefault(node.EntityType), model);
         }
 
         CheckKeysAreSelected(section, errors);
@@ -326,7 +373,8 @@ internal static class AggregateTree
         }
     }
 
-    private static void SetFields(AggregateNode node, string[] fields, AggregateSectionOptions options, IModel model)
+    private static void SetFields(AggregateNode node, string[] fields, AggregateSectionOptions options,
+        AggregateTableRule? rule, IModel model)
     {
         var entityType = model.FindEntityType(node.EntityType)!;
         var discriminator = entityType.FindDiscriminatorProperty()?.Name;
@@ -357,19 +405,26 @@ internal static class AggregateTree
 
         foreach (var property in entityType.GetProperties())
         {
-            if (property.PropertyInfo == null || property.IsPrimaryKey() || property.Name == discriminator ||
-                property.GetBeforeSaveBehavior() != PropertySaveBehavior.Save ||
-                property.GetAfterSaveBehavior() != PropertySaveBehavior.Save ||
-                AggregateNode.SystemFields.Contains(property.Name))
+            if (!IsSettable(property, discriminator))
             {
                 continue;
             }
 
-            node.SettableProperties[property.Name] = property.PropertyInfo;
+            node.SettableProperties[property.Name] = property.PropertyInfo!;
 
-            if (selected.Contains(property.Name) && property.Name != node.LinkField && !readOnly.Contains(property.Name))
+            if (!selected.Contains(property.Name) || property.Name == node.LinkField || readOnly.Contains(property.Name))
             {
-                node.WritableFields.Add(property.Name);
+                continue;
+            }
+
+            if (rule?.ClientWritesOnCreate(property.Name) != false)
+            {
+                node.CreateFields.Add(property.Name);
+            }
+
+            if (rule?.ClientWritesOnUpdate(property.Name) != false)
+            {
+                node.UpdateFields.Add(property.Name);
             }
         }
 
@@ -464,6 +519,14 @@ internal static class AggregateTree
             }
         }
     }
+
+    // A field the save may write: mapped to a CLR property, saved by EF on insert and update, and not the key, the
+    // discriminator or a system field the save sets itself
+    private static bool IsSettable(IProperty property, string? discriminator) =>
+        property.PropertyInfo != null && !property.IsPrimaryKey() && property.Name != discriminator &&
+        property.GetBeforeSaveBehavior() == PropertySaveBehavior.Save &&
+        property.GetAfterSaveBehavior() == PropertySaveBehavior.Save &&
+        !AggregateNode.SystemFields.Contains(property.Name);
 
     private static bool IsHidden(PropertyInfo? property) =>
         property != null && Attribute.GetCustomAttribute(property, typeof(UIHideAttribute)) != null;

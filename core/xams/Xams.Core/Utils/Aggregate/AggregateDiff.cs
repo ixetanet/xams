@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Xams.Core.Base;
 using Xams.Core.Dtos.Data;
 using Xams.Core.Repositories;
@@ -15,17 +16,20 @@ internal sealed class AggregateDiff
     private readonly DateTime _now;
     private readonly DateTime? _loadedAt;
     private readonly bool _ignoreConflicts;
+    private readonly IReadOnlyDictionary<Type, AggregateTableRule> _rules;
     private readonly List<AggregateError> _errors = new();
     private readonly Dictionary<(string Table, Guid Id), Planned> _planned = new();
     private readonly List<Planned> _order = new();
     private readonly List<ReferenceCheck> _referenceChecks = new();
 
-    internal AggregateDiff(BaseServiceContext context, DateTime now, DateTime? loadedAt, bool ignoreConflicts)
+    internal AggregateDiff(BaseServiceContext context, DateTime now, DateTime? loadedAt, bool ignoreConflicts,
+        IReadOnlyDictionary<Type, AggregateTableRule> rules)
     {
         _context = context;
         _now = now;
         _loadedAt = loadedAt;
         _ignoreConflicts = ignoreConflicts;
+        _rules = rules;
     }
 
     internal async Task<AggregateChangeSet> RunAsync(List<AggregateSection> sections)
@@ -56,7 +60,11 @@ internal sealed class AggregateDiff
 
         ThrowIfErrors();
 
-        FinishCreates();
+        BuildCreates();
+        await RunCreateHooks();
+        ThrowIfErrors();
+
+        CheckCreatedScopes();
         CheckReferences();
         ThrowIfErrors();
 
@@ -393,7 +401,7 @@ internal sealed class AggregateDiff
         if (current != null)
         {
             var changes = new Dictionary<string, AggregateFieldChange>();
-            foreach (var field in node.WritableFields)
+            foreach (var field in node.UpdateFields)
             {
                 if (!record.Fields.TryGetValue(field, out var element) ||
                     !TryConvert(node, record.Id, field, element, out var value))
@@ -411,7 +419,18 @@ internal sealed class AggregateDiff
 
             if (node.Kind == AggregateNodeKind.Child && current.ParentId != record.Parent!.Id)
             {
-                changes[node.LinkField!] = new AggregateFieldChange(current.ParentId, record.Parent.Id);
+                // A move writes the link field, so a table whose rules don't let the client change it can't move.
+                // It's an error rather than ignored: a move is never an echo of what the client read.
+                if (_rules.GetValueOrDefault(node.EntityType)?.ClientWritesOnUpdate(node.LinkField!) == false)
+                {
+                    _errors.Add(Error(AggregateErrorKind.Invalid, node.TableName, record.Id, node.LinkField,
+                        $"{node.TableName} {record.Id} can't be moved from {node.Parent!.TableName} {current.ParentId} " +
+                        $"to {record.Parent.Id}, because the table's rules don't let the client change {node.LinkField}."));
+                }
+                else
+                {
+                    changes[node.LinkField!] = new AggregateFieldChange(current.ParentId, record.Parent.Id);
+                }
             }
 
             if (node.Kind == AggregateNodeKind.Root)
@@ -451,7 +470,7 @@ internal sealed class AggregateDiff
         }
 
         var values = new Dictionary<string, object?>();
-        foreach (var field in node.WritableFields)
+        foreach (var field in node.CreateFields)
         {
             if (record.Fields.TryGetValue(field, out var element) &&
                 TryConvert(node, record.Id, field, element, out var value))
@@ -483,6 +502,11 @@ internal sealed class AggregateDiff
             Values = values,
             ClientSuppliedId = !record.IdAssigned
         };
+
+        if (node.Kind == AggregateNodeKind.Child)
+        {
+            create.Links[node.LinkField!] = record.Parent!.Id;
+        }
 
         if (node.Kind == AggregateNodeKind.Root)
         {
@@ -644,6 +668,12 @@ internal sealed class AggregateDiff
             }
 
             existing.Sections.AddRange(incoming.Sections);
+            // A conflicting link was already reported with the values
+            foreach (var (field, parentId) in incoming.Links)
+            {
+                existing.Links.TryAdd(field, parentId);
+            }
+
             return;
         }
 
@@ -669,12 +699,118 @@ internal sealed class AggregateDiff
 
     // ---- Checks once every record is planned ----
 
-    // Builds the instances to insert, defaults included, and checks a new root record is still one of its query's rows
-    private void FinishCreates()
+    // Builds the instances to insert, defaults included
+    private void BuildCreates()
     {
         foreach (var planned in _order.Where(x => x.Kind == PlannedKind.Create))
         {
             planned.Entity = CreateEntity(planned.Node, planned);
+        }
+    }
+
+    // Gives each table's OnCreate hooks every record the save creates in it, in one call per hook. Rejections are
+    // collected so every hook still runs. A hook can reach any new record through Created<T>(), so once they have
+    // all run, every new record's key and parent links are checked, in tables with hooks or without.
+    private async Task RunCreateHooks()
+    {
+        var creates = _order.Where(x => x.Kind == PlannedKind.Create).ToList();
+        var hooked = creates.Select(x => x.Node.EntityType).Distinct()
+            .Where(x => _rules.TryGetValue(x, out var rule) && rule.OnCreate.Count > 0)
+            .ToList();
+        if (hooked.Count == 0)
+        {
+            return;
+        }
+
+        var created = creates.Select(x => x.Entity!).ToList();
+        foreach (var type in HookOrder(hooked))
+        {
+            var planned = creates.Where(x => x.Node.EntityType == type).ToList();
+            var records = planned.Select(x => x.Entity!).ToList();
+            var context = new AggregateCreateContext(planned[0].Node.TableName,
+                planned.ToDictionary(x => x.Entity!, x => x.Id, ReferenceEqualityComparer.Instance), created, _errors);
+            foreach (var hook in _rules[type].OnCreate)
+            {
+                await hook(records, context);
+            }
+        }
+
+        foreach (var planned in creates)
+        {
+            CheckHookKeptKeys(planned);
+        }
+    }
+
+    // Principal tables first: a table's hooks run after those of every table it depends on through foreign keys,
+    // directly or through other tables (with hooks or without), so a new record's hook sees its new ancestors filled
+    // in. Otherwise, and in a cycle, the first table planned goes first.
+    private List<Type> HookOrder(List<Type> types)
+    {
+        var model = _context.GetDbContext<IXamsDbContext>().Model;
+        var principals = types.ToDictionary(type => type,
+            type => DependsOn(model, type).Where(x => x != type && types.Contains(x)).ToHashSet());
+
+        var ordered = new List<Type>();
+        var remaining = types.ToList();
+        while (remaining.Count > 0)
+        {
+            var next = remaining.FirstOrDefault(x => !principals[x].Overlaps(remaining)) ?? remaining[0];
+            ordered.Add(next);
+            remaining.Remove(next);
+        }
+
+        return ordered;
+    }
+
+    // Every entity type a type reaches through foreign keys, directly or through other tables
+    private static HashSet<Type> DependsOn(IModel model, Type type)
+    {
+        var reached = new HashSet<Type>();
+        var pending = new Stack<Type>([type]);
+        while (pending.Count > 0)
+        {
+            var entityType = model.FindEntityType(pending.Pop());
+            if (entityType == null)
+            {
+                continue;
+            }
+
+            foreach (var principal in entityType.GetForeignKeys().Select(x => x.PrincipalEntityType.ClrType))
+            {
+                if (reached.Add(principal))
+                {
+                    pending.Push(principal);
+                }
+            }
+        }
+
+        return reached;
+    }
+
+    // The key and the link to each parent the record was nested under come from the submitted data and the nesting;
+    // the rest of the save relies on them
+    private void CheckHookKeptKeys(Planned planned)
+    {
+        var node = planned.Node;
+        var fields = new List<(string Field, Guid? Expected)> { (node.PrimaryKey, planned.Id) };
+        fields.AddRange(planned.Links.Select(x => (x.Key, (Guid?)x.Value)));
+
+        foreach (var (field, expected) in fields)
+        {
+            if (AsGuid(node.ScalarProperties[field].GetValue(planned.Entity)) != expected)
+            {
+                _errors.Add(Error(AggregateErrorKind.Setup, node.TableName, planned.Id, field,
+                    $"{node.TableName} {planned.Id}: an OnCreate hook changed {field}. A hook can't change a new " +
+                    "record's key or its link to its parent."));
+            }
+        }
+    }
+
+    // A new root record must still be one of its query's rows after the defaults and any OnCreate hook
+    private void CheckCreatedScopes()
+    {
+        foreach (var planned in _order.Where(x => x.Kind == PlannedKind.Create))
+        {
             foreach (var section in planned.Sections)
             {
                 CheckCreatedScope(section, planned);
@@ -991,6 +1127,10 @@ internal sealed class AggregateDiff
         // Create: the instance to insert, and the sections whose query it must stay in (root records only)
         public object? Entity { get; set; }
         public List<AggregateSection> Sections { get; } = new();
+
+        // Create: the parent each nested occurrence links it to, by link field. A record submitted both as a root
+        // and nested keeps the link from the nesting, whichever came first.
+        public Dictionary<string, Guid> Links { get; } = new();
     }
 
     private sealed record ReferenceCheck(AggregateNode ParentNode, Guid ParentId, AggregateNode Node, Guid? ReferencedId);
